@@ -41,4 +41,9 @@ public class ProductRepository {
         }
         return em.merge(p);
     }
+    public void deleteById(EntityManager em, Long id) {
+    Product p = em.find(Product.class, id);
+    if (p != null) em.remove(p);
+}
+
 }

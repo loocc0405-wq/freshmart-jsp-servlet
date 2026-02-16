@@ -18,4 +18,14 @@ public class ProductService {
     public List<Product> search(String keyword, String category) {
         return executor.execute(em -> productRepo.search(em, keyword, category));
     }
+    public Product getById(Long id) {
+    return executor.execute(em -> productRepo.findById(em, id).orElse(null));
+}
+public Product save(Product p) {
+    return executor.execute(em -> productRepo.save(em, p));
+}
+public void deleteById(Long id) {
+    executor.executeVoid(em -> productRepo.deleteById(em, id));
+}
+
 }

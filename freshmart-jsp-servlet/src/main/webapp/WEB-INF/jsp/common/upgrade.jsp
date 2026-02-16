@@ -5,14 +5,23 @@
 
 <div class="alert alert-warning">
     <h4>Tính năng trả phí (PRO)</h4>
-    <p>
-        Tài khoản của bạn chưa có gói <b>PRO</b> hoặc đã hết hạn, nên không truy cập được Module dự báo.
-    </p>
-    <p class="mb-0">
-        (Trong bài PRJ, bạn có thể làm module "fake payment" để gia hạn <code>expired_date</code>.)
-    </p>
+    <p>Bạn chưa có PRO hoặc đã hết hạn.</p>
 </div>
 
-<a class="btn btn-primary" href="${pageContext.request.contextPath}/catalog">Về Catalog</a>
+<c:if test="${not empty errorMessage}">
+    <div class="alert alert-danger"><c:out value="${errorMessage}"/></div>
+</c:if>
+
+<form method="post" action="${pageContext.request.contextPath}/subscription/upgrade" class="card">
+    <div class="card-body">
+        <label class="form-label">Chọn gói (days)</label>
+        <select class="form-select" name="planDays">
+            <option value="30">30 days</option>
+            <option value="90">90 days</option>
+            <option value="365">365 days</option>
+        </select>
+        <button class="btn btn-primary mt-3">Fake payment & Upgrade</button>
+    </div>
+</form>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
