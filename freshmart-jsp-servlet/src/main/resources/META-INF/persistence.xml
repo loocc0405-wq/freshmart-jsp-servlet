@@ -19,24 +19,20 @@
         <class>com.freshmart.entity.RevenueDaily</class>
 
         <properties>
-            <!-- DB config: update these for your machine -->
-<property name="javax.persistence.jdbc.driver" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
-<property name="javax.persistence.jdbc.url"
-          value="jdbc:sqlserver://localhost:1433;databaseName=freshmart;encrypt=true;trustServerCertificate=true"/>
-<property name="javax.persistence.jdbc.user" value="sa"/>
-<property name="javax.persistence.jdbc.password" value="123456"/>
-<property name="hibernate.dialect" value="org.hibernate.dialect.SQLServer2012Dialect"/>
+    <!-- SQL Server -->
+    <property name="javax.persistence.jdbc.driver" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
+    <property name="javax.persistence.jdbc.url"
+              value="jdbc:sqlserver://localhost:1433;databaseName=freshmart;encrypt=true;trustServerCertificate=true"/>
+    <property name="javax.persistence.jdbc.user" value="sa"/>
+    <property name="javax.persistence.jdbc.password" value="123456"/>
 
+    <!-- Hibernate -->
+    <property name="hibernate.dialect" value="org.hibernate.dialect.SQLServer2012Dialect"/>
+    <property name="hibernate.hbm2ddl.auto" value="update"/>
+    <property name="hibernate.show_sql" value="false"/>
+    <property name="hibernate.format_sql" value="true"/>
+</properties>
 
-            <!-- Hibernate -->
-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
-            <property name="hibernate.hbm2ddl.auto" value="update"/>
-            <property name="hibernate.show_sql" value="false"/>
-            <property name="hibernate.format_sql" value="true"/>
-
-            <!-- Fix for MySQL timezone warnings -->
-            <property name="hibernate.jdbc.time_zone" value="UTC"/>
-        </properties>
     </persistence-unit>
 
 </persistence>
