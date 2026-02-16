@@ -30,4 +30,7 @@ public class UserRepository {
         }
         return em.merge(user);
     }
+    public Optional<User> findById(EntityManager em, Long id) {
+        return Optional.ofNullable(em.find(User.class, id));
+    }
 }
