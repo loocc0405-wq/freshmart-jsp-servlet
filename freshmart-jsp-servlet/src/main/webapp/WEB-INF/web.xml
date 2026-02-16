@@ -63,6 +63,23 @@
         <filter-name>AuthorizationFilter</filter-name>
         <url-pattern>/pro/*</url-pattern>
     </filter-mapping>
+    <filter-mapping>
+    <filter-name>AuthenticationFilter</filter-name>
+    <url-pattern>/customer/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>AuthenticationFilter</filter-name>
+        <url-pattern>/subscription/*</url-pattern>
+    </filter-mapping>
+
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/customer/*</url-pattern>
+    </filter-mapping>
+    <filter-mapping>
+        <filter-name>AuthorizationFilter</filter-name>
+        <url-pattern>/subscription/*</url-pattern>
+    </filter-mapping>
 
     <!-- Tier gating: PRO module -->
     <filter>

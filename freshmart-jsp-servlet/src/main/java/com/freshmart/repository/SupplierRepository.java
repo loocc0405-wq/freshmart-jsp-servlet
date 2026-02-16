@@ -1,8 +1,10 @@
 package com.freshmart.repository;
 
 import com.freshmart.entity.Supplier;
+
 import javax.persistence.EntityManager;
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 public class SupplierRepository {
     public List<Supplier> findAll(EntityManager em) {

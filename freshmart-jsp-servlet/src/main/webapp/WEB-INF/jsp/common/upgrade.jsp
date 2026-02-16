@@ -21,6 +21,7 @@
             <option value="365">365 days</option>
         </select>
         <button class="btn btn-primary mt-3">Fake payment & Upgrade</button>
+        <a class="btn btn-outline-secondary mt-3 ms-2" href="${pageContext.request.contextPath}/catalog">Về Catalog</a>
     </div>
 </form>
 

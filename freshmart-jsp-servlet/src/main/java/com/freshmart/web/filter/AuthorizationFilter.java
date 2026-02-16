@@ -29,6 +29,9 @@ public class AuthorizationFilter implements Filter {
         rules.put("/staff/", EnumSet.of(Role.STAFF, Role.ADMIN));
         rules.put("/seller/", EnumSet.of(Role.SELLER, Role.ADMIN));
         rules.put("/pro/", EnumSet.of(Role.CUSTOMER, Role.STAFF, Role.ADMIN)); // dashboard/forecast
+        rules.put("/customer/", EnumSet.of(Role.CUSTOMER, Role.ADMIN));
+        rules.put("/subscription/", EnumSet.of(Role.CUSTOMER, Role.ADMIN));
+
     }
 
     @Override
