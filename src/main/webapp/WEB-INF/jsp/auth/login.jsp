@@ -13,7 +13,11 @@
                 </c:if>
 
                 <form method="post" action="${pageContext.request.contextPath}/login">
+<<<<<<< HEAD
                     <input type="hidden" name="return" value="${param["return"]}">
+=======
+                    <input type="hidden" name="return" value="${param['return']}"/>
+>>>>>>> main
 
                     <div class="mb-3">
                         <label class="form-label">Username</label>
