@@ -2,7 +2,6 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="pageTitle" value="Login"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
-
 <div class="row justify-content-center">
     <div class="col-md-5">
         <div class="card shadow-sm">
@@ -14,7 +13,7 @@
                 </c:if>
 
                 <form method="post" action="${pageContext.request.contextPath}/login">
-                    <input type="hidden" name="return" value="${param.return}"/>
+                    <input type="hidden" name="return" value="${param["return"]}">
 
                     <div class="mb-3">
                         <label class="form-label">Username</label>
