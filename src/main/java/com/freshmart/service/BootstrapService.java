@@ -10,7 +10,7 @@ import com.freshmart.repository.UserRepository;
 import com.freshmart.util.JpaExecutor;
 import com.freshmart.util.PasswordUtil;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 

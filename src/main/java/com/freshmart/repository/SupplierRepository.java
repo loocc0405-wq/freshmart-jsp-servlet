@@ -2,7 +2,7 @@ package com.freshmart.repository;
 
 import com.freshmart.entity.Supplier;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 

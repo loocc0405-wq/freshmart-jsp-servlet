@@ -76,7 +76,7 @@ public class ForecastService {
         });
     }
 
-    private Map<LocalDate, BigDecimal> loadContinuousSeries(javax.persistence.EntityManager em, LocalDate from, LocalDate toInclusive) {
+    private Map<LocalDate, BigDecimal> loadContinuousSeries(jakarta.persistence.EntityManager em, LocalDate from, LocalDate toInclusive) {
         List<RevenueDaily> rows = revenueRepo.findBetween(em, from, toInclusive);
 
         Map<LocalDate, BigDecimal> series = new HashMap<>();

@@ -12,7 +12,7 @@ import com.freshmart.service.dto.ItemRequest;
 import com.freshmart.util.CodeGenerator;
 import com.freshmart.util.JpaExecutor;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;

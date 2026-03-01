@@ -3,7 +3,7 @@ package com.freshmart.service;
 import com.freshmart.entity.RevenueDaily;
 import com.freshmart.repository.RevenueDailyRepository;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
