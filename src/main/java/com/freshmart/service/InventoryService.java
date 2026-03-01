@@ -5,7 +5,7 @@ import com.freshmart.exception.InsufficientStockException;
 import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.service.dto.LotConsumption;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;

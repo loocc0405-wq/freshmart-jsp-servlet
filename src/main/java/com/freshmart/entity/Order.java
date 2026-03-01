@@ -4,7 +4,7 @@ import com.freshmart.enums.OrderStatus;
 import com.freshmart.enums.OrderType;
 import com.freshmart.enums.PaymentMethod;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;

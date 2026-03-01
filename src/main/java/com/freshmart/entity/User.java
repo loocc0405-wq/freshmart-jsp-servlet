@@ -3,7 +3,7 @@ package com.freshmart.entity;
 import com.freshmart.enums.Role;
 import com.freshmart.enums.Tier;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
