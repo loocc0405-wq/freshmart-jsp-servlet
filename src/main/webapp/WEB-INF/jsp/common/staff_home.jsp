@@ -9,6 +9,7 @@
 <ul>
     <li><a href="${pageContext.request.contextPath}/seller/pos">Seller POS (demo)</a></li>
     <li><a href="${pageContext.request.contextPath}/pro/dashboard">Dashboard doanh thu</a></li>
+    <li><a href="${pageContext.request.contextPath}/staff/forecast">Gợi ý nhập hàng (Rule-based)</a></li>
 </ul>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
