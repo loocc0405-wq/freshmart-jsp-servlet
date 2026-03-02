@@ -5,7 +5,10 @@ import jakarta.persistence.*;
 @Entity
 @Table(name = "cart_items",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uq_cart_items_cart_product", columnNames = {"cart_id", "product_id"})
+                @UniqueConstraint(
+                        name = "uq_cart_items_cart_product",
+                        columnNames = {"cart_id", "product_id"}
+                )
         })
 public class CartItem {
 
@@ -13,12 +16,16 @@ public class CartItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Giữ LAZY vì không dùng cart trong JSP
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "cart_id", foreignKey = @ForeignKey(name = "fk_cart_items_cart"))
+    @JoinColumn(name = "cart_id",
+            foreignKey = @ForeignKey(name = "fk_cart_items_cart"))
     private Cart cart;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", foreignKey = @ForeignKey(name = "fk_cart_items_product"))
+    // 🔥 SỬA Ở ĐÂY: đổi LAZY -> EAGER
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name = "product_id",
+            foreignKey = @ForeignKey(name = "fk_cart_items_product"))
     private Product product;
 
     @Column(nullable = false)
