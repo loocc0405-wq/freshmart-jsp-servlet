@@ -4,13 +4,13 @@ import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.exception.AuthenticationException;
 import com.freshmart.service.AuthService;
-import com.freshmart.util.WebUtil;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 @WebServlet(urlPatterns = {"/login"})
@@ -19,42 +19,81 @@ public class LoginServlet extends HttpServlet {
     private final AuthService authService = new AuthService();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        // Nếu đã login rồi thì không cho vào lại login page
+        if (req.getSession().getAttribute(AppConstants.SESSION_USER) != null) {
+            resp.sendRedirect(req.getContextPath() + "/catalog");
+            return;
+        }
+
+        req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp")
+                .forward(req, resp);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
         String username = req.getParameter("username");
         String password = req.getParameter("password");
         String returnUrl = req.getParameter("return");
 
         try {
-            User u = authService.login(username, password);
-            req.getSession().setAttribute(AppConstants.SESSION_USER, u);
+            User user = authService.login(username, password);
 
+            // ✅ Lưu user vào session
+            req.getSession().setAttribute(AppConstants.SESSION_USER, user);
+
+            String contextPath = req.getContextPath();
+
+            // ===============================
+            // 1️⃣ Nếu có returnUrl hợp lệ → quay lại trang đó
+            // ===============================
             if (returnUrl != null && !returnUrl.isBlank()) {
-                resp.sendRedirect(returnUrl);
-                return;
+
+                // Chống open redirect (không cho redirect ra ngoài domain)
+                if (!returnUrl.startsWith("http")) {
+
+                    if (returnUrl.startsWith(contextPath)) {
+                        resp.sendRedirect(returnUrl);
+                    } else {
+                        resp.sendRedirect(contextPath + returnUrl);
+                    }
+                    return;
+                }
             }
 
-            // Simple role-based landing
-            switch (u.getRole()) {
+            // ===============================
+            // 2️⃣ Nếu login trực tiếp → chuyển theo role
+            // ===============================
+            switch (user.getRole()) {
                 case ADMIN:
-                    resp.sendRedirect(WebUtil.contextPath(req) + "/admin");
+                    resp.sendRedirect(contextPath + "/admin");
                     break;
+
                 case STAFF:
-                    resp.sendRedirect(WebUtil.contextPath(req) + "/staff");
+                    resp.sendRedirect(contextPath + "/staff/suppliers");
                     break;
+
                 case SELLER:
-                    resp.sendRedirect(WebUtil.contextPath(req) + "/seller/pos");
+                    resp.sendRedirect(contextPath + "/seller/pos");
                     break;
+
+                case CUSTOMER:
+                    resp.sendRedirect(contextPath + "/customer");
+                    break;
+
                 default:
-                    resp.sendRedirect(WebUtil.contextPath(req) + "/catalog");
+                    resp.sendRedirect(contextPath + "/catalog");
             }
+
         } catch (AuthenticationException ex) {
+
             req.setAttribute("error", ex.getMessage());
-            req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
+            req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp")
+                    .forward(req, resp);
         }
     }
 }
