@@ -33,7 +33,35 @@
                         Category: <c:out value="${p.category}"/><br/>
                         Giá: <b><c:out value="${p.sellPrice}"/></b> / <c:out value="${p.unit}"/>
                     </p>
-                    <a class="btn btn-sm btn-primary" href="${pageContext.request.contextPath}/product?id=${p.id}">Chi tiết</a>
+
+                    <!-- Nút Chi tiết -->
+                    <a class="btn btn-sm btn-primary"
+                       href="${pageContext.request.contextPath}/product?id=${p.id}">
+                        Chi tiết
+                    </a>
+
+                    <!-- ================= ADD TO CART ================= -->
+                    <form action="${pageContext.request.contextPath}/cart"
+                          method="post"
+                          class="mt-2 d-flex align-items-center gap-2">
+
+                        <input type="hidden" name="action" value="add"/>
+                        <input type="hidden" name="productId" value="${p.id}"/>
+
+                        <input type="number"
+                               name="qty"
+                               value="1"
+                               min="1"
+                               class="form-control form-control-sm"
+                               style="width:80px;"/>
+
+                        <button type="submit"
+                                class="btn btn-sm btn-success">
+                            Thêm vào giỏ
+                        </button>
+                    </form>
+                    <!-- ================================================= -->
+
                 </div>
             </div>
         </div>
