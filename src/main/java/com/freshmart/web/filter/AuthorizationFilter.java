@@ -40,7 +40,7 @@ public class AuthorizationFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
 
-        User u = (User) request.getSession().getAttribute(AppConstants.SESSION_USER);
+       User u = (User) request.getSession().getAttribute("authUser");
         if (u == null) {
             // AuthenticationFilter should catch, but keep it safe.
             response.sendRedirect(WebUtil.contextPath(request) + "/login");
