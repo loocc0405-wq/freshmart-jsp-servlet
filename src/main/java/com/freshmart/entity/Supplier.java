@@ -28,6 +28,10 @@ public class Supplier {
     @Column(length = 255)
     private String note;
 
+    @Column(nullable = false)
+    private String email;
+
+
     public Supplier() {}
 
     public Supplier(String name) {
@@ -87,4 +91,7 @@ public class Supplier {
     public void setNote(String note) {
         this.note = note;
     }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }
