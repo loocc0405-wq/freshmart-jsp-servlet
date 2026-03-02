@@ -1,6 +1,7 @@
 package com.freshmart.repository;
 
 import com.freshmart.entity.User;
+import com.freshmart.enums.Role;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -19,6 +20,26 @@ public class UserRepository {
         return rs.isEmpty() ? Optional.empty() : Optional.of(rs.get(0));
     }
 
+  
+    public List<User> findByRole(EntityManager em, Role role) {
+        TypedQuery<User> q = em.createQuery(
+                "SELECT u FROM User u WHERE u.role = :role ORDER BY u.id DESC",
+                User.class
+        );
+        q.setParameter("role", role);
+        return q.getResultList();
+    }
+
+ 
+    public boolean existsByUsername(EntityManager em, String username) {
+        Long c = em.createQuery(
+                "SELECT COUNT(u) FROM User u WHERE u.username = :username",
+                Long.class
+        ).setParameter("username", username)
+         .getSingleResult();
+        return c != null && c > 0;
+    }
+
     public long count(EntityManager em) {
         return em.createQuery("SELECT COUNT(u) FROM User u", Long.class).getSingleResult();
     }
@@ -30,6 +51,7 @@ public class UserRepository {
         }
         return em.merge(user);
     }
+
     public Optional<User> findById(EntityManager em, Long id) {
         return Optional.ofNullable(em.find(User.class, id));
     }

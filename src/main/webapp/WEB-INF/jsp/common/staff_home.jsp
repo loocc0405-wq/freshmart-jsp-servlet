@@ -24,6 +24,9 @@
                     <a class="btn btn-warning btn-sm" href="${pageContext.request.contextPath}/staff/inventory-report">
                         📊 Báo cáo
                     </a>
+                    <a class="btn btn-secondary btn-sm" href="${pageContext.request.contextPath}/staff/forecast">
+                        🔮 Gợi ý nhập hàng
+                    </a>
                 </div>
             </div>
         </div>
@@ -99,7 +102,5 @@
         <br/>→ Hệ thống sẽ lấy từ Lô A trước (HSD sớm hơn)
     </p>
 </div>
-
-<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
