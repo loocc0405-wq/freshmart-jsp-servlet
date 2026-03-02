@@ -154,6 +154,7 @@
                         <th>HSD</th>
                         <th>Số lượng còn lại</th>
                         <th>Ghi chú</th>
+                        <th>Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -167,6 +168,11 @@
                                     <c:when test="${lot.qtyLeft > 0}">Cần loại bỏ ngay</c:when>
                                     <c:otherwise>Đã dùng hết</c:otherwise>
                                 </c:choose>
+                            </td>
+                            <td>
+                                <a class="btn btn-sm btn-danger" href="${pageContext.request.contextPath}/staff/delete-lot?lotId=${lot.id}&amp;redirect=/staff/inventory?productId=${selectedProduct.id}">
+                                    Xóa
+                                </a>
                             </td>
                         </tr>
                     </c:forEach>

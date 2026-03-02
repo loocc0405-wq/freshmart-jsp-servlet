@@ -347,7 +347,11 @@ List<ProductLot> getLotsExpiringWithinDays(int days)
 List<ProductLot> getExpiredLotsForProduct(Long productId)
 
 // Xóa lô
-void deleteLot(Long lotId)
+void deleteLot(Long lotId)  
+
+Web endpoint `/staff/delete-lot?lotId={id}&redirect={path}` is available for
+removing expired or waste lots. The inventory report and product view pages show
+"Xóa" buttons to call this servlet.
 
 // Tính tổng giá trị tồn kho
 BigDecimal getTotalStockValue(Long productId)

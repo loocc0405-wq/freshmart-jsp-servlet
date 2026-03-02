@@ -160,24 +160,32 @@
         <div class="card">
             <div class="card-header bg-danger text-white">Lô đã hết hạn (cần loại bỏ)</div>
             <div class="card-body">
-                <c:if test="${empty expiredProducts}">
+                <c:if test="${empty expiredLots}">
                     <div class="alert alert-success">Không có lô nào hết hạn.</div>
                 </c:if>
-                <c:if test="${not empty expiredProducts}">
-                    <table class="table table-danger">
+                <c:if test="${not empty expiredLots}">
+                    <table class="table table-danger table-sm">
                         <thead>
                         <tr>
+                            <th>Lô ID</th>
                             <th>Sản phẩm</th>
-                            <th>Số lô hết hạn</th>
-                            <th>Ghi chú</th>
+                            <th>HSD</th>
+                            <th>Số lượng còn lại</th>
+                            <th>Hành động</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <c:forEach items="${expiredProducts}" var="item">
+                        <c:forEach items="${expiredLots}" var="lot">
                             <tr>
-                                <td><c:out value="${item.productName}"/></td>
-                                <td><c:out value="${item.count}"/></td>
-                                <td>Cần loại bỏ sắp</td>
+                                <td><c:out value="${lot.id}"/></td>
+                                <td><c:out value="${lot.product.name}"/></td>
+                                <td><c:out value="${lot.expiryDate}"/></td>
+                                <td><c:out value="${lot.qtyLeft}"/></td>
+                                <td>
+                                    <a class="btn btn-sm btn-danger" href="${pageContext.request.contextPath}/staff/delete-lot?lotId=${lot.id}&amp;redirect=/staff/inventory-report">
+                                        Xóa
+                                    </a>
+                                </td>
                             </tr>
                         </c:forEach>
                         </tbody>
