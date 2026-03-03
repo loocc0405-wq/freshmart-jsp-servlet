@@ -50,20 +50,7 @@ BEGIN
 END
 GO
 
--- ---- SUPPLIERS (schema evolution) ----
--- Add email column if missing (matches Supplier.email NOT NULL in JPA)
-IF COL_LENGTH(N'dbo.suppliers', N'email') IS NULL
-BEGIN
-    ALTER TABLE dbo.suppliers ADD email NVARCHAR(120) NULL;
 
-    -- Backfill existing rows then enforce NOT NULL
-    UPDATE dbo.suppliers
-    SET email = CONCAT(N'supplier', id, N'@freshmart.local')
-    WHERE email IS NULL;
-
-    ALTER TABLE dbo.suppliers ALTER COLUMN email NVARCHAR(120) NOT NULL;
-END
-GO
 -- PRODUCTS
 IF OBJECT_ID(N'dbo.products', N'U') IS NULL
 BEGIN
