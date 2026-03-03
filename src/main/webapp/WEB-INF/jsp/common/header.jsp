@@ -32,6 +32,9 @@
 
         <div class="collapse navbar-collapse" id="nav">
 
+            <!-- ✅ Lấy user từ session (tên phổ biến nhất là authUser) -->
+            <c:set var="auth" value="${sessionScope.authUser}" />
+
             <!-- LEFT MENU -->
             <ul class="navbar-nav me-auto">
 
@@ -40,22 +43,35 @@
                     <a class="nav-link" href="${pageContext.request.contextPath}/catalog">Catalog</a>
                 </li>
 
-                <!-- PRO dashboard: chỉ user tier PRO -->
-                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.tier != null && sessionScope.authUser.tier.toString() eq 'PRO'}">
+                <!-- ✅ PRO: chỉ user tier PRO -->
+                <c:if test="${auth != null && auth.tier != null && auth.tier.toString() eq 'PRO'}">
                     <li class="nav-item">
                         <a class="nav-link" href="${pageContext.request.contextPath}/pro/dashboard">PRO Dashboard</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="${pageContext.request.contextPath}/pro/seasonality">PRO Seasonality</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="${pageContext.request.contextPath}/pro/replenishment">PRO Restock</a>
+                    </li>
                 </c:if>
 
-                <!-- SELLER POS: chỉ role SELLER -->
-                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role != null && sessionScope.authUser.role.toString() eq 'SELLER'}">
+                <!-- ✅ SELLER POS: SELLER hoặc ADMIN (admin có thể test) -->
+                <c:if test="${auth != null && auth.role != null && (auth.role.toString() eq 'SELLER' || auth.role.toString() eq 'ADMIN')}">
                     <li class="nav-item">
                         <a class="nav-link" href="${pageContext.request.contextPath}/seller/pos">Seller POS</a>
                     </li>
                 </c:if>
 
-                <!-- ADMIN MANAGE SELLERS: chỉ role ADMIN -->
-                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role != null && sessionScope.authUser.role.toString() eq 'ADMIN'}">
+                <!-- ✅ STAFF -->
+                <c:if test="${auth != null && auth.role != null && (auth.role.toString() eq 'STAFF' || auth.role.toString() eq 'ADMIN')}">
+                    <li class="nav-item">
+                        <a class="nav-link" href="${pageContext.request.contextPath}/staff/forecast">Staff Forecast</a>
+                    </li>
+                </c:if>
+
+                <!-- ✅ ADMIN -->
+                <c:if test="${auth != null && auth.role != null && auth.role.toString() eq 'ADMIN'}">
                     <li class="nav-item">
                         <a class="nav-link" href="${pageContext.request.contextPath}/admin/sellers">Manage Sellers</a>
                     </li>
@@ -67,12 +83,12 @@
             <ul class="navbar-nav">
                 <c:choose>
 
-                    <c:when test="${sessionScope.authUser != null}">
+                    <c:when test="${auth != null}">
                         <li class="nav-item">
                             <span class="navbar-text me-3">
                                 Xin chào,
-                                <b><c:out value="${sessionScope.authUser.username}"/></b>
-                                (<c:out value="${sessionScope.authUser.role}"/>)
+                                <b><c:out value="${auth.username}"/></b>
+                                (<c:out value="${auth.role}"/>)
                             </span>
                         </li>
 
