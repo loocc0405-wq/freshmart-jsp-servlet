@@ -1,51 +1,69 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-<html>
-<head>
-    <title>Supplier Management</title>
-</head>
-<body>
+<c:set var="pageTitle" value="Suppliers" />
+<%@ include file="_layout_top.jspf" %>
 
-<h2>Supplier List</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="mb-0">Suppliers</h3>
+    <div class="text-muted">Manage supplier info</div>
+  </div>
+  <a class="btn btn-primary" href="${pageContext.request.contextPath}/staff/suppliers?action=new">
+    + Add Supplier
+  </a>
+</div>
 
-<a href="${pageContext.request.contextPath}/staff/suppliers?action=add">
-    ➕ Add New Supplier
-</a>
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th>Address</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+        <c:forEach var="s" items="${suppliers}">
+          <tr>
+            <td class="text-muted">${s.id}</td>
+            <td class="fw-semibold">${s.name}</td>
+            <td>${empty s.phone ? "-" : s.phone}</td>
+            <td>${empty s.email ? "-" : s.email}</td>
+            <td>${empty s.address ? "-" : s.address}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="${pageContext.request.contextPath}/staff/suppliers?action=edit&id=${s.id}">
+                Edit
+              </a>
 
-<br><br>
-
-<table border="1" cellpadding="8">
-    <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Email</th>
-        <th>Address</th>
-        <th>Action</th>
-    </tr>
-
-    <c:forEach var="s" items="${suppliers}"></c:forEach>
-        <tr>
-            <td>${s.id}</td>
-            <td>${s.name}</td>
-            <td>${s.phone}</td>
-            <td>${s.email}</td>
-            <td>${s.address}</td>
-            <td>
-                <a href="${pageContext.request.contextPath}/staff/suppliers?action=edit&id=${s.id}">
-                    Edit
-                </a>
-                |
-                <a href="${pageContext.request.contextPath}/staff/suppliers?action=delete&id=${s.id}"
-                   onclick="return confirm('Are you sure?')">
-                    Delete
-                </a>
+              <!-- Delete bằng POST cho chuyên nghiệp -->
+              <form class="d-inline"
+                    action="${pageContext.request.contextPath}/staff/suppliers"
+                    method="post"
+                    onsubmit="return confirm('Delete this supplier?');">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="id" value="${s.id}">
+                <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+              </form>
             </td>
-        </tr>
-    </c:forEach>
+          </tr>
+        </c:forEach>
 
-</table>
+        <c:if test="${empty suppliers}">
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">No suppliers found.</td>
+          </tr>
+        </c:if>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-</body>
-</html>
+<%@ include file="_layout_bottom.jspf" %>
