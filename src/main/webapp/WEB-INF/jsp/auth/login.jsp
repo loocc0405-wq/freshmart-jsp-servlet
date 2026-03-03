@@ -1,40 +1,72 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="pageTitle" value="Login"/>
-<jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h3 class="card-title mb-3">Đăng nhập</h3>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FreshMart Login</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg,#00c853,#009688);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            width: 350px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+        h2 {
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #00c853;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #009688;
+        }
+        .error {
+            color: red;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
 
-                <c:if test="${not empty error}">
-                    <div class="alert alert-danger"><c:out value="${error}"/></div>
-                </c:if>
+<div class="card">
+    <h2>FreshMart Login</h2>
 
-                <form method="post" action="${pageContext.request.contextPath}/login">
-                    <input type="hidden" name="return" value="${param['return']}"/>
+    <c:if test="${not empty error}">
+        <div class="error">${error}</div>
+    </c:if>
 
-                    <div class="mb-3">
-                        <label class="form-label">Username</label>
-                        <input class="form-control" name="username" required/>
-                    </div>
+    <form method="post" action="login">
+        <input type="hidden" name="csrf_token"
+               value="${sessionScope.CSRF_TOKEN}" />
 
-                    <div class="mb-3">
-                        <label class="form-label">Password</label>
-                        <input class="form-control" type="password" name="password" required/>
-                    </div>
-
-                    <button class="btn btn-primary w-100" type="submit">Login</button>
-
-                    <hr/>
-                    <p class="text-muted mb-0">
-                        Default accounts: admin/admin123, staff/staff123, seller/seller123, customer/customer123
-                    </p>
-                </form>
-            </div>
-        </div>
-    </div>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
+    </form>
 </div>
 
-<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
+</body>
+</html>

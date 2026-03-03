@@ -95,4 +95,15 @@
         <welcome-file>index.jsp</welcome-file>
     </welcome-file-list>
 
+        <!-- CSRF Protection for Login -->
+    <filter>
+        <filter-name>CsrfFilter</filter-name>
+        <filter-class>com.freshmart.web.filter.CsrfFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>CsrfFilter</filter-name>
+        <url-pattern>/login</url-pattern>
+    </filter-mapping>
+
 </web-app>
