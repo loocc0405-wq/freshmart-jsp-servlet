@@ -32,70 +32,84 @@
     </div>
   </div>
 
-  <table class="table table-bordered bg-white align-middle">
-    <thead class="table-light">
-    <tr>
-      <th>Product</th>
-      <th class="text-end">Avg7<br/><span class="small text-muted">(qty/day)</span></th>
-      <th class="text-end">Avg<c:out value="${daysHistory}"/><br/><span class="small text-muted">(qty/day)</span></th>
-      <th class="text-end">SeasonFactor</th>
-      <th class="text-end">Forecast/day</th>
-      <th class="text-end">Stock</th>
-      <th class="text-end">ExpectedDemand</th>
-      <th class="text-end">SafetyStock</th>
-      <th class="text-center">Suggested Import</th>
-    </tr>
-    </thead>
+  <c:choose>
+    <c:when test="${empty rows}">
+      <div class="alert alert-warning">Chưa có dữ liệu gợi ý. Hãy đảm bảo có sản phẩm + đơn COMPLETED + tồn kho.</div>
+    </c:when>
+    <c:otherwise>
+      <div class="table-responsive">
+        <table class="table table-bordered bg-white align-middle">
+          <thead class="table-light">
+          <tr>
+            <th>Product</th>
+            <th class="text-end">Avg7<br/><span class="small text-muted">(qty/day)</span></th>
+            <th class="text-end">Avg<c:out value="${daysHistory}"/><br/><span class="small text-muted">(qty/day)</span></th>
+            <th class="text-end">SeasonFactor</th>
+            <th class="text-end">Forecast/day</th>
+            <th class="text-end">Stock</th>
+            <th class="text-end">ExpectedDemand</th>
+            <th class="text-end">SafetyStock</th>
+            <th class="text-end">ReorderPoint</th>
+            <th class="text-center">Suggested Import</th>
+          </tr>
+          </thead>
 
-    <tbody>
-    <c:forEach var="r" items="${rows}">
-      <c:set var="expectedDemand" value="${r.forecastPerDay * (leadTimeDays + bufferDays)}"/>
-      <c:set var="safetyStock" value="${r.forecastPerDay * safetyDays}"/>
-      <c:set var="reorderPoint" value="${expectedDemand + safetyStock}"/>
+          <tbody>
+          <c:forEach var="r" items="${rows}">
+            <c:set var="expectedDemand" value="${r.forecastPerDay * (leadTimeDays + bufferDays)}"/>
+            <c:set var="safetyStock" value="${r.forecastPerDay * safetyDays}"/>
+            <c:set var="reorderPoint" value="${expectedDemand + safetyStock}"/>
 
-      <tr>
-        <td><c:out value="${r.productName}"/></td>
+            <tr>
+              <td><c:out value="${r.productName}"/></td>
 
-        <td class="text-end">
-          <fmt:formatNumber value="${r.avg7}" minFractionDigits="2" maxFractionDigits="2"/>
-        </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.avg7}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-        <td class="text-end">
-          <fmt:formatNumber value="${r.avg30}" minFractionDigits="2" maxFractionDigits="2"/>
-        </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.avg30}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-        <td class="text-end">
-          <fmt:formatNumber value="${r.seasonFactor}" minFractionDigits="2" maxFractionDigits="2"/>
-        </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.seasonFactor}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-        <td class="text-end">
-          <fmt:formatNumber value="${r.forecastPerDay}" minFractionDigits="2" maxFractionDigits="2"/>
-        </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.forecastPerDay}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-        <td class="text-end"><c:out value="${r.stock}"/></td>
+              <td class="text-end"><c:out value="${r.stock}"/></td>
 
-        <td class="text-end">
-          <fmt:formatNumber value="${expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/>
-        </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-        <td class="text-end">
-          <fmt:formatNumber value="${safetyStock}" minFractionDigits="2" maxFractionDigits="2"/>
-        </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${safetyStock}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-        <td class="text-center">
-          <c:choose>
-            <c:when test="${r.suggestedQty > 0}">
-              <span class="badge text-bg-warning"><c:out value="${r.suggestedQty}"/></span>
-            </c:when>
-            <c:otherwise>
-              <span class="badge text-bg-success">OK</span>
-            </c:otherwise>
-          </c:choose>
-        </td>
-      </tr>
-    </c:forEach>
-    </tbody>
-  </table>
+              <td class="text-end">
+                <fmt:formatNumber value="${reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
+
+              <td class="text-center">
+                <c:choose>
+                  <c:when test="${r.suggestedQty > 0}">
+                    <span class="badge text-bg-warning"><c:out value="${r.suggestedQty}"/></span>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="badge text-bg-success">OK</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+            </tr>
+          </c:forEach>
+          </tbody>
+        </table>
+      </div>
+    </c:otherwise>
+  </c:choose>
 </div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
