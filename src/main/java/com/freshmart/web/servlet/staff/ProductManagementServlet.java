@@ -27,27 +27,36 @@ public class ProductManagementServlet extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        if (action == null) {
+        if (action == null || action.isBlank()) {
             listProducts(request, response);
-        } else {
-            switch (action) {
-                case "add":
-                    showForm(request, response, null);
-                    break;
+            return;
+        }
 
-                case "edit":
-                    Long id = Long.parseLong(request.getParameter("id"));
-                    Product product = productService.getById(id);
-                    showForm(request, response, product);
-                    break;
+        switch (action) {
+            case "add":
+                showForm(request, response, null);
+                break;
 
-                case "delete":
-                    deleteProduct(request, response);
-                    break;
-
-                default:
-                    listProducts(request, response);
+            case "edit": {
+                String idStr = request.getParameter("id");
+                if (idStr == null || idStr.isBlank()) {
+                    request.getSession().setAttribute("flash", "Missing product id.");
+                    response.sendRedirect(request.getContextPath() + "/staff/products");
+                    return;
+                }
+                Long id = Long.parseLong(idStr);
+                Product product = productService.getById(id);
+                if (product == null) {
+                    request.getSession().setAttribute("flash", "Product not found.");
+                    response.sendRedirect(request.getContextPath() + "/staff/products");
+                    return;
+                }
+                showForm(request, response, product);
+                break;
             }
+
+            default:
+                listProducts(request, response);
         }
     }
 
@@ -57,6 +66,15 @@ public class ProductManagementServlet extends HttpServlet {
 
         request.setCharacterEncoding("UTF-8");
 
+        String action = request.getParameter("action");
+
+        // DELETE bằng POST
+        if ("delete".equalsIgnoreCase(action)) {
+            deleteProductPost(request, response);
+            return;
+        }
+
+        // SAVE (create/update)
         String idStr = request.getParameter("id");
         String name = request.getParameter("name");
         String category = request.getParameter("category");
@@ -66,20 +84,35 @@ public class ProductManagementServlet extends HttpServlet {
         String description = request.getParameter("description");
 
         Product product;
+        boolean isCreate = (idStr == null || idStr.isBlank());
 
-        if (idStr == null || idStr.isEmpty()) {
+        if (isCreate) {
             product = new Product();
         } else {
             Long id = Long.parseLong(idStr);
             product = productService.getById(id);
+            if (product == null) {
+                request.getSession().setAttribute("flash", "Product not found.");
+                response.sendRedirect(request.getContextPath() + "/staff/products");
+                return;
+            }
         }
 
         product.setName(name);
         product.setCategory(category);
         product.setUnit(unit);
 
-        if (priceStr != null && !priceStr.isEmpty()) {
-            product.setSellPrice(new BigDecimal(priceStr));
+        // parse sellPrice an toàn
+        if (priceStr != null && !priceStr.isBlank()) {
+            try {
+                product.setSellPrice(new BigDecimal(priceStr.trim()));
+            } catch (NumberFormatException e) {
+                request.getSession().setAttribute("flash", "Invalid sell price.");
+                // quay lại form (giữ dữ liệu)
+                request.setAttribute("product", product);
+                request.getRequestDispatcher("/WEB-INF/jsp/staff/product_form.jsp").forward(request, response);
+                return;
+            }
         }
 
         product.setImageUrl(imageUrl);
@@ -87,14 +120,32 @@ public class ProductManagementServlet extends HttpServlet {
 
         productService.save(product);
 
+        request.getSession().setAttribute("flash",
+                isCreate ? "Product created successfully!" : "Product updated successfully!");
         response.sendRedirect(request.getContextPath() + "/staff/products");
     }
 
     private void listProducts(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        List<Product> products = productService.listAll();
+        String keyword = request.getParameter("keyword");
+        String category = request.getParameter("category");
+
+        if (keyword != null) keyword = keyword.trim();
+        if (category != null) category = category.trim();
+
+        boolean hasKeyword = keyword != null && !keyword.isEmpty();
+        boolean hasCategory = category != null && !category.isEmpty();
+
+        List<Product> products = (hasKeyword || hasCategory)
+                ? productService.search(keyword, category)
+                : productService.listAll();
+
         request.setAttribute("products", products);
+
+        // để JSP set lại ô tìm kiếm
+        request.setAttribute("keyword", keyword);
+        request.setAttribute("category", category);
 
         request.getRequestDispatcher("/WEB-INF/jsp/staff/product_list.jsp")
                 .forward(request, response);
@@ -104,17 +155,24 @@ public class ProductManagementServlet extends HttpServlet {
             throws ServletException, IOException {
 
         request.setAttribute("product", product);
-
         request.getRequestDispatcher("/WEB-INF/jsp/staff/product_form.jsp")
                 .forward(request, response);
     }
 
-    private void deleteProduct(HttpServletRequest request, HttpServletResponse response)
+    private void deleteProductPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        Long id = Long.parseLong(request.getParameter("id"));
+        String idStr = request.getParameter("id");
+        if (idStr == null || idStr.isBlank()) {
+            request.getSession().setAttribute("flash", "Missing product id.");
+            response.sendRedirect(request.getContextPath() + "/staff/products");
+            return;
+        }
+
+        Long id = Long.parseLong(idStr);
         productService.deleteById(id);
 
+        request.getSession().setAttribute("flash", "Product deleted successfully!");
         response.sendRedirect(request.getContextPath() + "/staff/products");
     }
 }
