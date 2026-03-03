@@ -29,7 +29,9 @@ This starter project implements the **core architecture** and several key busine
 mvn clean package
 ```
 
-3. Deploy `target/freshmart.war` to **Tomcat 10** (copy into `TOMCAT_HOME/webapps/`), then start Tomcat.
+3. Deploy `target/freshmart.war` to **Tomcat 10.1+** (copy into `TOMCAT_HOME/webapps/`), then start Tomcat.
+
+> ⚠️ Lưu ý: Project đang dùng `jakarta.servlet-api 6.0` + JSTL Jakarta → **bắt buộc Tomcat 10.1+**. Nếu muốn chạy Tomcat 9 (javax.*) thì phải hạ dependency và đổi toàn bộ imports/taglib.
 
 4. Open:
 - `http://localhost:8080/freshmart/`
@@ -46,7 +48,7 @@ See `com.freshmart.bootstrap.AppBootstrapListener`.
 
 - `src/main/java` : controllers (servlets), filters, services, repositories, entities
 - `src/main/webapp/WEB-INF/jsp` : JSP views
-- `src/main/resources/META-INF/persistence.xml` : JPA config (MySQL)
+- `src/main/resources/META-INF/persistence.xml` : JPA config (**SQL Server default**)
 - `src/main/resources/META-INF/persistence-sqlserver.xml` : SQL Server config (reference)
 - `db/schema.sql` : reference schema (MySQL)
 - `db/schema-sqlserver.sql` : reference schema (SQL Server)
