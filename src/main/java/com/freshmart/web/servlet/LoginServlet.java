@@ -3,8 +3,8 @@ package com.freshmart.web.servlet;
 import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.exception.AuthenticationException;
-import com.freshmart.service.AuthService;
 import com.freshmart.security.LoginAttemptService;
+import com.freshmart.service.AuthService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -18,15 +18,12 @@ import java.io.IOException;
 public class LoginServlet extends HttpServlet {
 
     private final AuthService authService = new AuthService();
-
-    // ✅ Rate limit service
     private static final LoginAttemptService attemptService = new LoginAttemptService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        // Nếu đã login rồi -> điều hướng hợp lệ (tránh quay lại login)
         User user = (User) req.getSession().getAttribute(AppConstants.SESSION_USER);
         if (user != null) {
             redirectByRole(user, req, resp);
@@ -44,7 +41,6 @@ public class LoginServlet extends HttpServlet {
         String password = req.getParameter("password");
         String returnUrl = req.getParameter("return");
 
-        // ✅ 1) Check blocked
         if (attemptService.isBlocked(username)) {
             req.setAttribute("error",
                     "Tài khoản bị khóa tạm thời do nhập sai quá 5 lần. Vui lòng thử lại sau 5 phút.");
@@ -54,15 +50,13 @@ public class LoginServlet extends HttpServlet {
 
         try {
             User user = authService.login(username, password);
-
-            // ✅ 2) Success -> reset fail count
             attemptService.loginSuccess(username);
 
             req.getSession().setAttribute(AppConstants.SESSION_USER, user);
 
             String contextPath = req.getContextPath();
 
-            // ✅ Nếu có returnUrl hợp lệ -> quay lại trang đó (chỉ cho phép nội bộ)
+            // ✅ returnUrl nội bộ
             if (returnUrl != null && !returnUrl.isBlank() && !returnUrl.startsWith("http")) {
                 if (returnUrl.startsWith(contextPath)) {
                     resp.sendRedirect(returnUrl);
@@ -72,12 +66,9 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            // ✅ Login trực tiếp -> điều hướng theo role
             redirectByRole(user, req, resp);
 
         } catch (AuthenticationException ex) {
-
-            // ✅ 3) Failed -> increase fail count
             attemptService.loginFailed(username);
 
             req.setAttribute("error", ex.getMessage());
@@ -85,31 +76,28 @@ public class LoginServlet extends HttpServlet {
         }
     }
 
-private void redirectByRole(User user, HttpServletRequest req, HttpServletResponse resp) throws IOException {
-    String contextPath = req.getContextPath();
+    private void redirectByRole(User user, HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String contextPath = req.getContextPath();
 
-    switch (user.getRole()) {
-        case ADMIN:
-            // ✅ /admin thường không có servlet -> về trang quản lý có thật
-            resp.sendRedirect(contextPath + "/admin/sellers");
-            break;
+        switch (user.getRole()) {
+            case ADMIN:
+                resp.sendRedirect(contextPath + "/admin/sellers");
+                break;
 
-        case STAFF:
-            // ✅ /staff thường không có servlet -> về trang staff có thật
-            resp.sendRedirect(contextPath + "/staff/forecast");
-            // hoặc nếu bạn có staff suppliers:
-            // resp.sendRedirect(contextPath + "/staff/suppliers");
-            break;
+            case STAFF:
+                resp.sendRedirect(contextPath + "/staff/forecast");
+                break;
 
-        case SELLER:
-            resp.sendRedirect(contextPath + "/seller/pos");
-            break;
+            case SELLER:
+                resp.sendRedirect(contextPath + "/seller/pos");
+                break;
 
-        case CUSTOMER:
-            resp.sendRedirect(contextPath + "/catalog");
-            break;
+            case CUSTOMER:
+                resp.sendRedirect(contextPath + "/catalog");
+                break;
 
-        default:
-            resp.sendRedirect(contextPath + "/catalog");
+            default:
+                resp.sendRedirect(contextPath + "/catalog");
+        }
     }
 }
