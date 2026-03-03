@@ -1,43 +1,48 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
-<html>
-<head>
-    <title>Supplier Form</title>
-</head>
-<body>
+<c:set var="pageTitle" value="${supplier == null ? 'Add Supplier' : 'Edit Supplier'}" />
+<%@ include file="_layout_top.jspf" %>
 
-<h2>
-    ${supplier == null ? "Add New Supplier" : "Edit Supplier"}
-</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h3 class="mb-0">${supplier == null ? "Add Supplier" : "Edit Supplier"}</h3>
+    <div class="text-muted">Fill in supplier details</div>
+  </div>
+  <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/suppliers">Back</a>
+</div>
 
-<form action="${pageContext.request.contextPath}/staff/suppliers" method="post">
+<div class="card">
+  <div class="card-body">
+    <form action="${pageContext.request.contextPath}/staff/suppliers" method="post" class="row g-3">
+      <input type="hidden" name="id" value="${supplier.id}" />
 
-    <input type="hidden" name="id" value="${supplier.id}" />
+      <div class="col-md-6">
+        <label class="form-label">Name</label>
+        <input class="form-control" type="text" name="name" value="${supplier.name}" required>
+      </div>
 
-    <label>Name:</label><br>
-    <input type="text" name="name" value="${supplier.name}" required />
-    <br><br>
+      <div class="col-md-6">
+        <label class="form-label">Phone</label>
+        <input class="form-control" type="text" name="phone" value="${supplier.phone}" required>
+      </div>
 
-    <label>Phone:</label><br>
-    <input type="text" name="phone" value="${supplier.phone}" required />
-    <br><br>
+      <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <input class="form-control" type="email" name="email" value="${supplier.email}" required>
+      </div>
 
-    <label>Email:</label><br>
-    <input type="email" name="email" value="${supplier.email}" required />
-    <br><br>
+      <div class="col-md-6">
+        <label class="form-label">Address</label>
+        <input class="form-control" type="text" name="address" value="${supplier.address}" required>
+      </div>
 
-    <label>Address:</label><br>
-    <input type="text" name="address" value="${supplier.address}" required />
-    <br><br>
+      <div class="col-12 d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/suppliers">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
 
-    <button type="submit">Save</button>
-
-</form>
-
-<br>
-<a href="${pageContext.request.contextPath}/staff/suppliers">
-    Back to List
-</a>
-
-</body>
-</html>
+<%@ include file="_layout_bottom.jspf" %>
