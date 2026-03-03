@@ -29,7 +29,7 @@ This starter project implements the **core architecture** and several key busine
 mvn clean package
 ```
 
-3. Deploy `target/freshmart.war` to **Tomcat 9** (copy into `TOMCAT_HOME/webapps/`), then start Tomcat.
+3. Deploy `target/freshmart.war` to **Tomcat 10** (copy into `TOMCAT_HOME/webapps/`), then start Tomcat.
 
 4. Open:
 - `http://localhost:8080/freshmart/`

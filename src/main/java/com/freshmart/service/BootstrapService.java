@@ -53,8 +53,12 @@ public class BootstrapService {
 
         Long productCount = em.createQuery("SELECT COUNT(p) FROM Product p", Long.class).getSingleResult();
         if (productCount == 0) {
+            // ✅ IMPORTANT: Supplier.email is NOT NULL in JPA -> must seed email
             Supplier sup = new Supplier("Default Supplier");
+            sup.setEmail("supplier@freshmart.local");
             sup.setLeadTimeDays(2);
+            sup.setPhone("0900000000");
+            sup.setAddress("TP. Hồ Chí Minh");
             em.persist(sup);
 
             Product p1 = new Product("Rau muống", new BigDecimal("15000"));
