@@ -29,54 +29,58 @@ public class ReplenishmentService {
      * leadTimeDays: thời gian nhập hàng về (vd 3)
      * safetyDays: tồn kho an toàn (vd 2)
      */
-    public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int safetyDays) {
-        return executor.execute(em -> {
-            LocalDate today = LocalDate.now();
-            List<Product> products = productRepo.findAll(em);
+    public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int bufferDays, int safetyDays) {
+    return executor.execute(em -> {
+        LocalDate today = LocalDate.now();
+        List<Product> products = productRepo.findAll(em);
 
-            BigDecimal seasonFactor = getSeasonFactor(today);
+        BigDecimal seasonFactor = getSeasonFactor(today);
 
-            List<ReplenishSuggestion> out = new ArrayList<>();
-            for (Product p : products) {
-                BigDecimal avg7 = avgDailySold(em, p.getId(), 7);
-                BigDecimal avg30 = avgDailySold(em, p.getId(), daysHistory);
+        List<ReplenishSuggestion> out = new ArrayList<>();
+        for (Product p : products) {
+            BigDecimal avg7 = avgDailySold(em, p.getId(), 7);
+            BigDecimal avgHistory = avgDailySold(em, p.getId(), daysHistory);
 
-                // trend = avg7 / avg30 (nếu avg30=0 thì trend=1)
-                BigDecimal trend = BigDecimal.ONE;
-                if (avg30.compareTo(BigDecimal.ZERO) > 0) {
-                    trend = avg7.divide(avg30, 4, RoundingMode.HALF_UP);
-                    // kẹp trend để tránh nhảy quá mạnh
-                    if (trend.compareTo(new BigDecimal("0.5")) < 0) trend = new BigDecimal("0.5");
-                    if (trend.compareTo(new BigDecimal("2.0")) > 0) trend = new BigDecimal("2.0");
-                }
-
-                // forecastPerDay = avg7 * trend * seasonFactor
-                BigDecimal forecastPerDay = avg7.multiply(trend).multiply(seasonFactor)
-                        .setScale(2, RoundingMode.HALF_UP);
-
-                int stock = lotRepo.getAvailableQty(em, p.getId(), today);
-
-                // Need = forecastPerDay * (leadTimeDays + safetyDays) - stock
-                BigDecimal need = forecastPerDay.multiply(BigDecimal.valueOf(leadTimeDays + safetyDays));
-                int suggestedQty = need.setScale(0, RoundingMode.CEILING).intValue() - stock;
-                if (suggestedQty < 0) suggestedQty = 0;
-
-                out.add(new ReplenishSuggestion(
-                        p.getId(),
-                        p.getName(),
-                        avg7, avg30,
-                        seasonFactor,
-                        forecastPerDay,
-                        stock,
-                        suggestedQty
-                ));
+            // trend = avg7 / avgHistory (nếu avgHistory=0 thì trend=1)
+            BigDecimal trend = BigDecimal.ONE;
+            if (avgHistory.compareTo(BigDecimal.ZERO) > 0) {
+                trend = avg7.divide(avgHistory, 4, RoundingMode.HALF_UP);
+                if (trend.compareTo(new BigDecimal("0.5")) < 0) trend = new BigDecimal("0.5");
+                if (trend.compareTo(new BigDecimal("2.0")) > 0) trend = new BigDecimal("2.0");
             }
 
-            // sort: suggested desc
-            out.sort((a, b) -> Integer.compare(b.getSuggestedQty(), a.getSuggestedQty()));
-            return out;
-        });
-    }
+            // forecastPerDay = avg7 * trend * seasonFactor
+            BigDecimal forecastPerDay = avg7.multiply(trend).multiply(seasonFactor)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            int stock = lotRepo.getAvailableQty(em, p.getId(), today);
+
+            // đúng theo JSP:
+            // expectedDemand = forecastPerDay * (leadTimeDays + bufferDays)
+            // safetyStock    = forecastPerDay * safetyDays
+            // reorderPoint   = expectedDemand + safetyStock
+            BigDecimal expectedDemand = forecastPerDay.multiply(BigDecimal.valueOf(leadTimeDays + bufferDays));
+            BigDecimal safetyStock = forecastPerDay.multiply(BigDecimal.valueOf(safetyDays));
+            BigDecimal reorderPoint = expectedDemand.add(safetyStock);
+
+            int suggestedQty = reorderPoint.setScale(0, RoundingMode.CEILING).intValue() - stock;
+            if (suggestedQty < 0) suggestedQty = 0;
+
+            out.add(new ReplenishSuggestion(
+                    p.getId(),
+                    p.getName(),
+                    avg7, avgHistory,          // vẫn đẩy vào field avg30 của DTO nếu DTO đang tên vậy
+                    seasonFactor,
+                    forecastPerDay,
+                    stock,
+                    suggestedQty
+            ));
+        }
+
+        out.sort((a, b) -> Integer.compare(b.getSuggestedQty(), a.getSuggestedQty()));
+        return out;
+    });
+}
 
     /**
      * avgDailySold = tổng quantity bán / số ngày.
