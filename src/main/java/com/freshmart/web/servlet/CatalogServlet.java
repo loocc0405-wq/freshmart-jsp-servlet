@@ -9,9 +9,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 @WebServlet(urlPatterns = {"/catalog"})
@@ -24,22 +24,27 @@ public class CatalogServlet extends HttpServlet {
         String q = req.getParameter("q");
         String cat = req.getParameter("category");
 
-        boolean hasFilter = (q != null && !q.isBlank()) || (cat != null && !cat.isBlank());
+        boolean hasFilter =
+                (q != null && !q.isBlank()) ||
+                (cat != null && !cat.isBlank());
 
         List<Product> products = hasFilter
                 ? productService.search(q, cat)
                 : productService.listAll();
 
-        // NEW: đổ danh sách category cho dropdown
+        // dropdown categories
         List<String> categories = productService.listCategories();
         req.setAttribute("categories", categories);
 
-        // NEW: nếu không lọc thì group theo category để hiển thị theo từng mục
-        if (!hasFilter) {
+        // group mode (chỉ khi không filter)
+        boolean groupMode = !hasFilter && categories != null && !categories.isEmpty();
+        req.setAttribute("groupMode", groupMode);
+
+        if (groupMode) {
             Map<String, List<Product>> grouped = new LinkedHashMap<>();
             for (String c : categories) {
                 List<Product> inCat = products.stream()
-                        .filter(p -> c.equals(p.getCategory()))
+                        .filter(p -> c != null && c.equals(p.getCategory()))
                         .collect(Collectors.toList());
                 if (!inCat.isEmpty()) grouped.put(c, inCat);
             }
