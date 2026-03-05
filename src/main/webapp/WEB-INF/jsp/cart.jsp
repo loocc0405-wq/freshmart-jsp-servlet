@@ -27,12 +27,12 @@
                 <form action="${pageContext.request.contextPath}/cart" method="post" class="d-flex gap-2">
                     <input type="hidden" name="action" value="update"/>
                     <input type="hidden" name="productId" value="${item.product.id}"/>
-                    <input type="number" name="qty" min="1" value="${item.qty}" class="form-control form-control-sm"/>
+                    <input type="number" name="qty" min="1" value="${item.quantity}" class="form-control form-control-sm"/>
                     <button class="btn btn-primary btn-sm">Update</button>
                 </form>
             </td>
 
-            <td>${item.total}</td>
+            <td>${item.lineTotal}</td>
 
             <td>
                 <form action="${pageContext.request.contextPath}/cart" method="post">
