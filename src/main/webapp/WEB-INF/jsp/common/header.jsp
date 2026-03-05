@@ -28,11 +28,9 @@
 </head>
 
 <body class="app-body">
-<nav class="navbar navbar-expand-lg navbar-dark fm-navbar sticky-top">
+ <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
-        <a class="navbar-brand" href="${pageContext.request.contextPath}/">
-            <i class="bi bi-basket2-fill me-2 fm-icon"></i>FreshMart
-        </a>
+        <a class="navbar-brand" href="${pageContext.request.contextPath}/">FreshMart</a>
 
         <button class="navbar-toggler" type="button"
                 data-bs-toggle="collapse" data-bs-target="#nav"
@@ -43,48 +41,114 @@
 
         <div class="collapse navbar-collapse" id="nav">
 
-            <!-- ✅ Lấy user từ session (tên phổ biến nhất là authUser) -->
-            <c:set var="auth" value="${sessionScope.authUser}" />
-
-            <!-- LEFT MENU -->
             <ul class="navbar-nav me-auto">
 
-                <!-- Ai cũng xem được -->
+                <!-- Home -->
                 <li class="nav-item">
-                    <a class="nav-link" href="${pageContext.request.contextPath}/catalog">Catalog</a>
+                    <a class="nav-link ${pageContext.request.servletPath == '/' || pageContext.request.servletPath == '/home' ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/">
+                        Home
+                    </a>
                 </li>
 
-                <!-- ✅ PRO: chỉ user tier PRO -->
-                <c:if test="${auth != null && auth.tier != null && auth.tier.toString() eq 'PRO'}">
+                <!-- Catalog -->
+                <li class="nav-item">
+                    <a class="nav-link ${pageContext.request.servletPath == '/catalog' || pageContext.request.servletPath == '/product' ? 'active' : ''}"
+                       href="${pageContext.request.contextPath}/catalog">
+                        Catalog
+                    </a>
+                </li>
+
+                <!-- Cart (login required) -->
+                <c:if test="${sessionScope.authUser != null}">
                     <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/pro/dashboard">PRO Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/pro/seasonality">PRO Seasonality</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/pro/replenishment">PRO Restock</a>
+                        <a class="nav-link ${pageContext.request.servletPath == '/cart-view' ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/cart-view">
+                            Cart
+                        </a>
                     </li>
                 </c:if>
 
-                <!-- ✅ SELLER POS: SELLER hoặc ADMIN (admin có thể test) -->
-                <c:if test="${auth != null && auth.role != null && (auth.role.toString() eq 'SELLER' || auth.role.toString() eq 'ADMIN')}">
+                <!-- Subscription / Upgrade (CUSTOMER or ADMIN) -->
+                <c:if test="${sessionScope.authUser != null 
+                             && (sessionScope.authUser.role.toString() eq 'CUSTOMER' 
+                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
                     <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/seller/pos">Seller POS</a>
+                        <a class="nav-link ${pageContext.request.servletPath.startsWith('/subscription') ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/subscription/upgrade">
+                            Upgrade
+                        </a>
                     </li>
                 </c:if>
 
-                <!-- ✅ STAFF -->
-                <c:if test="${auth != null && auth.role != null && (auth.role.toString() eq 'STAFF' || auth.role.toString() eq 'ADMIN')}">
-                    <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/staff/forecast">Staff Forecast</a>
+                <!-- PRO (tier PRO OR STAFF OR ADMIN) -->
+                <c:if test="${sessionScope.authUser != null 
+                             && (sessionScope.authUser.tier.toString() eq 'PRO'
+                                 || sessionScope.authUser.role.toString() eq 'STAFF'
+                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/pro') ? 'active' : ''}"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            PRO
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/dashboard">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/seasonality">Seasonality</a></li>
+                        </ul>
                     </li>
                 </c:if>
 
-                <!-- ✅ ADMIN -->
-                <c:if test="${auth != null && auth.role != null && auth.role.toString() eq 'ADMIN'}">
-                    <li class="nav-item">
-                        <a class="nav-link" href="${pageContext.request.contextPath}/admin/sellers">Manage Sellers</a>
+                <!-- SELLER / ADMIN -->
+                <c:if test="${sessionScope.authUser != null 
+                             && (sessionScope.authUser.role.toString() eq 'SELLER'
+                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/seller') ? 'active' : ''}"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            Seller
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/seller/pos">POS</a></li>
+                        </ul>
+                    </li>
+                </c:if>
+
+                <!-- STAFF / ADMIN -->
+                <c:if test="${sessionScope.authUser != null 
+                             && (sessionScope.authUser.role.toString() eq 'STAFF'
+                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/staff') ? 'active' : ''}"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            Staff
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff">Staff Home</a></li>
+                            <li><hr class="dropdown-divider"/></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/suppliers">Suppliers</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/products">Products</a></li>
+                            <li><hr class="dropdown-divider"/></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/inventory">Inventory (FEFO)</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/import-lot">Import lot</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/inventory-report">Inventory report</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/forecast">Forecast</a></li>
+                        </ul>
+                    </li>
+                </c:if>
+
+                <!-- ADMIN -->
+                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'ADMIN'}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/admin') ? 'active' : ''}"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            Admin
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/sellers">Manage sellers</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/products">Manage products</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/add-product">Add product</a></li>
+                        </ul>
                     </li>
                 </c:if>
 
@@ -93,39 +157,29 @@
             <!-- RIGHT MENU -->
             <ul class="navbar-nav">
                 <c:choose>
-
-                    <c:when test="${auth != null}">
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="${pageContext.request.contextPath}/cart-view" title="Giỏ hàng">
-                                <i class="bi bi-cart3"></i>
-                            </a>
-                        </li>
-
+                    <c:when test="${sessionScope.authUser != null}">
                         <li class="nav-item">
                             <span class="navbar-text me-3">
                                 Xin chào,
-                                <b><c:out value="${auth.username}"/></b>
-                                (<c:out value="${auth.role}"/>)
+                                <b><c:out value="${sessionScope.authUser.username}"/></b>
+                                (<c:out value="${sessionScope.authUser.role}"/>)
                             </span>
                         </li>
-
                         <li class="nav-item">
                             <a class="nav-link" href="${pageContext.request.contextPath}/logout">Logout</a>
                         </li>
                     </c:when>
-
                     <c:otherwise>
                         <li class="nav-item">
                             <a class="nav-link" href="${pageContext.request.contextPath}/login">Login</a>
                         </li>
                     </c:otherwise>
-
                 </c:choose>
             </ul>
 
         </div>
     </div>
-</nav>
+</nav>   
+
 
 <main class="container py-4 fm-page">
