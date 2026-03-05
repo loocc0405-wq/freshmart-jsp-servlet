@@ -34,6 +34,16 @@ public class ProductRepository {
         return q.getResultList();
     }
 
+    // NEW: dùng để đổ dropdown category
+    public List<String> listCategories(EntityManager em) {
+        return em.createQuery(
+                        "SELECT DISTINCT p.category FROM Product p " +
+                                "WHERE p.category IS NOT NULL AND p.category <> '' " +
+                                "ORDER BY p.category",
+                        String.class)
+                .getResultList();
+    }
+
     public Product save(EntityManager em, Product p) {
         if (p.getId() == null) {
             em.persist(p);
@@ -41,9 +51,9 @@ public class ProductRepository {
         }
         return em.merge(p);
     }
-    public void deleteById(EntityManager em, Long id) {
-    Product p = em.find(Product.class, id);
-    if (p != null) em.remove(p);
-}
 
+    public void deleteById(EntityManager em, Long id) {
+        Product p = em.find(Product.class, id);
+        if (p != null) em.remove(p);
+    }
 }
