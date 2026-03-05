@@ -49,7 +49,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
                 LocalDate today = LocalDate.now();
 
                 // Available qty and lots
-                int availableQty = inventoryService.getAvailableQty(executor.execute(em -> em), productId, today);
+                int availableQty = executor.execute(em -> inventoryService.getAvailableQty(em, productId, today));
                 List<ProductLot> availableLots = executor.execute(em -> lotRepo.findAvailableLotsFEFO(em, productId, today));
 
                 // Expired lots
