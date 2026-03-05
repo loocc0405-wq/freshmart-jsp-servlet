@@ -83,10 +83,54 @@
     </c:when>
 
     <!-- Nếu có filter thì hiển thị danh sách bình thường -->
+    <c:choose>
+    <c:when test="${empty param.q and empty param.category and not empty groupedProducts}">
+        <c:forEach items="${groupedProducts}" var="entry">
+            <h4 class="mt-4"><c:out value="${entry.key}"/></h4>
+            <div class="row">
+                <c:forEach items="${entry.value}" var="p">
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100">
+                            <c:if test="${not empty p.imageUrl}">
+                                <img class="card-img-top" src="${p.imageUrl}" alt="image"/>
+                            </c:if>
+                            <div class="card-body">
+                                <h5 class="card-title"><c:out value="${p.name}"/></h5>
+                                <p class="card-text">
+                                    Category: <c:out value="${p.category}"/><br/>
+                                    Giá: <b><c:out value="${p.sellPrice}"/></b> / <c:out value="${p.unit}"/>
+                                </p>
+
+                                <a class="btn btn-sm btn-primary"
+                                   href="${pageContext.request.contextPath}/product?id=${p.id}">
+                                    Chi tiết
+                                </a>
+
+                                <form action="${pageContext.request.contextPath}/cart"
+                                      method="post"
+                                      class="mt-2 d-flex align-items-center gap-2">
+                                    <input type="hidden" name="action" value="add"/>
+                                    <input type="hidden" name="productId" value="${p.id}"/>
+
+                                    <input type="number" name="qty" value="1" min="1"
+                                           class="form-control form-control-sm" style="width:80px;"/>
+
+                                    <button type="submit" class="btn btn-sm btn-success">
+                                        Thêm vào giỏ
+                                    </button>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </c:forEach>
+            </div>
+        </c:forEach>
+    </c:when>
+
     <c:otherwise>
         <div class="row">
             <c:forEach items="${products}" var="p">
-
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
                         <c:if test="${not empty p.imageUrl}">
@@ -107,19 +151,13 @@
                             <form action="${pageContext.request.contextPath}/cart"
                                   method="post"
                                   class="mt-2 d-flex align-items-center gap-2">
-
                                 <input type="hidden" name="action" value="add"/>
                                 <input type="hidden" name="productId" value="${p.id}"/>
 
-                                <input type="number"
-                                       name="qty"
-                                       value="1"
-                                       min="1"
-                                       class="form-control form-control-sm"
-                                       style="width:80px;"/>
+                                <input type="number" name="qty" value="1" min="1"
+                                       class="form-control form-control-sm" style="width:80px;"/>
 
-                                <button type="submit"
-                                        class="btn btn-sm btn-success">
+                                <button type="submit" class="btn btn-sm btn-success">
                                     Thêm vào giỏ
                                 </button>
                             </form>
@@ -127,10 +165,10 @@
                         </div>
                     </div>
                 </div>
-
             </c:forEach>
         </div>
     </c:otherwise>
+</c:choose>
 </c:choose>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
