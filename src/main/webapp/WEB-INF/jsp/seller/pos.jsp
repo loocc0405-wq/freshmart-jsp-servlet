@@ -31,6 +31,7 @@
                             <td><c:out value="${nearestExpiryMap[p.id]}"/></td>
                             <td>
                                 <form class="d-flex gap-2" method="post" action="${pageContext.request.contextPath}/seller/pos">
+                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                                     <input type="hidden" name="productId" value="${p.id}"/>
                                     <input class="form-control form-control-sm" style="width: 90px" name="quantity" type="number" min="1" value="1"/>
                                     <button class="btn btn-sm btn-primary" type="submit">Add</button>
@@ -80,6 +81,7 @@
                     <hr/>
 
                     <form method="post" action="${pageContext.request.contextPath}/seller/pos/checkout" class="d-flex gap-2">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                         <select class="form-select" name="paymentMethod">
                             <option value="CASH">Tiền mặt</option>
                             <option value="BANK_TRANSFER">Chuyển khoản</option>
@@ -89,6 +91,7 @@
                     </form>
 
                     <form method="post" action="${pageContext.request.contextPath}/seller/pos/clear" class="mt-2">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                         <button class="btn btn-outline-danger w-100" type="submit">Clear cart</button>
                     </form>
                 </c:if>
@@ -102,3 +105,4 @@
 </div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
+

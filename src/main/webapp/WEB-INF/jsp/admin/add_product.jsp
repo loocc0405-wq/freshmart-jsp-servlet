@@ -12,7 +12,7 @@
 </c:if>
 
 <form method="post">
-
+    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
     Tên sản phẩm:<br/>
     <input type="text" name="name" required/><br/><br/>
 

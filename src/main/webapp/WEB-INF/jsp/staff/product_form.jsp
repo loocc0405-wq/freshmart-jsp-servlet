@@ -23,6 +23,9 @@
           method="post"
           class="row g-3">
 
+      <!-- CSRF TOKEN (THÊM MỚI) -->
+      <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
       <!-- Hidden ID (chỉ có khi edit) -->
       <c:if test="${isEdit}">
         <input type="hidden" name="id" value="${product.id}" />

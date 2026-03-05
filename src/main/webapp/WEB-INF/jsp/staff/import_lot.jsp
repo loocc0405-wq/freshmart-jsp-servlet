@@ -16,13 +16,19 @@
 <div class="row">
     <div class="col-lg-6">
         <form method="post" action="${pageContext.request.contextPath}/staff/import-lot" class="card">
+
+            <!-- CSRF TOKEN (THÊM MỚI) -->
+            <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">Sản phẩm *</label>
                     <select class="form-select" name="productId" required>
                         <option value="">-- Chọn sản phẩm --</option>
                         <c:forEach items="${products}" var="p">
-                            <option value="${p.id}"><c:out value="${p.name}"/> (ID: ${p.id})</option>
+                            <option value="${p.id}">
+                                <c:out value="${p.name}"/> (ID: ${p.id})
+                            </option>
                         </c:forEach>
                     </select>
                 </div>
@@ -32,7 +38,9 @@
                     <select class="form-select" name="supplierId">
                         <option value="">-- Không chọn --</option>
                         <c:forEach items="${suppliers}" var="s">
-                            <option value="${s.id}"><c:out value="${s.name}"/></option>
+                            <option value="${s.id}">
+                                <c:out value="${s.name}"/>
+                            </option>
                         </c:forEach>
                     </select>
                 </div>
@@ -58,7 +66,8 @@
                 </div>
 
                 <button class="btn btn-primary w-100" type="submit">Nhập lô</button>
-                <a class="btn btn-outline-secondary w-100 mt-2" href="${pageContext.request.contextPath}/staff">Quay lại</a>
+                <a class="btn btn-outline-secondary w-100 mt-2"
+                   href="${pageContext.request.contextPath}/staff">Quay lại</a>
             </div>
         </form>
     </div>

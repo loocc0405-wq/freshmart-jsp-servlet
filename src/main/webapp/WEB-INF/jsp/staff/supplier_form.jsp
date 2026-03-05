@@ -15,6 +15,10 @@
 <div class="card">
   <div class="card-body">
     <form action="${pageContext.request.contextPath}/staff/suppliers" method="post" class="row g-3">
+
+      <!-- CSRF TOKEN (thêm) -->
+      <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
       <input type="hidden" name="id" value="${supplier.id}" />
 
       <div class="col-md-6">
@@ -41,6 +45,7 @@
         <button class="btn btn-primary" type="submit">Save</button>
         <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/suppliers">Cancel</a>
       </div>
+
     </form>
   </div>
 </div>

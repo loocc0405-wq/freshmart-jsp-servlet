@@ -10,6 +10,9 @@
 
 <form method="post" action="${pageContext.request.contextPath}/staff/products">
 
+    <!-- CSRF TOKEN (thêm) -->
+    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
     <input type="hidden" name="id" value="${product.id}" />
 
     Tên:<br>

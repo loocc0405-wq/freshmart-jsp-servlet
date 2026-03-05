@@ -25,6 +25,10 @@
 
             <td>
                 <form action="${pageContext.request.contextPath}/cart" method="post" class="d-flex gap-2">
+
+                    <!-- CSRF TOKEN -->
+                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
                     <input type="hidden" name="action" value="update"/>
                     <input type="hidden" name="productId" value="${item.product.id}"/>
                     <input type="number" name="qty" min="1" value="${item.quantity}" class="form-control form-control-sm"/>
@@ -36,6 +40,10 @@
 
             <td>
                 <form action="${pageContext.request.contextPath}/cart" method="post">
+
+                    <!-- CSRF TOKEN -->
+                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
                     <input type="hidden" name="action" value="remove"/>
                     <input type="hidden" name="productId" value="${item.product.id}"/>
                     <button class="btn btn-danger btn-sm">X</button>
