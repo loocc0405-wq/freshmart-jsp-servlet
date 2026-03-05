@@ -2,14 +2,14 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 
 <c:set var="pageTitle" value="Suppliers" />
-<%@ include file="_layout_top.jspf" %>
+<jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h3 class="mb-0">Suppliers</h3>
     <div class="text-muted">Manage supplier info</div>
   </div>
-  <a class="btn btn-primary" href="${pageContext.request.contextPath}/staff/suppliers?action=new">
+  <a class="btn btn-primary" href="${pageContext.request.contextPath}/staff/suppliers?action=create">
     + Add Supplier
   </a>
 </div>
@@ -66,4 +66,4 @@
   </div>
 </div>
 
-<%@ include file="_layout_bottom.jspf" %>
+<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

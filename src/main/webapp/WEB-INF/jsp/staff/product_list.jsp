@@ -1,9 +1,9 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
 <c:set var="pageTitle" value="Products" />
-<%@ include file="_layout_top.jspf" %>
+<jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
@@ -132,4 +132,4 @@
   </div>
 </div>
 
-<%@ include file="_layout_bottom.jspf" %>
+<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
