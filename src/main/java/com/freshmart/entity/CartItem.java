@@ -1,6 +1,7 @@
 package com.freshmart.entity;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "cart_items",
@@ -65,5 +66,23 @@ public class CartItem {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    @Transient
+    public Integer getQty() {
+        return getQuantity();
+    }
+
+    public void setQty(Integer qty) {
+        setQuantity(qty);
+    }
+
+    @Transient
+    public BigDecimal getLineTotal() {
+        BigDecimal price = (product == null || product.getSellPrice() == null)
+                ? BigDecimal.ZERO
+                : product.getSellPrice();
+        int qty = (quantity == null) ? 0 : quantity;
+        return price.multiply(BigDecimal.valueOf(qty));
     }
 }
