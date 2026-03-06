@@ -112,6 +112,17 @@ public class SupplierManagementServlet extends HttpServlet {
             supplier.setEmail(request.getParameter("email"));
             supplier.setPhone(request.getParameter("phone"));
             supplier.setAddress(request.getParameter("address"));
+            // additional fields
+            supplier.setCertificate(request.getParameter("certificate"));
+            String leadTime = request.getParameter("leadTimeDays");
+            if (leadTime != null && !leadTime.isEmpty()) {
+                try {
+                    supplier.setLeadTimeDays(Integer.parseInt(leadTime));
+                } catch (NumberFormatException nfe) {
+                    supplier.setLeadTimeDays(1);
+                }
+            }
+            supplier.setNote(request.getParameter("note"));
 
             supplierService.save(supplier);
 
