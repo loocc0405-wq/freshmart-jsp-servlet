@@ -21,7 +21,7 @@ public class SupplierManagementServlet extends HttpServlet {
     }
 
     // ==========================
-    // GET
+    // GET (only for display: list / create form / edit form)
     // ==========================
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -37,6 +37,7 @@ public class SupplierManagementServlet extends HttpServlet {
         switch (action) {
 
             case "create":
+                request.setAttribute("supplier", new Supplier());
                 request.getRequestDispatcher("/WEB-INF/jsp/staff/supplier_form.jsp")
                         .forward(request, response);
                 break;
@@ -50,43 +51,79 @@ public class SupplierManagementServlet extends HttpServlet {
                         .forward(request, response);
                 break;
 
-            case "delete":
-                Long deleteId = Long.parseLong(request.getParameter("id"));
-                supplierService.deleteById(deleteId);
-
-                response.sendRedirect(request.getContextPath() + "/staff/suppliers");
-                break;
-
             default:
                 listSuppliers(request, response);
         }
     }
 
     // ==========================
-    // POST (Create / Update)
+    // POST (Create / Update / Delete)
     // ==========================
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
 
-        String idParam = request.getParameter("id");
+        String action = request.getParameter("action");
 
-        Supplier supplier;
-
-        if (idParam == null || idParam.isEmpty()) {
-            supplier = new Supplier();
+        if (action != null && action.equals("delete")) {
+            handleDelete(request, response);
         } else {
-            supplier = supplierService.getById(Long.parseLong(idParam));
+            handleCreateOrUpdate(request, response);
         }
+    }
 
-        supplier.setName(request.getParameter("name"));
-        supplier.setEmail(request.getParameter("email"));
-        supplier.setPhone(request.getParameter("phone"));
-        supplier.setAddress(request.getParameter("address"));
+    // ==========================
+    // Handle DELETE
+    // ==========================
+    private void handleDelete(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        try {
+            Long deleteId = Long.parseLong(request.getParameter("id"));
+            supplierService.deleteById(deleteId);
 
-        supplierService.save(supplier);
+            HttpSession session = request.getSession();
+            session.setAttribute("successMessage", "Supplier deleted successfully!");
+            
+            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+        } catch (Exception e) {
+            HttpSession session = request.getSession();
+            session.setAttribute("errorMessage", "Failed to delete supplier: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+        }
+    }
 
-        response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+    // ==========================
+    // Handle CREATE / UPDATE
+    // ==========================
+    private void handleCreateOrUpdate(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        try {
+            String idParam = request.getParameter("id");
+
+            Supplier supplier;
+
+            if (idParam == null || idParam.isEmpty()) {
+                supplier = new Supplier();
+            } else {
+                supplier = supplierService.getById(Long.parseLong(idParam));
+            }
+
+            supplier.setName(request.getParameter("name"));
+            supplier.setEmail(request.getParameter("email"));
+            supplier.setPhone(request.getParameter("phone"));
+            supplier.setAddress(request.getParameter("address"));
+
+            supplierService.save(supplier);
+
+            HttpSession session = request.getSession();
+            session.setAttribute("successMessage", "Supplier saved successfully!");
+            
+            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+        } catch (Exception e) {
+            HttpSession session = request.getSession();
+            session.setAttribute("errorMessage", "Failed to save supplier: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+        }
     }
 
     // ==========================

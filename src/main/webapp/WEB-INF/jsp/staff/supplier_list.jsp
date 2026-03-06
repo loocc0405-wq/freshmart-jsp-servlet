@@ -4,6 +4,23 @@
 <c:set var="pageTitle" value="Suppliers" />
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
+<!-- Flash Messages -->
+<c:if test="${not empty sessionScope.successMessage}">
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle me-2"></i>${sessionScope.successMessage}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <c:set var="temp" value="${sessionScope.remove('successMessage')}" />
+</c:if>
+
+<c:if test="${not empty sessionScope.errorMessage}">
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-circle me-2"></i>${sessionScope.errorMessage}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <c:set var="temp" value="${sessionScope.remove('errorMessage')}" />
+</c:if>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h3 class="mb-0">Suppliers</h3>
