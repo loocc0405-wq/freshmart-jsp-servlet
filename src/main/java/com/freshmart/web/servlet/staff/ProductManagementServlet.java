@@ -83,6 +83,13 @@ public class ProductManagementServlet extends HttpServlet {
         String imageUrl = request.getParameter("imageUrl");
         String description = request.getParameter("description");
 
+        // Trim data
+        if (name != null) name = name.trim();
+        if (category != null) category = category.trim();
+        if (unit != null) unit = unit.trim();
+        if (imageUrl != null) imageUrl = imageUrl.trim();
+        if (description != null) description = description.trim();
+
         Product product;
         boolean isCreate = (idStr == null || idStr.isBlank());
 
@@ -98,21 +105,63 @@ public class ProductManagementServlet extends HttpServlet {
             }
         }
 
+        // Validation
+        StringBuilder errors = new StringBuilder();
+
+        if (name == null || name.isEmpty()) {
+            errors.append("Product name is required. ");
+        }
+
+        if (category == null || category.isEmpty()) {
+            errors.append("Category is required. ");
+        }
+
+        if (unit == null || unit.isEmpty()) {
+            errors.append("Unit is required. ");
+        }
+
+        if (priceStr != null && !priceStr.trim().isEmpty()) {
+            try {
+                BigDecimal price = new BigDecimal(priceStr.trim());
+                if (price.compareTo(BigDecimal.ZERO) < 0) {
+                    errors.append("Sell price cannot be negative. ");
+                }
+            } catch (NumberFormatException e) {
+                errors.append("Invalid sell price format. ");
+            }
+        } else {
+            errors.append("Sell price is required. ");
+        }
+
+        // If validation fails, forward back to form with errors
+        if (errors.length() > 0) {
+            request.setAttribute("product", product);
+            request.setAttribute("errors", errors.toString().trim());
+            // Keep user input
+            product.setName(name);
+            product.setCategory(category);
+            product.setUnit(unit);
+            product.setImageUrl(imageUrl);
+            product.setDescription(description);
+            if (priceStr != null && !priceStr.trim().isEmpty()) {
+                try {
+                    product.setSellPrice(new BigDecimal(priceStr.trim()));
+                } catch (NumberFormatException e) {
+                    product.setSellPrice(BigDecimal.ZERO);
+                }
+            }
+            request.getRequestDispatcher("/WEB-INF/jsp/staff/product_form.jsp").forward(request, response);
+            return;
+        }
+
+        // Set validated data
         product.setName(name);
         product.setCategory(category);
         product.setUnit(unit);
 
         // parse sellPrice an toàn
         if (priceStr != null && !priceStr.isBlank()) {
-            try {
-                product.setSellPrice(new BigDecimal(priceStr.trim()));
-            } catch (NumberFormatException e) {
-                request.getSession().setAttribute("flash", "Invalid sell price.");
-                // quay lại form (giữ dữ liệu)
-                request.setAttribute("product", product);
-                request.getRequestDispatcher("/WEB-INF/jsp/staff/product_form.jsp").forward(request, response);
-                return;
-            }
+            product.setSellPrice(new BigDecimal(priceStr.trim()));
         }
 
         product.setImageUrl(imageUrl);

@@ -61,7 +61,7 @@ public class SupplierManagementServlet extends HttpServlet {
     // ==========================
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+            throws IOException, ServletException {
 
         String action = request.getParameter("action");
 
@@ -96,7 +96,7 @@ public class SupplierManagementServlet extends HttpServlet {
     // Handle CREATE / UPDATE
     // ==========================
     private void handleCreateOrUpdate(HttpServletRequest request, HttpServletResponse response)
-            throws IOException {
+            throws IOException, ServletException {
         try {
             String idParam = request.getParameter("id");
 
@@ -108,21 +108,79 @@ public class SupplierManagementServlet extends HttpServlet {
                 supplier = supplierService.getById(Long.parseLong(idParam));
             }
 
-            supplier.setName(request.getParameter("name"));
-            supplier.setEmail(request.getParameter("email"));
-            supplier.setPhone(request.getParameter("phone"));
-            supplier.setAddress(request.getParameter("address"));
-            // additional fields
-            supplier.setCertificate(request.getParameter("certificate"));
-            String leadTime = request.getParameter("leadTimeDays");
-            if (leadTime != null && !leadTime.isEmpty()) {
+            // Read and validate fields
+            String name = request.getParameter("name");
+            String email = request.getParameter("email");
+            String phone = request.getParameter("phone");
+            String address = request.getParameter("address");
+            String certificate = request.getParameter("certificate");
+            String leadTimeStr = request.getParameter("leadTimeDays");
+            String note = request.getParameter("note");
+
+            // Trim data
+            if (name != null) name = name.trim();
+            if (email != null) email = email.trim();
+            if (phone != null) phone = phone.trim();
+            if (address != null) address = address.trim();
+            if (certificate != null) certificate = certificate.trim();
+            if (note != null) note = note.trim();
+
+            // Validation
+            StringBuilder errors = new StringBuilder();
+
+            if (name == null || name.isEmpty()) {
+                errors.append("Name is required. ");
+            }
+
+            if (leadTimeStr != null && !leadTimeStr.trim().isEmpty()) {
                 try {
-                    supplier.setLeadTimeDays(Integer.parseInt(leadTime));
-                } catch (NumberFormatException nfe) {
-                    supplier.setLeadTimeDays(1);
+                    int leadTime = Integer.parseInt(leadTimeStr.trim());
+                    if (leadTime <= 0) {
+                        errors.append("Lead time must be a positive number. ");
+                    }
+                } catch (NumberFormatException e) {
+                    errors.append("Lead time must be a valid number. ");
                 }
             }
-            supplier.setNote(request.getParameter("note"));
+
+            if (email != null && !email.isEmpty()) {
+                if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                    errors.append("Invalid email format. ");
+                }
+            }
+
+            // If validation fails, forward back to form with errors
+            if (errors.length() > 0) {
+                request.setAttribute("supplier", supplier);
+                request.setAttribute("errors", errors.toString().trim());
+                // Keep user input
+                supplier.setName(name);
+                supplier.setEmail(email);
+                supplier.setPhone(phone);
+                supplier.setAddress(address);
+                supplier.setCertificate(certificate);
+                supplier.setNote(note);
+                if (leadTimeStr != null && !leadTimeStr.trim().isEmpty()) {
+                    try {
+                        supplier.setLeadTimeDays(Integer.parseInt(leadTimeStr.trim()));
+                    } catch (NumberFormatException e) {
+                        supplier.setLeadTimeDays(1);
+                    }
+                }
+                request.getRequestDispatcher("/WEB-INF/jsp/staff/supplier_form.jsp").forward(request, response);
+                return;
+            }
+
+            // Set validated data
+            supplier.setName(name);
+            supplier.setEmail(email);
+            supplier.setPhone(phone);
+            supplier.setAddress(address);
+            supplier.setCertificate(certificate);
+            if (leadTimeStr != null && !leadTimeStr.trim().isEmpty()) {
+                supplier.setLeadTimeDays(Integer.parseInt(leadTimeStr.trim()));
+            }
+            supplier.setNote(note);
 
             supplierService.save(supplier);
 

@@ -14,6 +14,16 @@
 
 <div class="card">
   <div class="card-body">
+    <!-- Error Messages -->
+    <c:if test="${not empty errors}">
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Validation Errors:</strong><br>
+        ${errors}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    </c:if>
+
     <form action="${pageContext.request.contextPath}/staff/suppliers" method="post" class="row g-3">
       <input type="hidden" name="id" value="${supplier.id}" />
 
