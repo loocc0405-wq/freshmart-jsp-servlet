@@ -37,6 +37,21 @@
         <input class="form-control" type="text" name="address" value="${supplier.address}" required>
       </div>
 
+      <div class="col-md-6">
+        <label class="form-label">Certificate</label>
+        <input class="form-control" type="text" name="certificate" value="${supplier.certificate}">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Lead time (days)</label>
+        <input class="form-control" type="number" min="1" name="leadTimeDays" value="${supplier.leadTimeDays}" required>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Note</label>
+        <textarea class="form-control" name="note" rows="3">${supplier.note}</textarea>
+      </div>
+
       <div class="col-12 d-flex gap-2">
         <button class="btn btn-primary" type="submit">Save</button>
         <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/suppliers">Cancel</a>
