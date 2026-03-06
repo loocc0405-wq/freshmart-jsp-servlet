@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public class SupplierRepository {
     public List<Supplier> findAll(EntityManager em) {
-        return em.createQuery("SELECT s FROM Supplier s ORDER BY s.id DESC", Supplier.class).getResultList();
+        return em.createQuery("SELECT s FROM Supplier s ORDER BY s.id ASC", Supplier.class).getResultList();
     }
     public Optional<Supplier> findById(EntityManager em, Long id) {
         return Optional.ofNullable(em.find(Supplier.class, id));
