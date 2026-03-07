@@ -59,7 +59,7 @@
 
 <c:if test="${groupMode}">
     <c:forEach items="${groupedProducts}" var="entry">
-        <div class="d-flex align-items-center gap-2 mt-4">
+<div class="d-flex align-items-center gap-2 mt-4">
             <h2 class="h5 mb-0"><c:out value="${entry.key}"/></h2>
             <span class="badge rounded-pill fm-badge">${fn:length(entry.value)} SP</span>
         </div>
@@ -112,7 +112,8 @@
 
                                 <form action="${pageContext.request.contextPath}/cart"
                                       method="post"
-                                      class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
                                     <input type="hidden" name="action" value="add"/>
                                     <input type="hidden" name="productId" value="${p.id}"/>
 
@@ -169,7 +170,7 @@
                                     <fmt:formatNumber value="${p.sellPrice}" type="number" groupingUsed="true" maxFractionDigits="2"/>
                                 </span>
                                 <span class="fm-muted">₫</span>
-                            </div>
+</div>
                             <span class="small fm-muted">/ <c:out value="${p.unit}"/></span>
                         </div>
                     </div>
@@ -184,6 +185,7 @@
                             <form action="${pageContext.request.contextPath}/cart"
                                   method="post"
                                   class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
                                 <input type="hidden" name="action" value="add"/>
                                 <input type="hidden" name="productId" value="${p.id}"/>
 
@@ -223,7 +225,7 @@
                         <c:url var="pageUrl" value="/catalog">
                             <c:param name="q" value="${param.q}"/>
                             <c:param name="category" value="${param.category}"/>
-                            <c:param name="sort" value="${param.sort}"/>
+<c:param name="sort" value="${param.sort}"/>
                             <c:param name="page" value="${i}"/>
                         </c:url>
                         <a class="page-link" href="${pageUrl}">${i}</a>
