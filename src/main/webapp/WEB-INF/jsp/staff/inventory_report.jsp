@@ -182,9 +182,12 @@
                                 <td><c:out value="${lot.expiryDate}"/></td>
                                 <td><c:out value="${lot.qtyLeft}"/></td>
                                 <td>
-                                    <a class="btn btn-sm btn-danger" href="${pageContext.request.contextPath}/staff/delete-lot?lotId=${lot.id}&amp;redirect=/staff/inventory-report">
-                                        Xóa
-                                    </a>
+                                    <form action="${pageContext.request.contextPath}/staff/delete-lot" method="post" class="d-inline">
+                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                        <input type="hidden" name="lotId" value="${lot.id}"/>
+                                        <input type="hidden" name="redirect" value="/staff/inventory-report"/>
+                                        <button class="btn btn-sm btn-danger" onclick="return confirm('Xác nhận loại bỏ lô này?');">Loại bỏ</button>
+                                    </form>
                                 </td>
                             </tr>
                         </c:forEach>

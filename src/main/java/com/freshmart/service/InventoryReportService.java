@@ -183,7 +183,8 @@ public class InventoryReportService {
      */
     public List<ProductLot> getExpiredLotsForCleanup() {
         return executor.execute(em -> em.createQuery(
-                "SELECT l FROM ProductLot l WHERE l.expiryDate < CURRENT_DATE ORDER BY l.expiryDate ASC",
+                "SELECT l FROM ProductLot l JOIN FETCH l.product p " +
+                "WHERE l.expiryDate < CURRENT_DATE ORDER BY l.expiryDate ASC",
                 ProductLot.class
         ).getResultList());
     }

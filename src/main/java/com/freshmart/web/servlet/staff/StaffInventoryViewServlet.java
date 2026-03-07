@@ -47,6 +47,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
                 }
 
                 LocalDate today = LocalDate.now();
+                req.setAttribute("today", today);
 
                 // Available qty and lots
                 int availableQty = executor.execute(em -> inventoryService.getAvailableQty(em, productId, today));
