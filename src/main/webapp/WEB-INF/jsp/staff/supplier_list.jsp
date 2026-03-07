@@ -64,6 +64,8 @@
                     action="${pageContext.request.contextPath}/staff/suppliers"
                     method="post"
                     onsubmit="return confirm('Delete this supplier?');">
+                <!-- csrf token required for POST -->
+                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" value="${s.id}">
                 <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>

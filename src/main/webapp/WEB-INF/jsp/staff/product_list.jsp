@@ -111,6 +111,7 @@
                     action="${pageContext.request.contextPath}/staff/products"
                     method="post"
                     onsubmit="return confirm('Delete this product?');">
+                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" value="${p.id}">
                 <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
