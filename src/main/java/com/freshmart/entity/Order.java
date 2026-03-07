@@ -57,7 +57,8 @@ public class Order {
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items = new ArrayList<>();
 
-    public Order() {}
+    public Order() {
+    }
 
     public void addItem(OrderItem item) {
         items.add(item);
@@ -68,8 +69,6 @@ public class Order {
         items.remove(item);
         item.setOrder(null);
     }
-
-    // Getters / setters
 
     public Long getId() {
         return id;
@@ -135,6 +134,10 @@ public class Order {
         return createdAt;
     }
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public LocalDateTime getCompletedAt() {
         return completedAt;
     }
@@ -145,5 +148,9 @@ public class Order {
 
     public List<OrderItem> getItems() {
         return items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
     }
 }
