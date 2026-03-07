@@ -82,6 +82,7 @@ public class ProductManagementServlet extends HttpServlet {
         String priceStr = request.getParameter("sellPrice");
         String imageUrl = request.getParameter("imageUrl");
         String description = request.getParameter("description");
+        String activeParam = request.getParameter("active");
 
         // Trim data
         if (name != null) name = name.trim();
@@ -89,6 +90,7 @@ public class ProductManagementServlet extends HttpServlet {
         if (unit != null) unit = unit.trim();
         if (imageUrl != null) imageUrl = imageUrl.trim();
         if (description != null) description = description.trim();
+        boolean active = "on".equalsIgnoreCase(activeParam) || "true".equalsIgnoreCase(activeParam);
 
         Product product;
         boolean isCreate = (idStr == null || idStr.isBlank());
@@ -133,6 +135,15 @@ public class ProductManagementServlet extends HttpServlet {
             errors.append("Sell price is required. ");
         }
 
+        // validate imageUrl if provided
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                new java.net.URL(imageUrl);
+            } catch (Exception e) {
+                errors.append("Image URL is not a valid URL. ");
+            }
+        }
+
         // If validation fails, forward back to form with errors
         if (errors.length() > 0) {
             request.setAttribute("product", product);
@@ -143,6 +154,7 @@ public class ProductManagementServlet extends HttpServlet {
             product.setUnit(unit);
             product.setImageUrl(imageUrl);
             product.setDescription(description);
+            product.setActive(active);
             if (priceStr != null && !priceStr.trim().isEmpty()) {
                 try {
                     product.setSellPrice(new BigDecimal(priceStr.trim()));
@@ -166,6 +178,7 @@ public class ProductManagementServlet extends HttpServlet {
 
         product.setImageUrl(imageUrl);
         product.setDescription(description);
+        product.setActive(active);
 
         productService.save(product);
 
@@ -179,16 +192,20 @@ public class ProductManagementServlet extends HttpServlet {
 
         String keyword = request.getParameter("keyword");
         String category = request.getParameter("category");
+        String showInactiveParam = request.getParameter("showInactive");
 
         if (keyword != null) keyword = keyword.trim();
         if (category != null) category = category.trim();
 
         boolean hasKeyword = keyword != null && !keyword.isEmpty();
         boolean hasCategory = category != null && !category.isEmpty();
+        boolean showInactive = "on".equalsIgnoreCase(showInactiveParam) || "true".equalsIgnoreCase(showInactiveParam);
 
         List<Product> products = (hasKeyword || hasCategory)
-                ? productService.search(keyword, category)
-                : productService.listAll();
+                ? productService.search(keyword, category, showInactive)
+                : productService.listAll(showInactive);
+
+        request.setAttribute("showInactive", showInactive);
 
         request.setAttribute("products", products);
 

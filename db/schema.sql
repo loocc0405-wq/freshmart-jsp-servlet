@@ -49,9 +49,13 @@ CREATE TABLE IF NOT EXISTS products (
   sell_price DECIMAL(18,2) NOT NULL,
   image_url VARCHAR(500) NULL,
   description TEXT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   KEY idx_products_category (category)
 );
+
+-- migration: ensure active column exists for upgrades
+ALTER TABLE products ADD COLUMN IF NOT EXISTS active TINYINT(1) NOT NULL DEFAULT 1; 
 
 -- PRODUCT_LOTS
 CREATE TABLE IF NOT EXISTS product_lots (

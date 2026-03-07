@@ -90,6 +90,14 @@
                placeholder="https://example.com/image.jpg">
       </div>
 
+      <div class="col-md-4 d-flex align-items-center">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="active" id="active"
+                 <c:if test="${product.active}">checked</c:if> />
+          <label class="form-check-label" for="active">Active</label>
+        </div>
+      </div>
+
       <!-- Preview ảnh (nếu có imageUrl) -->
       <c:if test="${not empty product.imageUrl}">
         <div class="col-12">

@@ -62,10 +62,17 @@ BEGIN
         unit NVARCHAR(20) NULL,
         sell_price DECIMAL(18,2) NOT NULL,
         image_url NVARCHAR(500) NULL,
-        description NVARCHAR(MAX) NULL
+        description NVARCHAR(MAX) NULL,
+        active BIT NOT NULL CONSTRAINT df_products_active DEFAULT (1)
     );
 
     CREATE INDEX idx_products_category ON dbo.products(category);
+END
+
+-- migration: ensure active column exists
+IF COL_LENGTH('products','active') IS NULL
+BEGIN
+    ALTER TABLE products ADD active BIT NOT NULL CONSTRAINT df_products_active DEFAULT (1);
 END
 GO
 
