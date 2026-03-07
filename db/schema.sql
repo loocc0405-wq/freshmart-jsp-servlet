@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS users (
   tier VARCHAR(10) NOT NULL DEFAULT 'FREE',
   expired_date DATE NULL,
   full_name VARCHAR(100) NULL,
+  gender VARCHAR(10) NULL,
+  dob DATE NULL,
   phone VARCHAR(20) NULL,
   address VARCHAR(255) NULL,
   active TINYINT(1) NOT NULL DEFAULT 1,
@@ -23,6 +25,10 @@ CREATE TABLE IF NOT EXISTS users (
   PRIMARY KEY (id),
   UNIQUE KEY uq_users_username (username)
 );
+
+-- migration: ensure gender/dob columns exist for upgrades
+ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(10) NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS dob DATE NULL;
 
 -- SUPPLIERS
 CREATE TABLE IF NOT EXISTS suppliers (
@@ -55,7 +61,7 @@ CREATE TABLE IF NOT EXISTS products (
 );
 
 -- migration: ensure active column exists for upgrades
-ALTER TABLE products ADD COLUMN IF NOT EXISTS active TINYINT(1) NOT NULL DEFAULT 1; 
+ALTER TABLE products ADD COLUMN IF NOT EXISTS active TINYINT(1) NOT NULL DEFAULT 1;
 
 -- PRODUCT_LOTS
 CREATE TABLE IF NOT EXISTS product_lots (

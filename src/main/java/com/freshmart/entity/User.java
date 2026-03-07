@@ -1,5 +1,6 @@
 package com.freshmart.entity;
 
+import com.freshmart.enums.Gender;
 import com.freshmart.enums.Role;
 import com.freshmart.enums.Tier;
 
@@ -38,6 +39,13 @@ public class User {
     @Column(name = "full_name", length = 100)
     private String fullName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Gender gender;
+
+    @Column(name = "dob")
+    private LocalDate dob;
+
     @Column(length = 20)
     private String phone;
 
@@ -64,8 +72,6 @@ public class User {
         if (expiredDate == null) return false;
         return !expiredDate.isBefore(today);
     }
-
-    // Getters / setters
 
     public Long getId() {
         return id;
@@ -117,6 +123,22 @@ public class User {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public LocalDate getDob() {
+        return dob;
+    }
+
+    public void setDob(LocalDate dob) {
+        this.dob = dob;
     }
 
     public String getPhone() {

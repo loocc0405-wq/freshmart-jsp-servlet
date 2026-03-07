@@ -1,7 +1,6 @@
 -- FreshMart reference schema (SQL Server)
 -- Run in SSMS / Azure Data Studio
 
--- Create DB if not exists
 IF DB_ID(N'freshmart') IS NULL
 BEGIN
     CREATE DATABASE freshmart;
@@ -10,10 +9,6 @@ GO
 
 USE freshmart;
 GO
-
--- Optional: set collation / unicode defaults if you need
--- ALTER DATABASE freshmart COLLATE Vietnamese_100_CI_AS;
--- GO
 
 -- USERS
 IF OBJECT_ID(N'dbo.users', N'U') IS NULL
@@ -26,12 +21,28 @@ BEGIN
         tier NVARCHAR(10) NOT NULL CONSTRAINT df_users_tier DEFAULT N'FREE',
         expired_date DATE NULL,
         full_name NVARCHAR(100) NULL,
+        gender NVARCHAR(10) NULL,
+        dob DATE NULL,
         phone NVARCHAR(20) NULL,
         address NVARCHAR(255) NULL,
         active BIT NOT NULL CONSTRAINT df_users_active DEFAULT (1),
         created_at DATETIME2(0) NOT NULL CONSTRAINT df_users_created_at DEFAULT (SYSDATETIME()),
         CONSTRAINT uq_users_username UNIQUE (username)
     );
+END
+GO
+
+-- migration: ensure gender exists
+IF COL_LENGTH('users', 'gender') IS NULL
+BEGIN
+    ALTER TABLE users ADD gender NVARCHAR(10) NULL;
+END
+GO
+
+-- migration: ensure dob exists
+IF COL_LENGTH('users', 'dob') IS NULL
+BEGIN
+    ALTER TABLE users ADD dob DATE NULL;
 END
 GO
 
@@ -51,6 +62,14 @@ BEGIN
 END
 GO
 
+-- migration: ensure email column exists
+IF COL_LENGTH('suppliers', 'email') IS NULL
+BEGIN
+    ALTER TABLE suppliers ADD email NVARCHAR(255) NULL;
+    UPDATE suppliers SET email = N'unknown@example.com' WHERE email IS NULL;
+    ALTER TABLE suppliers ALTER COLUMN email NVARCHAR(255) NOT NULL;
+END
+GO
 
 -- PRODUCTS
 IF OBJECT_ID(N'dbo.products', N'U') IS NULL
@@ -68,11 +87,12 @@ BEGIN
 
     CREATE INDEX idx_products_category ON dbo.products(category);
 END
+GO
 
 -- migration: ensure active column exists
-IF COL_LENGTH('products','active') IS NULL
+IF COL_LENGTH('products', 'active') IS NULL
 BEGIN
-    ALTER TABLE products ADD active BIT NOT NULL CONSTRAINT df_products_active DEFAULT (1);
+    ALTER TABLE products ADD active BIT NOT NULL CONSTRAINT df_products_active_upgrade DEFAULT (1);
 END
 GO
 
@@ -174,11 +194,3 @@ BEGIN
     );
 END
 GO
-
--- migration: make sure email column exists (skip if already present)
-IF COL_LENGTH('suppliers','email') IS NULL
-BEGIN
-    ALTER TABLE suppliers ADD email NVARCHAR(255) NULL;
-    UPDATE suppliers SET email = 'unknown@example.com' WHERE email IS NULL;
-    ALTER TABLE suppliers ALTER COLUMN email NVARCHAR(255) NOT NULL;
-END
