@@ -33,7 +33,7 @@ public class ReplenishmentService {
     public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int bufferDays, int safetyDays) {
         return executor.execute(em -> {
             LocalDate today = LocalDate.now();
-            List<Product> products = productRepo.findAll(em);
+            List<Product> products = productRepo.findAll(em, false);
 
             BigDecimal seasonFactor = getSeasonFactor(today);
 

@@ -1,7 +1,6 @@
 -- FreshMart reference schema (SQL Server)
 -- Run in SSMS / Azure Data Studio
 
--- Create DB if not exists
 IF DB_ID(N'freshmart') IS NULL
 BEGIN
     CREATE DATABASE freshmart;
@@ -10,10 +9,6 @@ GO
 
 USE freshmart;
 GO
-
--- Optional: set collation / unicode defaults if you need
--- ALTER DATABASE freshmart COLLATE Vietnamese_100_CI_AS;
--- GO
 
 -- USERS
 IF OBJECT_ID(N'dbo.users', N'U') IS NULL
@@ -26,12 +21,28 @@ BEGIN
         tier NVARCHAR(10) NOT NULL CONSTRAINT df_users_tier DEFAULT N'FREE',
         expired_date DATE NULL,
         full_name NVARCHAR(100) NULL,
+        gender NVARCHAR(10) NULL,
+        dob DATE NULL,
         phone NVARCHAR(20) NULL,
         address NVARCHAR(255) NULL,
         active BIT NOT NULL CONSTRAINT df_users_active DEFAULT (1),
         created_at DATETIME2(0) NOT NULL CONSTRAINT df_users_created_at DEFAULT (SYSDATETIME()),
         CONSTRAINT uq_users_username UNIQUE (username)
     );
+END
+GO
+
+-- migration: ensure gender exists
+IF COL_LENGTH('users', 'gender') IS NULL
+BEGIN
+    ALTER TABLE users ADD gender NVARCHAR(10) NULL;
+END
+GO
+
+-- migration: ensure dob exists
+IF COL_LENGTH('users', 'dob') IS NULL
+BEGIN
+    ALTER TABLE users ADD dob DATE NULL;
 END
 GO
 
@@ -45,11 +56,20 @@ BEGIN
         address NVARCHAR(255) NULL,
         certificate NVARCHAR(255) NULL,
         lead_time_days INT NULL CONSTRAINT df_suppliers_lead_time DEFAULT (1),
-        note NVARCHAR(255) NULL
+        note NVARCHAR(255) NULL,
+        email NVARCHAR(255) NOT NULL
     );
 END
 GO
 
+-- migration: ensure email column exists
+IF COL_LENGTH('suppliers', 'email') IS NULL
+BEGIN
+    ALTER TABLE suppliers ADD email NVARCHAR(255) NULL;
+    UPDATE suppliers SET email = N'unknown@example.com' WHERE email IS NULL;
+    ALTER TABLE suppliers ALTER COLUMN email NVARCHAR(255) NOT NULL;
+END
+GO
 
 -- PRODUCTS
 IF OBJECT_ID(N'dbo.products', N'U') IS NULL
@@ -61,10 +81,18 @@ BEGIN
         unit NVARCHAR(20) NULL,
         sell_price DECIMAL(18,2) NOT NULL,
         image_url NVARCHAR(500) NULL,
-        description NVARCHAR(MAX) NULL
+        description NVARCHAR(MAX) NULL,
+        active BIT NOT NULL CONSTRAINT df_products_active DEFAULT (1)
     );
 
     CREATE INDEX idx_products_category ON dbo.products(category);
+END
+GO
+
+-- migration: ensure active column exists
+IF COL_LENGTH('products', 'active') IS NULL
+BEGIN
+    ALTER TABLE products ADD active BIT NOT NULL CONSTRAINT df_products_active_upgrade DEFAULT (1);
 END
 GO
 
@@ -166,12 +194,3 @@ BEGIN
     );
 END
 GO
-
--- 1) Thêm cột email (cho phép null tạm thời để không bị lỗi)
-ALTER TABLE suppliers ADD email NVARCHAR(255) NULL;
-
--- 2) Set giá trị mặc định cho các dòng hiện có (nếu có)
-UPDATE suppliers SET email = 'unknown@example.com' WHERE email IS NULL;
-
--- 3) Đặt NOT NULL nếu bạn muốn email bắt buộc
-ALTER TABLE suppliers ALTER COLUMN email NVARCHAR(255) NOT NULL;

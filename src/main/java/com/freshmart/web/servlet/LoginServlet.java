@@ -54,9 +54,14 @@ public class LoginServlet extends HttpServlet {
 
             req.getSession().setAttribute(AppConstants.SESSION_USER, user);
 
+            // Ensure CSRF token exists for later POST actions (e.g., logout)
+            jakarta.servlet.http.HttpSession session = req.getSession();
+            if (session.getAttribute("CSRF_TOKEN") == null) {
+                session.setAttribute("CSRF_TOKEN", java.util.UUID.randomUUID().toString());
+            }
+
             String contextPath = req.getContextPath();
 
-            // ✅ returnUrl nội bộ
             if (returnUrl != null && !returnUrl.isBlank() && !returnUrl.startsWith("http")) {
                 if (returnUrl.startsWith(contextPath)) {
                     resp.sendRedirect(returnUrl);
@@ -70,7 +75,6 @@ public class LoginServlet extends HttpServlet {
 
         } catch (AuthenticationException ex) {
             attemptService.loginFailed(username);
-
             req.setAttribute("error", ex.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
         }
@@ -93,7 +97,7 @@ public class LoginServlet extends HttpServlet {
                 break;
 
             case CUSTOMER:
-                resp.sendRedirect(contextPath + "/catalog");
+                resp.sendRedirect(contextPath + "/customer/dashboard");
                 break;
 
             default:

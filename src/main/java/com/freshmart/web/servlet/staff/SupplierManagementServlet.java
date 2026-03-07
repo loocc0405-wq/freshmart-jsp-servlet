@@ -132,6 +132,28 @@ public class SupplierManagementServlet extends HttpServlet {
                 errors.append("Name is required. ");
             }
 
+            if (email == null || email.isEmpty()) {
+                errors.append("Email is required. ");
+            } else {
+                if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                    errors.append("Invalid email format. ");
+                }
+            }
+
+            if (phone == null || phone.isEmpty()) {
+                errors.append("Phone is required. ");
+            } else {
+                // allow digits, space, plus, hyphen, parentheses
+                if (!phone.matches("^[0-9+\\-\\s()]+$")) {
+                    errors.append("Phone can only contain digits and +-() spaces. ");
+                } else {
+                    String digits = phone.replaceAll("[^0-9]", "");
+                    if (digits.length() < 9 || digits.length() > 15) {
+                        errors.append("Phone number must have between 9 and 15 digits. ");
+                    }
+                }
+            }
+
             if (leadTimeStr != null && !leadTimeStr.trim().isEmpty()) {
                 try {
                     int leadTime = Integer.parseInt(leadTimeStr.trim());
@@ -140,12 +162,6 @@ public class SupplierManagementServlet extends HttpServlet {
                     }
                 } catch (NumberFormatException e) {
                     errors.append("Lead time must be a valid number. ");
-                }
-            }
-
-            if (email != null && !email.isEmpty()) {
-                if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-                    errors.append("Invalid email format. ");
                 }
             }
 
@@ -201,8 +217,38 @@ public class SupplierManagementServlet extends HttpServlet {
     private void listSuppliers(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        List<Supplier> suppliers = supplierService.listAll();
+        // --- read search/filter/paging parameters with safe defaults ---
+        String q = request.getParameter("q");
+        if (q != null) q = q.trim();
+        if (q != null && q.isEmpty()) q = null;
+        String certificate = request.getParameter("certificate");
+        if (certificate != null) certificate = certificate.trim();
+        if (certificate != null && certificate.isEmpty()) certificate = null;
+
+        int page = 1;
+        String pageParam = request.getParameter("page");
+        try {
+            if (pageParam != null) {
+                page = Integer.parseInt(pageParam);
+            }
+        } catch (NumberFormatException e) {
+            // ignore and keep default
+        }
+        if (page < 1) page = 1;
+
+        final int pageSize = 10; // may adjust later or make configurable
+
+        List<Supplier> suppliers = supplierService.search(q, certificate, page, pageSize);
+        long total = supplierService.count(q, certificate);
+        int totalPages = (int) ((total + pageSize - 1) / pageSize);
+
         request.setAttribute("suppliers", suppliers);
+        request.setAttribute("search", q);
+        request.setAttribute("certificateFilter", certificate);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalItems", total);
+        request.setAttribute("pageSize", pageSize);
 
         request.getRequestDispatcher("/WEB-INF/jsp/staff/supplier_list.jsp")
                 .forward(request, response);

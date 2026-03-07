@@ -46,7 +46,7 @@ public class SellerPosServlet extends HttpServlet {
         LocalDate today = LocalDate.now();
 
         executor.execute(em -> {
-            products.addAll(productRepo.findAll(em));
+            products.addAll(productRepo.findAll(em, false));
 
             for (Product p : products) {
                 int available = inventoryService.getAvailableQty(em, p.getId(), today);

@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <c:set var="pageTitle" value="Suppliers" />
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -30,6 +31,21 @@
     + Add Supplier
   </a>
 </div>
+
+<!-- search / filter form -->
+<form method="get" action="" class="row g-2 mb-3">
+  <div class="col-md-4">
+    <input type="text" class="form-control" name="q" placeholder="Search name, email or phone"
+           value="${fn:escapeXml(search)}" />
+  </div>
+  <div class="col-md-3">
+    <input type="text" class="form-control" name="certificate" placeholder="Certificate"
+           value="${fn:escapeXml(certificateFilter)}" />
+  </div>
+  <div class="col-auto">
+    <button class="btn btn-outline-secondary" type="submit">Search</button>
+  </div>
+</form>
 
 <div class="card">
   <div class="card-body">
@@ -64,6 +80,8 @@
                     action="${pageContext.request.contextPath}/staff/suppliers"
                     method="post"
                     onsubmit="return confirm('Delete this supplier?');">
+                <!-- csrf token required for POST -->
+                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                 <input type="hidden" name="action" value="delete">
                 <input type="hidden" name="id" value="${s.id}">
                 <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
@@ -80,7 +98,47 @@
         </tbody>
       </table>
     </div>
+
+    <!-- pagination -->
+    <c:if test="${totalPages > 1}">
+      <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center mt-3">
+          <li class="page-item ${currentPage == 1 ? 'disabled' : ''}">
+            <c:url var="prevUrl" value="/staff/suppliers">
+              <c:param name="page" value="${currentPage - 1}" />
+              <c:if test="${not empty search}"><c:param name="q" value="${search}"/></c:if>
+              <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
+            </c:url>
+            <a class="page-link" href="${prevUrl}" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+            </a>
+          </li>
+          <c:forEach begin="1" end="${totalPages}" var="i">
+            <li class="page-item ${i == currentPage ? 'active' : ''}">
+              <c:url var="linkUrl" value="/staff/suppliers">
+                <c:param name="page" value="${i}" />
+                <c:if test="${not empty search}"><c:param name="q" value="${search}"/></c:if>
+                <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
+              </c:url>
+              <a class="page-link" href="${linkUrl}">${i}</a>
+            </li>
+          </c:forEach>
+          <li class="page-item ${currentPage == totalPages ? 'disabled' : ''}">
+            <c:url var="nextUrl" value="/staff/suppliers">
+              <c:param name="page" value="${currentPage + 1}" />
+              <c:if test="${not empty search}"><c:param name="q" value="${search}"/></c:if>
+              <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
+            </c:url>
+            <a class="page-link" href="${nextUrl}" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </c:if>
+
   </div>
+</div>
 </div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

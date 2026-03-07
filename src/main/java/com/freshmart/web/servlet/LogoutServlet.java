@@ -28,9 +28,12 @@ public class LogoutServlet extends HttpServlet {
             return;
         }
 
-        // Generate CSRF token for logout form (self-contained; not relying on CsrfFilter mapping)
-        String token = UUID.randomUUID().toString();
-        session.setAttribute(CSRF_SESSION_KEY, token);
+        // Ensure CSRF token exists (stable per session)
+        String token = (String) session.getAttribute(CSRF_SESSION_KEY);
+        if (token == null || token.isBlank()) {
+            token = UUID.randomUUID().toString();
+            session.setAttribute(CSRF_SESSION_KEY, token);
+        }
         req.setAttribute("csrfToken", token);
 
         req.getRequestDispatcher("/WEB-INF/jsp/common/logout_confirm.jsp").forward(req, resp);

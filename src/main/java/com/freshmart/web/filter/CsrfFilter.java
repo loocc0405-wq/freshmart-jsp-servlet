@@ -32,11 +32,13 @@ public class CsrfFilter implements Filter {
             return;
         }
 
-        // ===== GET: tạo CSRF token (GIỮ NGUYÊN LOGIC CŨ) =====
+        // ===== GET: tạo CSRF token nếu chưa có =====
         if ("GET".equalsIgnoreCase(method)) {
-
-            String token = UUID.randomUUID().toString();
-            session.setAttribute(CSRF_TOKEN, token);
+            String token = (String) session.getAttribute(CSRF_TOKEN);
+            if (token == null || token.isBlank()) {
+                token = UUID.randomUUID().toString();
+                session.setAttribute(CSRF_TOKEN, token);
+            }
         }
 
         // ===== POST: kiểm tra CSRF token =====

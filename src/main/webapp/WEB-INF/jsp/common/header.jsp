@@ -17,18 +17,16 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
-    <!-- Typography + Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
 
-    <!-- App theme -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css"/>
 </head>
 
 <body class="app-body">
- <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="${pageContext.request.contextPath}/">FreshMart</a>
 
@@ -43,7 +41,6 @@
 
             <ul class="navbar-nav me-auto">
 
-                <!-- Home -->
                 <li class="nav-item">
                     <a class="nav-link ${pageContext.request.servletPath == '/' || pageContext.request.servletPath == '/home' ? 'active' : ''}"
                        href="${pageContext.request.contextPath}/">
@@ -51,7 +48,6 @@
                     </a>
                 </li>
 
-                <!-- Catalog -->
                 <li class="nav-item">
                     <a class="nav-link ${pageContext.request.servletPath == '/catalog' || pageContext.request.servletPath == '/product' ? 'active' : ''}"
                        href="${pageContext.request.contextPath}/catalog">
@@ -59,7 +55,6 @@
                     </a>
                 </li>
 
-                <!-- Cart (login required) -->
                 <c:if test="${sessionScope.authUser != null}">
                     <li class="nav-item">
                         <a class="nav-link ${pageContext.request.servletPath == '/cart-view' ? 'active' : ''}"
@@ -69,7 +64,20 @@
                     </li>
                 </c:if>
 
-                <!-- Subscription / Upgrade (CUSTOMER or ADMIN) -->
+                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/customer') ? 'active' : ''}"
+                           href="#" role="button" data-bs-toggle="dropdown">
+                            Customer
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/dashboard">Dashboard</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/orders">My Orders</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/profile">My Profile</a></li>
+                        </ul>
+                    </li>
+                </c:if>
+
                 <c:if test="${sessionScope.authUser != null 
                              && (sessionScope.authUser.role.toString() eq 'CUSTOMER' 
                                  || sessionScope.authUser.role.toString() eq 'ADMIN')}">
@@ -81,7 +89,6 @@
                     </li>
                 </c:if>
 
-                <!-- PRO (tier PRO OR STAFF OR ADMIN) -->
                 <c:if test="${sessionScope.authUser != null 
                              && (sessionScope.authUser.tier.toString() eq 'PRO'
                                  || sessionScope.authUser.role.toString() eq 'STAFF'
@@ -98,7 +105,6 @@
                     </li>
                 </c:if>
 
-                <!-- SELLER / ADMIN -->
                 <c:if test="${sessionScope.authUser != null 
                              && (sessionScope.authUser.role.toString() eq 'SELLER'
                                  || sessionScope.authUser.role.toString() eq 'ADMIN')}">
@@ -113,7 +119,6 @@
                     </li>
                 </c:if>
 
-                <!-- STAFF / ADMIN -->
                 <c:if test="${sessionScope.authUser != null 
                              && (sessionScope.authUser.role.toString() eq 'STAFF'
                                  || sessionScope.authUser.role.toString() eq 'ADMIN')}">
@@ -136,7 +141,6 @@
                     </li>
                 </c:if>
 
-                <!-- ADMIN -->
                 <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'ADMIN'}">
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/admin') ? 'active' : ''}"
@@ -154,7 +158,6 @@
 
             </ul>
 
-            <!-- RIGHT MENU -->
             <ul class="navbar-nav">
                 <c:choose>
                     <c:when test="${sessionScope.authUser != null}">
@@ -166,7 +169,12 @@
                             </span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="${pageContext.request.contextPath}/logout">Logout</a>
+                            <form action="${pageContext.request.contextPath}/logout" method="post" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                <button type="submit" class="nav-link btn btn-link p-0" style="text-decoration:none;">
+                                    Logout
+                                </button>
+                            </form>
                         </li>
                     </c:when>
                     <c:otherwise>
@@ -179,7 +187,6 @@
 
         </div>
     </div>
-</nav>   
-
+</nav>
 
 <main class="container py-4 fm-page">
