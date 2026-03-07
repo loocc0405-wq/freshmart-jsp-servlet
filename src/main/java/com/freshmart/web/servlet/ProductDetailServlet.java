@@ -28,16 +28,23 @@ public class ProductDetailServlet extends HttpServlet {
             return;
         }
 
-        Long id = Long.parseLong(idRaw);
+        Long id;
+        try {
+            id = Long.parseLong(idRaw);
+        } catch (NumberFormatException ex) {
+            resp.sendError(400, "Invalid id");
+            return;
+        }
 
-        executor.execute(em -> {
-            Product p = productRepo.findById(em, id)
-                    .orElseThrow(() -> new IllegalArgumentException("Product not found"));
-            int available = inventoryService.getAvailableQty(em, id, LocalDate.now());
-            req.setAttribute("product", p);
-            req.setAttribute("availableQty", available);
-            return null;
-        });
+        // load product and check active flag outside of lambda so we can bail
+        Product p = executor.execute(em -> productRepo.findById(em, id).orElse(null));
+        if (p == null || !p.isActive()) {
+            resp.sendError(404);
+            return;
+        }
+        int available = executor.execute(em -> inventoryService.getAvailableQty(em, id, LocalDate.now()));
+        req.setAttribute("product", p);
+        req.setAttribute("availableQty", available);
 
         req.getRequestDispatcher("/WEB-INF/jsp/catalog/product_detail.jsp").forward(req, resp);
     }

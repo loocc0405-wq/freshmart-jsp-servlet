@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-3">
             <label class="form-label small fm-muted">Danh mục</label>
             <select class="form-select" name="category">
                 <option value="">Tất cả danh mục</option>
@@ -33,7 +33,19 @@
                 </c:forEach>
             </select>
         </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label small fm-muted">Sắp xếp</label>
+            <select class="form-select" name="sort">
+                <option value="">Mặc định</option>
+                <option value="name_asc" <c:if test="${param.sort eq 'name_asc'}">selected</c:if>>Tên A-Z</option>
+                <option value="name_desc" <c:if test="${param.sort eq 'name_desc'}">selected</c:if>>Tên Z-A</option>
+                <option value="price_asc" <c:if test="${param.sort eq 'price_asc'}">selected</c:if>>Giá tăng</option>
+                <option value="price_desc" <c:if test="${param.sort eq 'price_desc'}">selected</c:if>>Giá giảm</option>
+            </select>
+        </div>
 
+        <!-- preserve sort parameter when submitting -->
+        <input type="hidden" name="sort" value="${param.sort}"/>
         <div class="col-12 col-md-3 d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-grow-1">
                 <i class="bi bi-search me-1"></i>Tìm
@@ -190,6 +202,47 @@
             </div>
         </c:forEach>
     </div>
+
+    <!-- pagination controls -->
+    <c:if test="${totalPages gt 1}">
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <c:if test="${currentPage > 1}">
+                    <li class="page-item">
+                        <c:url var="prevUrl" value="/catalog">
+                            <c:param name="q" value="${param.q}"/>
+                            <c:param name="category" value="${param.category}"/>
+                            <c:param name="sort" value="${param.sort}"/>
+                            <c:param name="page" value="${currentPage - 1}"/>
+                        </c:url>
+                        <a class="page-link" href="${prevUrl}">Trước</a>
+                    </li>
+                </c:if>
+                <c:forEach begin="1" end="${totalPages}" var="i">
+                    <li class="page-item <c:if test='${i == currentPage}'>active</c:if>">
+                        <c:url var="pageUrl" value="/catalog">
+                            <c:param name="q" value="${param.q}"/>
+                            <c:param name="category" value="${param.category}"/>
+                            <c:param name="sort" value="${param.sort}"/>
+                            <c:param name="page" value="${i}"/>
+                        </c:url>
+                        <a class="page-link" href="${pageUrl}">${i}</a>
+                    </li>
+                </c:forEach>
+                <c:if test="${currentPage < totalPages}">
+                    <li class="page-item">
+                        <c:url var="nextUrl" value="/catalog">
+                            <c:param name="q" value="${param.q}"/>
+                            <c:param name="category" value="${param.category}"/>
+                            <c:param name="sort" value="${param.sort}"/>
+                            <c:param name="page" value="${currentPage + 1}"/>
+                        </c:url>
+                        <a class="page-link" href="${nextUrl}">Tiếp</a>
+                    </li>
+                </c:if>
+            </ul>
+        </nav>
+    </c:if>
 </c:if>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
