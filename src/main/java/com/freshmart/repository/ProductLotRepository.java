@@ -1,9 +1,9 @@
 package com.freshmart.repository;
 
 import com.freshmart.entity.ProductLot;
-
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,18 +25,27 @@ public class ProductLotRepository {
         return q.getResultList();
     }
 
-
-    public java.time.LocalDate findNearestExpiry(EntityManager em, Long productId, LocalDate today) {
-        return em.createQuery(
+    /**
+     * Nearest expiry date among non-expired lots with qtyLeft > 0.
+     * Returns null if no valid lots.
+     */
+    public LocalDate findNearestExpiry(EntityManager em, Long productId, LocalDate today) {
+        List<LocalDate> res = em.createQuery(
                         "SELECT MIN(l.expiryDate) FROM ProductLot l " +
                                 "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
-                        java.time.LocalDate.class
+                        LocalDate.class
                 )
                 .setParameter("pid", productId)
                 .setParameter("today", today)
-                .getSingleResult();
+                .getResultList();
+
+        // MIN(...) can still return null depending on JPA provider; guard it.
+        return (res == null || res.isEmpty()) ? null : res.get(0);
     }
 
+    /**
+     * Total qty available (qtyLeft) for non-expired lots.
+     */
     public int getAvailableQty(EntityManager em, Long productId, LocalDate today) {
         Long sum = em.createQuery(
                         "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
@@ -46,6 +55,52 @@ public class ProductLotRepository {
                 .setParameter("pid", productId)
                 .setParameter("today", today)
                 .getSingleResult();
-        return sum.intValue();
+        return sum == null ? 0 : sum.intValue();
+    }
+
+    /**
+     * Total qtyLeft of lots that will expire within [today .. today+days] (inclusive),
+     * and still have qtyLeft > 0.
+     *
+     * Example: days = 3 => expiring in next 3 days (including today).
+     */
+    public int getExpiringQty(EntityManager em, Long productId, LocalDate today, int days) {
+        if (days < 0) days = 0;
+        LocalDate end = today.plusDays(days);
+
+        Long sum = em.createQuery(
+                        "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
+                                "WHERE l.product.id = :pid AND l.qtyLeft > 0 " +
+                                "AND l.expiryDate >= :today AND l.expiryDate <= :end",
+                        Long.class
+                )
+                .setParameter("pid", productId)
+                .setParameter("today", today)
+                .setParameter("end", end)
+                .getSingleResult();
+
+        return sum == null ? 0 : sum.intValue();
+    }
+
+    /**
+     * Count number of lots that will expire within [today .. today+days] (inclusive),
+     * and still have qtyLeft > 0.
+     */
+    public int countExpiringLots(EntityManager em, Long productId, LocalDate today, int days) {
+        if (days < 0) days = 0;
+        LocalDate end = today.plusDays(days);
+
+        Long cnt = em.createQuery(
+                        "SELECT COUNT(l) FROM ProductLot l " +
+                                "WHERE l.product.id = :pid AND l.qtyLeft > 0 " +
+                                "AND l.expiryDate >= :today AND l.expiryDate <= :end",
+                        Long.class
+                )
+                .setParameter("pid", productId)
+                .setParameter("today", today)
+                .setParameter("end", end)
+                .getSingleResult();
+
+        return cnt == null ? 0 : cnt.intValue();
     }
 }

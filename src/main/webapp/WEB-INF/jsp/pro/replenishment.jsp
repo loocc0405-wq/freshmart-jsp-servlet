@@ -42,12 +42,21 @@
           <b>reorderPoint</b> = <b>expectedDemand</b> + <b>safetyStock</b><br/>
           <b>suggestQty</b> = max(0, ceil(<b>reorderPoint</b> − <b>stock</b>))
         </div>
+
         <hr class="my-2"/>
+
         <div class="small">
           daysHistory=<c:out value="${daysHistory}"/>,
           leadTimeDays=<c:out value="${leadTimeDays}"/>,
           bufferDays=<c:out value="${bufferDays}"/>,
           safetyDays=<c:out value="${safetyDays}"/>
+        </div>
+
+        <hr class="my-2"/>
+
+        <div class="small">
+          <b>Rule thêm:</b> Nếu tồn kho có <b>nhiều lô sắp hết hạn</b> (≤ 3 ngày) thì hệ thống sẽ
+          <b>giảm Suggested</b> để ưu tiên <b>xả hàng</b> trước khi nhập thêm.
         </div>
       </div>
     </div>
@@ -71,7 +80,13 @@
             <th class="text-end">ExpectedDemand</th>
             <th class="text-end">SafetyStock</th>
             <th class="text-end">ReorderPoint</th>
+
+            <!-- NEW -->
+            <th class="text-end">ExpiringLots (≤3d)</th>
+            <th class="text-end">ExpiringQty (≤3d)</th>
+
             <th class="text-center">Suggested</th>
+            <th>Note</th>
           </tr>
           </thead>
 
@@ -96,6 +111,10 @@
               <td class="text-end"><fmt:formatNumber value="${safetyStock}" minFractionDigits="2" maxFractionDigits="2"/></td>
               <td class="text-end"><fmt:formatNumber value="${reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/></td>
 
+              <!-- NEW -->
+              <td class="text-end"><c:out value="${r.expiringLots}"/></td>
+              <td class="text-end"><c:out value="${r.expiringQty}"/></td>
+
               <td class="text-center">
                 <c:choose>
                   <c:when test="${r.suggestedQty > 0}">
@@ -103,6 +122,17 @@
                   </c:when>
                   <c:otherwise>
                     <span class="badge text-bg-success">OK</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${not empty r.note}">
+                    <span class="small"><c:out value="${r.note}"/></span>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
                   </c:otherwise>
                 </c:choose>
               </td>

@@ -19,6 +19,16 @@
 <div class="card">
   <div class="card-body">
 
+    <!-- Error Messages -->
+    <c:if test="${not empty errors}">
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>Validation Errors:</strong><br>
+        ${errors}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    </c:if>
+
     <form action="${pageContext.request.contextPath}/staff/products"
           method="post"
           class="row g-3">
@@ -78,6 +88,14 @@
                name="imageUrl"
                value="${product.imageUrl}"
                placeholder="https://example.com/image.jpg">
+      </div>
+
+      <div class="col-md-4 d-flex align-items-center">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="active" id="active"
+                 <c:if test="${product.active}">checked</c:if> />
+          <label class="form-check-label" for="active">Active</label>
+        </div>
       </div>
 
       <!-- Preview ảnh (nếu có imageUrl) -->

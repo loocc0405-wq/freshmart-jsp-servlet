@@ -33,8 +33,12 @@ CREATE TABLE IF NOT EXISTS suppliers (
   certificate VARCHAR(255) NULL,
   lead_time_days INT NULL DEFAULT 1,
   note VARCHAR(255) NULL,
+  email VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 );
+
+-- ensure email column exists for upgrades
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL DEFAULT '';
 
 -- PRODUCTS
 CREATE TABLE IF NOT EXISTS products (
@@ -45,9 +49,13 @@ CREATE TABLE IF NOT EXISTS products (
   sell_price DECIMAL(18,2) NOT NULL,
   image_url VARCHAR(500) NULL,
   description TEXT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   KEY idx_products_category (category)
 );
+
+-- migration: ensure active column exists for upgrades
+ALTER TABLE products ADD COLUMN IF NOT EXISTS active TINYINT(1) NOT NULL DEFAULT 1; 
 
 -- PRODUCT_LOTS
 CREATE TABLE IF NOT EXISTS product_lots (

@@ -65,7 +65,7 @@ public class InventoryReportService {
      */
     public List<ProductInventoryOverview> getAllProductInventoryOverview() {
         return executor.execute(em -> {
-            List<Product> products = productRepo.findAll(em);
+            List<Product> products = productRepo.findAll(em, false);
             List<ProductInventoryOverview> result = new ArrayList<>();
             LocalDate today = LocalDate.now();
 
