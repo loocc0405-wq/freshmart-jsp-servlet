@@ -132,6 +132,28 @@ public class SupplierManagementServlet extends HttpServlet {
                 errors.append("Name is required. ");
             }
 
+            if (email == null || email.isEmpty()) {
+                errors.append("Email is required. ");
+            } else {
+                if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                    errors.append("Invalid email format. ");
+                }
+            }
+
+            if (phone == null || phone.isEmpty()) {
+                errors.append("Phone is required. ");
+            } else {
+                // allow digits, space, plus, hyphen, parentheses
+                if (!phone.matches("^[0-9+\\-\\s()]+$")) {
+                    errors.append("Phone can only contain digits and +-() spaces. ");
+                } else {
+                    String digits = phone.replaceAll("[^0-9]", "");
+                    if (digits.length() < 9 || digits.length() > 15) {
+                        errors.append("Phone number must have between 9 and 15 digits. ");
+                    }
+                }
+            }
+
             if (leadTimeStr != null && !leadTimeStr.trim().isEmpty()) {
                 try {
                     int leadTime = Integer.parseInt(leadTimeStr.trim());
@@ -140,12 +162,6 @@ public class SupplierManagementServlet extends HttpServlet {
                     }
                 } catch (NumberFormatException e) {
                     errors.append("Lead time must be a valid number. ");
-                }
-            }
-
-            if (email != null && !email.isEmpty()) {
-                if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-                    errors.append("Invalid email format. ");
                 }
             }
 

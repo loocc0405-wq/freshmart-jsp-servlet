@@ -45,7 +45,8 @@ BEGIN
         address NVARCHAR(255) NULL,
         certificate NVARCHAR(255) NULL,
         lead_time_days INT NULL CONSTRAINT df_suppliers_lead_time DEFAULT (1),
-        note NVARCHAR(255) NULL
+        note NVARCHAR(255) NULL,
+        email NVARCHAR(255) NOT NULL
     );
 END
 GO
@@ -167,11 +168,10 @@ BEGIN
 END
 GO
 
--- 1) Thêm cột email (cho phép null tạm thời để không bị lỗi)
-ALTER TABLE suppliers ADD email NVARCHAR(255) NULL;
-
--- 2) Set giá trị mặc định cho các dòng hiện có (nếu có)
-UPDATE suppliers SET email = 'unknown@example.com' WHERE email IS NULL;
-
--- 3) Đặt NOT NULL nếu bạn muốn email bắt buộc
-ALTER TABLE suppliers ALTER COLUMN email NVARCHAR(255) NOT NULL;
+-- migration: make sure email column exists (skip if already present)
+IF COL_LENGTH('suppliers','email') IS NULL
+BEGIN
+    ALTER TABLE suppliers ADD email NVARCHAR(255) NULL;
+    UPDATE suppliers SET email = 'unknown@example.com' WHERE email IS NULL;
+    ALTER TABLE suppliers ALTER COLUMN email NVARCHAR(255) NOT NULL;
+END

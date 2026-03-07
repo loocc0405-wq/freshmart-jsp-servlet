@@ -33,8 +33,12 @@ CREATE TABLE IF NOT EXISTS suppliers (
   certificate VARCHAR(255) NULL,
   lead_time_days INT NULL DEFAULT 1,
   note VARCHAR(255) NULL,
+  email VARCHAR(255) NOT NULL,
   PRIMARY KEY (id)
 );
+
+-- ensure email column exists for upgrades
+ALTER TABLE suppliers ADD COLUMN IF NOT EXISTS email VARCHAR(255) NOT NULL DEFAULT '';
 
 -- PRODUCTS
 CREATE TABLE IF NOT EXISTS products (
