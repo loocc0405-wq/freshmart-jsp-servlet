@@ -139,11 +139,12 @@ public class ProductLotService {
      */
     public BigDecimal getTotalStockValue(Long productId) {
         return executor.execute(em -> {
-            Long value = em.createQuery(
-                    "SELECT COALESCE(SUM(l.qtyLeft * l.importPrice), 0) FROM ProductLot l WHERE l.product.id = :pid",
-                    Long.class
+            BigDecimal value = em.createQuery(
+                    "SELECT COALESCE(SUM(l.qtyLeft * COALESCE(l.importPrice, 0)), 0) " +
+                    "FROM ProductLot l WHERE l.product.id = :pid",
+                    BigDecimal.class
             ).setParameter("pid", productId).getSingleResult();
-            return BigDecimal.valueOf(value);
+            return value == null ? BigDecimal.ZERO : value;
         });
     }
 

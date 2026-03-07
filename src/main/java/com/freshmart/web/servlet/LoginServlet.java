@@ -54,6 +54,12 @@ public class LoginServlet extends HttpServlet {
 
             req.getSession().setAttribute(AppConstants.SESSION_USER, user);
 
+            // Ensure CSRF token exists for later POST actions (e.g., logout)
+            jakarta.servlet.http.HttpSession session = req.getSession();
+            if (session.getAttribute("CSRF_TOKEN") == null) {
+                session.setAttribute("CSRF_TOKEN", java.util.UUID.randomUUID().toString());
+            }
+
             String contextPath = req.getContextPath();
 
             // ✅ returnUrl nội bộ

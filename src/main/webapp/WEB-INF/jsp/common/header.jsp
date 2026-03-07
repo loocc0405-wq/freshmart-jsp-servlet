@@ -166,7 +166,12 @@
                             </span>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="${pageContext.request.contextPath}/logout">Logout</a>
+                            <form action="${pageContext.request.contextPath}/logout" method="post" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                <button type="submit" class="nav-link btn btn-link p-0" style="text-decoration:none;">
+                                    Logout
+                                </button>
+                            </form>
                         </li>
                     </c:when>
                     <c:otherwise>
