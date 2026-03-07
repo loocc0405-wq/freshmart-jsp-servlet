@@ -22,7 +22,9 @@ public class CsrfFilter implements Filter {
         String method = request.getMethod();
         String uri = request.getRequestURI();
 
-        // Bỏ qua static resources
+        // =====================================
+        // BỎ QUA STATIC RESOURCES
+        // =====================================
         if (uri.contains("/css/") ||
             uri.contains("/js/") ||
             uri.contains("/images/") ||
@@ -32,22 +34,26 @@ public class CsrfFilter implements Filter {
             return;
         }
 
-        // ===== GET: tạo CSRF token nếu chưa có =====
-        if ("GET".equalsIgnoreCase(method)) {
-            String token = (String) session.getAttribute(CSRF_TOKEN);
-            if (token == null || token.isBlank()) {
-                token = UUID.randomUUID().toString();
-                session.setAttribute(CSRF_TOKEN, token);
-            }
+        // =====================================
+        // LUÔN ĐẢM BẢO TOKEN TỒN TẠI
+        // (fix lỗi token null khi render JSP)
+        // =====================================
+        if (session.getAttribute(CSRF_TOKEN) == null) {
+            String token = UUID.randomUUID().toString();
+            session.setAttribute(CSRF_TOKEN, token);
         }
 
-        // ===== POST: kiểm tra CSRF token =====
+        // =====================================
+        // KIỂM TRA CSRF CHO POST REQUEST
+        // =====================================
         if ("POST".equalsIgnoreCase(method)) {
 
             String sessionToken = (String) session.getAttribute(CSRF_TOKEN);
             String requestToken = request.getParameter(CSRF_PARAM);
 
-            if (sessionToken == null || requestToken == null || !sessionToken.equals(requestToken)) {
+            if (sessionToken == null ||
+                requestToken == null ||
+                !sessionToken.equals(requestToken)) {
 
                 response.sendError(
                         HttpServletResponse.SC_FORBIDDEN,
