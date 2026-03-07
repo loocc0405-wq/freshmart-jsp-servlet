@@ -47,6 +47,17 @@ public class InventoryReportService {
             this.nearestExpiry = nearestExpiry;
             this.totalValue = totalValue;
         }
+
+        // ===== Add getters for JSP EL (JavaBean properties) =====
+        public Long getProductId() { return productId; }
+        public String getProductName() { return productName; }
+        public int getTotalQtyIn() { return totalQtyIn; }
+        public int getTotalQtyLeft() { return totalQtyLeft; }
+        public int getTotalQtyConsumed() { return totalQtyConsumed; }
+        public int getLotsCount() { return lotsCount; }
+        public int getExpiredLotsCount() { return expiredLotsCount; }
+        public LocalDate getNearestExpiry() { return nearestExpiry; }
+        public BigDecimal getTotalValue() { return totalValue; }
     }
 
     /**
@@ -75,7 +86,10 @@ public class InventoryReportService {
                 LocalDate nearestExpiry = lotRepo.findNearestExpiry(em, p.getId(), today);
 
                 BigDecimal totalValue = allLots.stream()
-                        .map(l -> l.getImportPrice().multiply(BigDecimal.valueOf(l.getQtyLeft())))
+                        .map(l -> {
+                            BigDecimal price = (l.getImportPrice() == null) ? BigDecimal.ZERO : l.getImportPrice();
+                            return price.multiply(BigDecimal.valueOf(l.getQtyLeft()));
+                        })
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 result.add(new ProductInventoryOverview(
@@ -124,7 +138,10 @@ public class InventoryReportService {
                 LocalDate nearestExpiry = lotRepo.findNearestExpiry(em, p.getId(), LocalDate.now());
 
                 BigDecimal totalValue = allLots.stream()
-                        .map(l -> l.getImportPrice().multiply(BigDecimal.valueOf(l.getQtyLeft())))
+                        .map(l -> {
+                            BigDecimal price = (l.getImportPrice() == null) ? BigDecimal.ZERO : l.getImportPrice();
+                            return price.multiply(BigDecimal.valueOf(l.getQtyLeft()));
+                        })
                         .reduce(BigDecimal.ZERO, BigDecimal::add);
 
                 result.add(new ProductInventoryOverview(
@@ -142,11 +159,12 @@ public class InventoryReportService {
      */
     public BigDecimal getTotalInventoryValue() {
         return executor.execute(em -> {
-            Long value = em.createQuery(
-                    "SELECT COALESCE(SUM(l.qtyLeft * l.importPrice), 0) FROM ProductLot l WHERE l.qtyLeft > 0",
-                    Long.class
+            BigDecimal value = em.createQuery(
+                    "SELECT COALESCE(SUM(l.qtyLeft * COALESCE(l.importPrice, 0)), 0) " +
+                    "FROM ProductLot l WHERE l.qtyLeft > 0",
+                    BigDecimal.class
             ).getSingleResult();
-            return BigDecimal.valueOf(value);
+            return value == null ? BigDecimal.ZERO : value;
         });
     }
 

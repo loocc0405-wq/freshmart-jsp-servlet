@@ -33,12 +33,10 @@ public class CsrfFilter implements Filter {
         }
 
         // ===== GET: tạo CSRF token nếu chưa có =====
-        // previously token was regenerated on every GET which could
-        // invalidate forms when the user navigated or refreshed before
-        // submitting. Only create once per session here.
         if ("GET".equalsIgnoreCase(method)) {
-            if (session.getAttribute(CSRF_TOKEN) == null) {
-                String token = UUID.randomUUID().toString();
+            String token = (String) session.getAttribute(CSRF_TOKEN);
+            if (token == null || token.isBlank()) {
+                token = UUID.randomUUID().toString();
                 session.setAttribute(CSRF_TOKEN, token);
             }
         }
