@@ -217,8 +217,38 @@ public class SupplierManagementServlet extends HttpServlet {
     private void listSuppliers(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        List<Supplier> suppliers = supplierService.listAll();
+        // --- read search/filter/paging parameters with safe defaults ---
+        String q = request.getParameter("q");
+        if (q != null) q = q.trim();
+        if (q != null && q.isEmpty()) q = null;
+        String certificate = request.getParameter("certificate");
+        if (certificate != null) certificate = certificate.trim();
+        if (certificate != null && certificate.isEmpty()) certificate = null;
+
+        int page = 1;
+        String pageParam = request.getParameter("page");
+        try {
+            if (pageParam != null) {
+                page = Integer.parseInt(pageParam);
+            }
+        } catch (NumberFormatException e) {
+            // ignore and keep default
+        }
+        if (page < 1) page = 1;
+
+        final int pageSize = 10; // may adjust later or make configurable
+
+        List<Supplier> suppliers = supplierService.search(q, certificate, page, pageSize);
+        long total = supplierService.count(q, certificate);
+        int totalPages = (int) ((total + pageSize - 1) / pageSize);
+
         request.setAttribute("suppliers", suppliers);
+        request.setAttribute("search", q);
+        request.setAttribute("certificateFilter", certificate);
+        request.setAttribute("currentPage", page);
+        request.setAttribute("totalPages", totalPages);
+        request.setAttribute("totalItems", total);
+        request.setAttribute("pageSize", pageSize);
 
         request.getRequestDispatcher("/WEB-INF/jsp/staff/supplier_list.jsp")
                 .forward(request, response);
