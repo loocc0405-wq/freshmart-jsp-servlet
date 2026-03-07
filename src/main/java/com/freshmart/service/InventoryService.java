@@ -30,7 +30,7 @@ public class InventoryService {
             throw new InsufficientStockException("Not enough stock. Need=" + qty + ", available=" + available);
         }
 
-        List<ProductLot> lots = lotRepo.findAvailableLotsFEFO(em, productId, today);
+        List<ProductLot> lots = lotRepo.findAvailableLotsFEFOForUpdate(em, productId, today);
         List<LotConsumption> consumed = new ArrayList<>();
 
         int remaining = qty;

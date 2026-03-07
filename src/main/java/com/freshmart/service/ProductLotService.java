@@ -69,7 +69,11 @@ public class ProductLotService {
     public List<ProductLot> getAllLotsForProduct(Long productId) {
         return executor.execute(em -> {
             return em.createQuery(
-                    "SELECT l FROM ProductLot l WHERE l.product.id = :pid ORDER BY l.expiryDate ASC, l.importDate ASC",
+                    "SELECT l FROM ProductLot l " +
+                    "JOIN FETCH l.product p " +
+                    "LEFT JOIN FETCH l.supplier s " +
+                    "WHERE p.id = :pid " +
+                    "ORDER BY l.expiryDate ASC, l.importDate ASC",
                     ProductLot.class
             ).setParameter("pid", productId).getResultList();
         });
@@ -102,7 +106,10 @@ public class ProductLotService {
         return executor.execute(em -> {
             LocalDate today = LocalDate.now();
             return em.createQuery(
-                    "SELECT l FROM ProductLot l WHERE l.product.id = :pid AND l.expiryDate < :today ORDER BY l.expiryDate ASC",
+                    "SELECT l FROM ProductLot l " +
+                    "JOIN FETCH l.product p " +
+                    "LEFT JOIN FETCH l.supplier s " +
+                    "WHERE p.id = :pid AND l.expiryDate < :today ORDER BY l.expiryDate ASC",
                     ProductLot.class
             ).setParameter("pid", productId).setParameter("today", today).getResultList();
         });
@@ -116,7 +123,10 @@ public class ProductLotService {
             LocalDate today = LocalDate.now();
             LocalDate deadline = today.plusDays(days);
             return em.createQuery(
-                    "SELECT l FROM ProductLot l WHERE l.expiryDate BETWEEN :today AND :deadline AND l.qtyLeft > 0 ORDER BY l.expiryDate ASC",
+                    "SELECT l FROM ProductLot l " +
+                    "JOIN FETCH l.product p " +
+                    "LEFT JOIN FETCH l.supplier s " +
+                    "WHERE l.expiryDate BETWEEN :today AND :deadline AND l.qtyLeft > 0 ORDER BY l.expiryDate ASC",
                     ProductLot.class
             ).setParameter("today", today).setParameter("deadline", deadline).getResultList();
         });
