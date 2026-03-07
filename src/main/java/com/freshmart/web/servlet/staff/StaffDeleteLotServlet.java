@@ -1,9 +1,7 @@
 package com.freshmart.web.servlet.staff;
 
 import com.freshmart.service.ProductLotService;
-import com.freshmart.util.JpaExecutor;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -18,10 +16,9 @@ import java.io.IOException;
 public class StaffDeleteLotServlet extends HttpServlet {
 
     private final ProductLotService lotService = new ProductLotService();
-    private final JpaExecutor executor = new JpaExecutor();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String lotIdRaw = req.getParameter("lotId");
         String redirect = req.getParameter("redirect");
         if (redirect == null || redirect.isBlank()) {
@@ -31,11 +28,8 @@ public class StaffDeleteLotServlet extends HttpServlet {
         try {
             if (lotIdRaw != null) {
                 Long lotId = Long.parseLong(lotIdRaw);
-                executor.execute(em -> {
-                    lotService.deleteLot(lotId);
-                    return null;
-                });
-                req.getSession().setAttribute("successMessage", "Lô #" + lotId + " đã được xóa.");
+                lotService.deleteLot(lotId);
+                req.getSession().setAttribute("successMessage", "Lô #" + lotId + " đã được loại bỏ.");
             } else {
                 req.getSession().setAttribute("errorMessage", "Không có ID lô để xóa.");
             }

@@ -16,12 +16,33 @@ public class ProductLotRepository {
     public List<ProductLot> findAvailableLotsFEFO(EntityManager em, Long productId, LocalDate today) {
         TypedQuery<ProductLot> q = em.createQuery(
                 "SELECT l FROM ProductLot l " +
-                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today " +
+                        "JOIN FETCH l.product p " +
+                        "LEFT JOIN FETCH l.supplier s " +
+                        "WHERE p.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today " +
                         "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
                 ProductLot.class
         );
         q.setParameter("pid", productId);
         q.setParameter("today", today);
+        return q.getResultList();
+    }
+
+    /**
+     * FEFO with pessimistic write lock to prevent race conditions during stock consumption.
+     * Used within a transaction to ensure exclusive access to lots.
+     */
+    public List<ProductLot> findAvailableLotsFEFOForUpdate(EntityManager em, Long productId, LocalDate today) {
+        TypedQuery<ProductLot> q = em.createQuery(
+                "SELECT l FROM ProductLot l " +
+                        "JOIN FETCH l.product p " +
+                        "LEFT JOIN FETCH l.supplier s " +
+                        "WHERE p.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today " +
+                        "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
+                ProductLot.class
+        );
+        q.setParameter("pid", productId);
+        q.setParameter("today", today);
+        q.setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
         return q.getResultList();
     }
 

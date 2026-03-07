@@ -11,7 +11,7 @@
             <select class="form-select" name="productId" onchange="this.form.submit()">
                 <option value="">-- Chọn sản phẩm --</option>
                 <c:forEach items="${products}" var="p">
-                    <option value="${p.id}" <c:if test="${selectedProduct.id == p.id}">selected</c:if>>
+                    <option value="${p.id}" <c:if test="${selectedProduct != null && selectedProduct.id == p.id}">selected</c:if>>
                         <c:out value="${p.name}"/> (ID: ${p.id})
                     </option>
                 </c:forEach>
@@ -56,7 +56,14 @@
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="text-muted">HSD gần nhất</h6>
-                    <h5><c:out value="${availableLots[0].expiryDate}"/></h5>
+                    <c:choose>
+                        <c:when test="${not empty availableLots}">
+                            <h5><c:out value="${availableLots[0].expiryDate}"/></h5>
+                        </c:when>
+                        <c:otherwise>
+                            <h5 class="text-muted">-</h5>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
             </div>
         </div>
@@ -170,9 +177,12 @@
                                 </c:choose>
                             </td>
                             <td>
-                                <a class="btn btn-sm btn-danger" href="${pageContext.request.contextPath}/staff/delete-lot?lotId=${lot.id}&amp;redirect=/staff/inventory?productId=${selectedProduct.id}">
-                                    Xóa
-                                </a>
+                                <form action="${pageContext.request.contextPath}/staff/delete-lot" method="post" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                    <input type="hidden" name="lotId" value="${lot.id}"/>
+                                    <input type="hidden" name="redirect" value="/staff/inventory?productId=${selectedProduct.id}"/>
+                                    <button class="btn btn-sm btn-danger" onclick="return confirm('Xác nhận loại bỏ lô này?');">Loại bỏ</button>
+                                </form>
                             </td>
                         </tr>
                     </c:forEach>
