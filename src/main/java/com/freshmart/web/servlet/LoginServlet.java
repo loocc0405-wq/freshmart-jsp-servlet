@@ -56,7 +56,6 @@ public class LoginServlet extends HttpServlet {
 
             String contextPath = req.getContextPath();
 
-            // ✅ returnUrl nội bộ
             if (returnUrl != null && !returnUrl.isBlank() && !returnUrl.startsWith("http")) {
                 if (returnUrl.startsWith(contextPath)) {
                     resp.sendRedirect(returnUrl);
@@ -70,7 +69,6 @@ public class LoginServlet extends HttpServlet {
 
         } catch (AuthenticationException ex) {
             attemptService.loginFailed(username);
-
             req.setAttribute("error", ex.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
         }
@@ -93,7 +91,7 @@ public class LoginServlet extends HttpServlet {
                 break;
 
             case CUSTOMER:
-                resp.sendRedirect(contextPath + "/catalog");
+                resp.sendRedirect(contextPath + "/customer/dashboard");
                 break;
 
             default:
