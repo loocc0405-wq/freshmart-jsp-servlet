@@ -10,7 +10,8 @@ import java.util.Optional;
 public class ProductRepository {
 
     public List<Product> findAll(EntityManager em) {
-        return em.createQuery("SELECT p FROM Product p ORDER BY p.id DESC", Product.class)
+        // show oldest first (ascending id)
+        return em.createQuery("SELECT p FROM Product p ORDER BY p.id ASC", Product.class)
                 .getResultList();
     }
 
@@ -26,7 +27,7 @@ public class ProductRepository {
         if (category != null && !category.isBlank()) {
             jpql.append(" AND p.category = :cat ");
         }
-        jpql.append(" ORDER BY p.id DESC");
+        jpql.append(" ORDER BY p.id ASC");
 
         TypedQuery<Product> q = em.createQuery(jpql.toString(), Product.class);
         if (keyword != null && !keyword.isBlank()) q.setParameter("kw", "%" + keyword.toLowerCase() + "%");

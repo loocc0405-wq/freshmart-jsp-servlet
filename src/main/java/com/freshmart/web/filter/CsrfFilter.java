@@ -32,11 +32,15 @@ public class CsrfFilter implements Filter {
             return;
         }
 
-        // ===== GET: tạo CSRF token (GIỮ NGUYÊN LOGIC CŨ) =====
+        // ===== GET: tạo CSRF token nếu chưa có =====
+        // previously token was regenerated on every GET which could
+        // invalidate forms when the user navigated or refreshed before
+        // submitting. Only create once per session here.
         if ("GET".equalsIgnoreCase(method)) {
-
-            String token = UUID.randomUUID().toString();
-            session.setAttribute(CSRF_TOKEN, token);
+            if (session.getAttribute(CSRF_TOKEN) == null) {
+                String token = UUID.randomUUID().toString();
+                session.setAttribute(CSRF_TOKEN, token);
+            }
         }
 
         // ===== POST: kiểm tra CSRF token =====
