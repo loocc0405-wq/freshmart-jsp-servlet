@@ -29,8 +29,8 @@ public class CatalogServlet extends HttpServlet {
                 (cat != null && !cat.isBlank());
 
         List<Product> products = hasFilter
-                ? productService.search(q, cat)
-                : productService.listAll();
+                ? productService.search(q, cat, false)
+                : productService.listAll(false);
 
         // dropdown categories
         List<String> categories = productService.listCategories();

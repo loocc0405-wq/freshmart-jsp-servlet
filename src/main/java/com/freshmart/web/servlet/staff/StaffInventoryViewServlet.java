@@ -34,7 +34,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String productIdRaw = req.getParameter("productId");
 
-        List<Product> products = executor.execute(productRepo::findAll);
+        List<Product> products = executor.execute(em -> productRepo.findAll(em, false));
         req.setAttribute("products", products);
 
         if (productIdRaw != null && !productIdRaw.isBlank()) {

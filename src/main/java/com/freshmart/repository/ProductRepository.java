@@ -9,9 +9,14 @@ import java.util.Optional;
 
 public class ProductRepository {
 
-    public List<Product> findAll(EntityManager em) {
+    public List<Product> findAll(EntityManager em, boolean showInactive) {
         // show oldest first (ascending id)
-        return em.createQuery("SELECT p FROM Product p ORDER BY p.id ASC", Product.class)
+        String jpql = "SELECT p FROM Product p";
+        if (!showInactive) {
+            jpql += " WHERE p.active = true";
+        }
+        jpql += " ORDER BY p.id ASC";
+        return em.createQuery(jpql, Product.class)
                 .getResultList();
     }
 
@@ -19,13 +24,16 @@ public class ProductRepository {
         return Optional.ofNullable(em.find(Product.class, id));
     }
 
-    public List<Product> search(EntityManager em, String keyword, String category) {
-        StringBuilder jpql = new StringBuilder("SELECT p FROM Product p WHERE 1=1 ");
+    public List<Product> search(EntityManager em, String keyword, String category, boolean showInactive) {
+        StringBuilder jpql = new StringBuilder("SELECT p FROM Product p WHERE 1=1");
+        if (!showInactive) {
+            jpql.append(" AND p.active = true");
+        }
         if (keyword != null && !keyword.isBlank()) {
-            jpql.append(" AND LOWER(p.name) LIKE :kw ");
+            jpql.append(" AND LOWER(p.name) LIKE :kw");
         }
         if (category != null && !category.isBlank()) {
-            jpql.append(" AND p.category = :cat ");
+            jpql.append(" AND p.category = :cat");
         }
         jpql.append(" ORDER BY p.id ASC");
 

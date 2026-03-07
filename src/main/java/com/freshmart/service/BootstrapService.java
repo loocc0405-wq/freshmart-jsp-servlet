@@ -27,6 +27,9 @@ public class BootstrapService {
     }
 
     private void seedIfEmpty(EntityManager em) {
+        // make sure schema is compatible (add missing columns manually)
+        ensureActiveColumn(em);
+
         long userCount = userRepo.count(em);
         if (userCount == 0) {
             User admin = new User("admin", PasswordUtil.hash("admin123"), Role.ADMIN);
@@ -111,6 +114,28 @@ public class BootstrapService {
         for (SeedProduct sp : items) {
             Product p = upsertProduct(em, sp);
             ensureLots(em, p, sup, sp.qty, sp.shelfLifeDays, sp.sellPrice);
+        }
+    }
+
+    /**
+     * Add `active` column if it does not exist, with default true.
+     * This is executed before any seeding so that Hibernate validate() will succeed.
+     */
+    private void ensureActiveColumn(EntityManager em) {
+        try {
+            Object res = em.createNativeQuery(
+                    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS " +
+                            "WHERE TABLE_NAME='products' AND COLUMN_NAME='active'")
+                    .getSingleResult();
+            long count = (res instanceof Number) ? ((Number) res).longValue() : Long.parseLong(res.toString());
+            if (count == 0) {
+                em.createNativeQuery(
+                        "ALTER TABLE products ADD active bit NOT NULL CONSTRAINT df_products_active DEFAULT (1)")
+                        .executeUpdate();
+            }
+        } catch (Exception e) {
+            // ignore failures (e.g. permissions) - schema will be validated later
+            System.err.println("ensureActiveColumn failed: " + e.getMessage());
         }
     }
 

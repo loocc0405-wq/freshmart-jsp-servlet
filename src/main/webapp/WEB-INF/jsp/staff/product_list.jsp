@@ -36,6 +36,13 @@
                value="${category}" placeholder="e.g. Rau, Thịt, Cá...">
       </div>
 
+      <div class="col-md-2">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="showInactive" id="showInactive"
+                 <c:if test="${showInactive}">checked</c:if> />
+          <label class="form-check-label" for="showInactive">Include inactive</label>
+        </div>
+      </div>
       <div class="col-md-2 d-grid">
         <button class="btn btn-outline-primary" type="submit">Search</button>
       </div>
@@ -55,6 +62,7 @@
             <th>Category</th>
             <th>Unit</th>
             <th class="text-end">Sell price</th>
+            <th>Status</th>
             <th>Image</th>
             <th>Description</th>
             <th class="text-end" style="width:180px;">Action</th>
@@ -80,6 +88,17 @@
 
             <td class="text-end">
               <fmt:formatNumber value="${p.sellPrice}" type="number" minFractionDigits="0" maxFractionDigits="0"/>
+            </td>
+
+            <td>
+              <c:choose>
+                <c:when test="${p.active}">
+                  <span class="badge bg-success">Active</span>
+                </c:when>
+                <c:otherwise>
+                  <span class="badge bg-secondary">Inactive</span>
+                </c:otherwise>
+              </c:choose>
             </td>
 
             <td>

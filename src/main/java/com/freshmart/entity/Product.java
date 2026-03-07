@@ -32,6 +32,10 @@ public class Product {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    // active flag allows marking product as inactive without deletion
+    @Column(nullable = false)
+    private boolean active = true;
+
     public Product() {}
 
     public Product(String name, BigDecimal sellPrice) {
@@ -90,5 +94,13 @@ public class Product {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

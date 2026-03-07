@@ -31,7 +31,7 @@ public class StaffImportLotServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         // Load products and suppliers for dropdown
-        var products = executor.execute(productRepo::findAll);
+        var products = executor.execute(em -> productRepo.findAll(em, false));
         var suppliers = executor.execute(supplierRepo::findAll);
 
         req.setAttribute("products", products);
