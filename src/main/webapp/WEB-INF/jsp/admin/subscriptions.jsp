@@ -323,12 +323,27 @@
                                                         </c:choose>
                                                     </td>
                                                     <td>
+                                                        <c:set var="uStatus" value="${statusMap[u.id]}" />
                                                         <c:choose>
-                                                            <c:when test="${u.proActive}">
-                                                                <span class="text-success fw-semibold">Active</span>
+                                                            <c:when
+                                                                test="${not empty uStatus && uStatus.status eq 'PRO_ACTIVE'}">
+                                                                <span class="badge text-bg-success">Active</span>
                                                             </c:when>
-                                                            <c:when test="${u.tier.toString() eq 'PRO'}">
-                                                                <span class="text-danger fw-semibold">Expired</span>
+                                                            <c:when
+                                                                test="${not empty uStatus && uStatus.status eq 'PRO_EXPIRING_SOON'}">
+                                                                <span class="badge text-bg-warning">Expiring Soon</span>
+                                                                <br /><small class="text-muted">còn
+                                                                    ${uStatus.daysRemaining} ngày</small>
+                                                            </c:when>
+                                                            <c:when
+                                                                test="${not empty uStatus && uStatus.status eq 'PRO_EXPIRED_IN_GRACE'}">
+                                                                <span class="badge text-bg-danger">In Grace</span>
+                                                                <br /><small class="text-muted">grace còn
+                                                                    ${uStatus.graceRemaining} ngày</small>
+                                                            </c:when>
+                                                            <c:when
+                                                                test="${not empty uStatus && uStatus.status eq 'PRO_EXPIRED'}">
+                                                                <span class="badge text-bg-dark">Expired</span>
                                                             </c:when>
                                                             <c:otherwise>
                                                                 <span class="text-muted">FREE</span>

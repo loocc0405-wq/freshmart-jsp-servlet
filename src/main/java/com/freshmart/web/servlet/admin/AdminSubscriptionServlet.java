@@ -1,13 +1,16 @@
 package com.freshmart.web.servlet.admin;
 
+import com.freshmart.entity.User;
 import com.freshmart.service.AppSettingService;
 import com.freshmart.service.SubscriptionService;
+import com.freshmart.service.dto.SubscriptionStatusDTO;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @WebServlet(urlPatterns = { "/admin/subscriptions" })
@@ -18,11 +21,19 @@ public class AdminSubscriptionServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setAttribute("users", subscriptionService.getCustomerUsers());
+        List<User> users = subscriptionService.getCustomerUsers();
+        req.setAttribute("users", users);
         req.setAttribute("payments", subscriptionService.getAllPayments());
         req.setAttribute("tierHistory", subscriptionService.getAllTierHistory());
         req.setAttribute("settings", appSettingService.getAllAsMap());
         req.setAttribute("planPrices", subscriptionService.getPlanPrices());
+
+        // Compute subscription status for each user
+        Map<Long, SubscriptionStatusDTO> statusMap = new LinkedHashMap<>();
+        for (User u : users) {
+            statusMap.put(u.getId(), subscriptionService.computeStatus(u));
+        }
+        req.setAttribute("statusMap", statusMap);
 
         HttpSession session = req.getSession();
         Object success = session.getAttribute("flashSuccess");
