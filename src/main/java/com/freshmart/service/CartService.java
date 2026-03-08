@@ -15,6 +15,7 @@ public class CartService {
     private final CartItemRepository cartItemRepo = new CartItemRepository();
     private final ProductRepository productRepo = new ProductRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
+    private final InventoryService inventoryService = new InventoryService();
 
     // =====================================================
     // HELPER: GET TOTAL STOCK
@@ -223,28 +224,8 @@ newItem.setCart(cart);
             List<CartItem> items = cartItemRepo.findByCartId(em, cart.getId());
 
             for (CartItem ci : items) {
-
-                int qtyNeed = ci.getQuantity();
-
-                List<ProductLot> lots = lotRepo.findAvailableLotsFEFO(
-                        em,
-                        ci.getProduct().getId(),
-                        LocalDate.now()
-                );
-
-                for (ProductLot lot : lots) {
-
-                    if (qtyNeed <= 0) break;
-
-                    int take = Math.min(qtyNeed, lot.getQtyLeft());
-                    lot.setQtyLeft(lot.getQtyLeft() - take);
-                    em.merge(lot);
-                    qtyNeed -= take;
-                }
-
-                if (qtyNeed > 0) {
-                    throw new RuntimeException("Not enough stock");
-                }
+                // Use centralized FEFO logic from InventoryService
+                inventoryService.consumeStockFEFO(em, ci.getProduct().getId(), ci.getQuantity(), LocalDate.now());
             }
 
             // Clear cart

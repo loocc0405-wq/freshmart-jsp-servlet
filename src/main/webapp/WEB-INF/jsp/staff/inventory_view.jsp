@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+
 <c:set var="pageTitle" value="Inventory View"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
@@ -14,8 +15,7 @@
                 <select class="form-select" name="productId">
                     <option value="">-- Tất cả sản phẩm --</option>
                     <c:forEach items="${products}" var="p">
-                        <option value="${p.id}"
-                            <c:if test="${filter != null && filter.productId != null && filter.productId == p.id}">selected</c:if>>
+                        <option value="${p.id}" ${filter != null && filter.productId != null && filter.productId == p.id ? 'selected="selected"' : ''}>
                             <c:out value="${p.name}"/> (ID: ${p.id})
                         </option>
                     </c:forEach>
@@ -27,8 +27,7 @@
                 <select class="form-select" name="supplierId">
                     <option value="">-- Tất cả nhà cung cấp --</option>
                     <c:forEach items="${suppliers}" var="s">
-                        <option value="${s.id}"
-                            <c:if test="${filter != null && filter.supplierId != null && filter.supplierId == s.id}">selected</c:if>>
+                        <option value="${s.id}" ${filter != null && filter.supplierId != null && filter.supplierId == s.id ? 'selected="selected"' : ''}>
                             <c:out value="${s.name}"/>
                         </option>
                     </c:forEach>
@@ -39,10 +38,10 @@
                 <label class="form-label">Trạng thái</label>
                 <select class="form-select" name="status">
                     <option value="">-- Tất cả --</option>
-                    <option value="AVAILABLE" ${filter != null && filter.status == 'AVAILABLE' ? 'selected' : ''}>Khả dụng</option>
-                    <option value="EXPIRING" ${filter != null && filter.status == 'EXPIRING' ? 'selected' : ''}>Sắp hết hạn</option>
-                    <option value="EXPIRED" ${filter != null && filter.status == 'EXPIRED' ? 'selected' : ''}>Hết hạn</option>
-                    <option value="CONSUMED" ${filter != null && filter.status == 'CONSUMED' ? 'selected' : ''}>Đã dùng hết</option>
+                    <option value="AVAILABLE" ${filter != null && filter.status == 'AVAILABLE' ? 'selected="selected"' : ''}>Khả dụng</option>
+                    <option value="EXPIRING" ${filter != null && filter.status == 'EXPIRING' ? 'selected="selected"' : ''}>Sắp hết hạn</option>
+                    <option value="EXPIRED" ${filter != null && filter.status == 'EXPIRED' ? 'selected="selected"' : ''}>Hết hạn</option>
+                    <option value="CONSUMED" ${filter != null && filter.status == 'CONSUMED' ? 'selected="selected"' : ''}>Đã dùng hết</option>
                 </select>
             </div>
 
@@ -92,7 +91,9 @@
 </div>
 
 <c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger"><c:out value="${errorMessage}"/></div>
+    <div class="alert alert-danger">
+        <c:out value="${errorMessage}"/>
+    </div>
 </c:if>
 
 <c:if test="${not empty filteredLots}">
@@ -118,15 +119,15 @@
                 </thead>
                 <tbody>
                 <c:forEach items="${filteredLots}" var="lot">
-                    <c:set var="status" value="AVAILABLE" />
+                    <c:set var="status" value="AVAILABLE"/>
                     <c:if test="${lot.expiryDate lt today}">
-                        <c:set var="status" value="EXPIRED" />
+                        <c:set var="status" value="EXPIRED"/>
                     </c:if>
                     <c:if test="${lot.qtyLeft == 0}">
-                        <c:set var="status" value="CONSUMED" />
+                        <c:set var="status" value="CONSUMED"/>
                     </c:if>
                     <c:if test="${lot.qtyLeft > 0 && lot.expiryDate ge today && (lot.expiryDate.toEpochDay() - today.toEpochDay()) <= 7}">
-                        <c:set var="status" value="EXPIRING" />
+                        <c:set var="status" value="EXPIRING"/>
                     </c:if>
 
                     <tr>
@@ -170,39 +171,49 @@
 </c:if>
 
 <c:if test="${selectedProduct != null}">
-    <!-- Summary -->
+    <c:if test="${stockSummary.expiredQty > 0}">
+        <div class="alert alert-warning mb-3">
+            <strong>⚠️ Cảnh báo:</strong>
+            Có <strong><c:out value="${stockSummary.expiredQty}"/></strong> đơn vị sản phẩm
+            <strong><c:out value="${selectedProduct.name}"/></strong> đã hết hạn còn tồn kho. Vui lòng xử lý.
+        </div>
+    </c:if>
+
     <div class="row mb-3">
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="text-muted">Tổng nhập</h6>
-                    <h3><c:out value="${summary.totalIn}"/></h3>
+                    <h3><c:out value="${stockSummary.totalIn}"/></h3>
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
-                    <h6 class="text-muted">Còn lại</h6>
-                    <h3 class="text-success"><c:out value="${summary.totalLeft}"/></h3>
+                    <h6 class="text-muted">Còn dùng được</h6>
+                    <h3 class="text-success"><c:out value="${stockSummary.availableQty}"/></h3>
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="text-muted">Đã dùng</h6>
-                    <h3 class="text-info"><c:out value="${summary.totalConsumed}"/></h3>
+                    <h3 class="text-info"><c:out value="${stockSummary.consumedQty}"/></h3>
                 </div>
             </div>
         </div>
+
         <div class="col-md-3">
             <div class="card text-center">
                 <div class="card-body">
                     <h6 class="text-muted">HSD gần nhất</h6>
                     <c:choose>
-                        <c:when test="${not empty availableLots}">
-                            <h5><c:out value="${availableLots[0].expiryDate}"/></h5>
+                        <c:when test="${stockSummary.nearestExpiry != null}">
+                            <h5><c:out value="${stockSummary.nearestExpiry}"/></h5>
                         </c:when>
                         <c:otherwise>
                             <h5 class="text-muted">-</h5>
@@ -213,7 +224,6 @@
         </div>
     </div>
 
-    <!-- Available Lots (FEFO) -->
     <div class="card mb-3">
         <div class="card-header">Lô còn dùng được (khả dụng - FEFO)</div>
         <div class="card-body">
@@ -239,15 +249,29 @@
                     <tbody>
                     <c:forEach items="${availableLots}" var="lot">
                         <c:set var="daysLeft" value="${lot.expiryDate.toEpochDay() - today.toEpochDay()}"/>
-                        <tr <c:if test="${daysLeft <= 3}">class="table-warning"</c:if>>
+                        <c:set var="rowClass" value=""/>
+                        <c:if test="${daysLeft <= 3}">
+                            <c:set var="rowClass" value="table-warning"/>
+                        </c:if>
+
+                        <tr class="${rowClass}">
                             <td><c:out value="${lot.id}"/></td>
                             <td><c:out value="${lot.importDate}"/></td>
                             <td><c:out value="${lot.expiryDate}"/></td>
                             <td>
                                 <c:choose>
-                                    <c:when test="${daysLeft <= 0}">Hết hạn (hôm nay)</c:when>
-                                    <c:when test="${daysLeft <= 3}"><span class="badge bg-warning"><c:out value="${daysLeft}"/> ngày</span></c:when>
-                                    <c:otherwise><c:out value="${daysLeft}"/> ngày</c:otherwise>
+                                    <c:when test="${daysLeft == 0}">
+                                        <span class="badge bg-danger">HSD hôm nay - bán ngay</span>
+                                    </c:when>
+                                    <c:when test="${daysLeft < 0}">
+                                        <span class="badge bg-danger">Đã hết hạn</span>
+                                    </c:when>
+                                    <c:when test="${daysLeft <= 3}">
+                                        <span class="badge bg-warning"><c:out value="${daysLeft}"/> ngày</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <c:out value="${daysLeft}"/> ngày
+                                    </c:otherwise>
                                 </c:choose>
                             </td>
                             <td><c:out value="${lot.qtyIn}"/></td>
@@ -257,7 +281,7 @@
                             <td>
                                 <a class="btn btn-sm btn-outline-primary"
                                    href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
-                                   Sửa
+                                    Sửa
                                 </a>
                             </td>
                         </tr>
@@ -268,7 +292,6 @@
         </div>
     </div>
 
-    <!-- Upcoming Expiry (7 days) -->
     <c:if test="${not empty upcomingExpiry}">
         <div class="card mb-3">
             <div class="card-header bg-warning">⚠️ Sắp hết hạn (trong 7 ngày tới)</div>
@@ -300,7 +323,6 @@
         </div>
     </c:if>
 
-    <!-- Expired Lots -->
     <c:if test="${not empty expiredLots}">
         <div class="card mb-3">
             <div class="card-header bg-danger text-white">Lô đã hết hạn (cần loại bỏ)</div>
@@ -323,8 +345,12 @@
                             <td><c:out value="${lot.qtyLeft}"/></td>
                             <td>
                                 <c:choose>
-                                    <c:when test="${lot.qtyLeft > 0}">Cần loại bỏ ngay</c:when>
-                                    <c:otherwise>Đã dùng hết</c:otherwise>
+                                    <c:when test="${lot.qtyLeft > 0}">
+                                        Cần loại bỏ ngay
+                                    </c:when>
+                                    <c:otherwise>
+                                        Đã dùng hết
+                                    </c:otherwise>
                                 </c:choose>
                             </td>
                             <td>
@@ -332,7 +358,9 @@
                                     <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
                                     <input type="hidden" name="lotId" value="${lot.id}"/>
                                     <input type="hidden" name="redirect" value="/staff/inventory?productId=${selectedProduct.id}"/>
-                                    <button class="btn btn-sm btn-danger" onclick="return confirm('Xác nhận loại bỏ lô này?');">Loại bỏ</button>
+                                    <button class="btn btn-sm btn-danger" onclick="return confirm('Xác nhận loại bỏ lô này?');">
+                                        Loại bỏ
+                                    </button>
                                 </form>
                             </td>
                         </tr>
@@ -343,7 +371,6 @@
         </div>
     </c:if>
 
-    <!-- All Lots History -->
     <div class="card">
         <div class="card-header">Toàn bộ lô (lịch sử)</div>
         <div class="card-body">
@@ -371,9 +398,17 @@
                         <c:set var="status" value="consumed"/>
                     </c:if>
 
-                    <tr <c:if test="${status == 'expired'}">class="table-danger"</c:if> <c:if test="${status == 'consumed'}">class="table-secondary"</c:if>>
+                    <c:set var="rowClass" value=""/>
+                    <c:if test="${status == 'expired'}">
+                        <c:set var="rowClass" value="table-danger"/>
+                    </c:if>
+                    <c:if test="${status == 'consumed'}">
+                        <c:set var="rowClass" value="table-secondary"/>
+                    </c:if>
+
+                    <tr class="${rowClass}">
                         <td><c:out value="${lot.id}"/></td>
-                        <td><c:out value="${lot.supplier.name}"/></td>
+                        <td><c:out value="${lot.supplier != null ? lot.supplier.name : '-'}"/></td>
                         <td><c:out value="${lot.importDate}"/></td>
                         <td><c:out value="${lot.expiryDate}"/></td>
                         <td><c:out value="${lot.qtyIn}"/></td>
@@ -381,15 +416,21 @@
                         <td><c:out value="${lot.importPrice}"/></td>
                         <td>
                             <c:choose>
-                                <c:when test="${status == 'expired'}"><span class="badge bg-danger">Hết hạn</span></c:when>
-                                <c:when test="${status == 'consumed'}"><span class="badge bg-secondary">Đã dùng hết</span></c:when>
-                                <c:otherwise><span class="badge bg-success">Khả dụng</span></c:otherwise>
+                                <c:when test="${status == 'expired'}">
+                                    <span class="badge bg-danger">Hết hạn</span>
+                                </c:when>
+                                <c:when test="${status == 'consumed'}">
+                                    <span class="badge bg-secondary">Đã dùng hết</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="badge bg-success">Khả dụng</span>
+                                </c:otherwise>
                             </c:choose>
                         </td>
                         <td>
                             <a class="btn btn-sm btn-outline-primary"
                                href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
-                               Sửa
+                                Sửa
                             </a>
                         </td>
                     </tr>
@@ -398,11 +439,12 @@
             </table>
         </div>
     </div>
-
 </c:if>
 
 <c:if test="${selectedProduct == null}">
-    <div class="alert alert-info">Vui lòng chọn một sản phẩm để xem chi tiết tồn kho.</div>
+    <div class="alert alert-info">
+        Vui lòng chọn một sản phẩm để xem chi tiết tồn kho.
+    </div>
 </c:if>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

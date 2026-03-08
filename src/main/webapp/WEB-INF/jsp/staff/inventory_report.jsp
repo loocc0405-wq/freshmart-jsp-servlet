@@ -173,11 +173,12 @@
                     <tr>
                         <th>Sản phẩm</th>
                         <th>Tổng nhập</th>
-                        <th>Còn lại</th>
+                        <th>Còn dùng được</th>
+                        <th>Hết hạn còn tồn</th>
                         <th>Đã dùng</th>
-                        <th>Số lô</th>
+                        <th>Số lô khả dụng</th>
                         <th>HSD gần nhất</th>
-                        <th>Giá trị tồn kho</th>
+                        <th>Giá trị dùng được</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -185,11 +186,12 @@
                         <tr>
                             <td><c:out value="${o.productName}"/></td>
                             <td><c:out value="${o.totalQtyIn}"/></td>
-                            <td><c:out value="${o.totalQtyLeft}"/></td>
+                            <td><c:out value="${o.availableQty}"/></td>
+                            <td><c:out value="${o.expiredQty}"/></td>
                             <td><c:out value="${o.totalQtyConsumed}"/></td>
-                            <td><span class="badge bg-secondary"><c:out value="${o.lotsCount}"/></span></td>
+                            <td><span class="badge bg-secondary"><c:out value="${o.activeLotsCount}"/></span></td>
                             <td><c:out value="${o.nearestExpiry}"/></td>
-                            <td><c:out value="${o.totalValue}"/></td>
+                            <td><c:out value="${o.availableValue}"/></td>
                         </tr>
                     </c:forEach>
                     </tbody>
@@ -201,7 +203,7 @@
     <!-- Low Stock -->
     <div id="low-stock" class="tab-pane fade">
         <div class="card">
-            <div class="card-header">Sản phẩm có số lượng tồn kho dưới ${lowStockThreshold} đơn vị</div>
+            <div class="card-header">Sản phẩm có số lượng tồn kho dưới ${lowStockThreshold} đơn vị (khả dụng)</div>
             <div class="card-body">
                 <c:if test="${empty lowStockProducts}">
                     <div class="text-muted">Không có sản phẩm với tồn kho thấp.</div>
@@ -211,7 +213,7 @@
                         <thead>
                         <tr>
                             <th>Sản phẩm</th>
-                            <th>Số lượng còn lại</th>
+                            <th>Số lượng còn dùng được</th>
                             <th>Hành động</th>
                         </tr>
                         </thead>
@@ -219,7 +221,7 @@
                         <c:forEach items="${lowStockProducts}" var="o">
                             <tr>
                                 <td><c:out value="${o.productName}"/></td>
-                                <td><c:out value="${o.totalQtyLeft}"/></td>
+                                <td><c:out value="${o.availableQty}"/></td>
                                 <td><a class="btn btn-sm btn-primary" href="${pageContext.request.contextPath}/staff/import-lot">Nhập thêm</a></td>
                             </tr>
                         </c:forEach>
@@ -233,7 +235,7 @@
     <!-- Upcoming Expiry -->
     <div id="upcoming-expiry" class="tab-pane fade">
         <div class="card">
-            <div class="card-header bg-warning">Sản phẩm sắp hết hạn (${upcomingExpiryDays} ngày tới)</div>
+            <div class="card-header bg-warning">Sắp hết hạn (${upcomingExpiryDays} ngày tới)</div>
             <div class="card-body">
                 <c:if test="${empty upcomingExpiryProducts}">
                     <div class="text-muted">Không có sản phẩm sắp hết hạn.</div>
@@ -244,7 +246,7 @@
                         <tr>
                             <th>Sản phẩm</th>
                             <th>HSD gần nhất</th>
-                            <th>Số lượng</th>
+                            <th>Số lượng còn dùng được</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -252,7 +254,7 @@
                             <tr>
                                 <td><c:out value="${o.productName}"/></td>
                                 <td><c:out value="${o.nearestExpiry}"/></td>
-                                <td><c:out value="${o.totalQtyLeft}"/></td>
+                                <td><c:out value="${o.availableQty}"/></td>
                             </tr>
                         </c:forEach>
                         </tbody>

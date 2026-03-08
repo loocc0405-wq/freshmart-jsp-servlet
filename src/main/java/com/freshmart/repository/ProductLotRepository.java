@@ -190,7 +190,7 @@ public class ProductLotRepository {
         } else if ("EXPIRING".equalsIgnoreCase(filter.getStatus())) {
             jpql.append("AND l.qtyLeft > 0 AND l.expiryDate >= :today AND l.expiryDate <= :expiringDeadline ");
         } else if ("EXPIRED".equalsIgnoreCase(filter.getStatus())) {
-            jpql.append("AND l.expiryDate < :today ");
+            jpql.append("AND l.qtyLeft > 0 AND l.expiryDate < :today ");
         } else if ("CONSUMED".equalsIgnoreCase(filter.getStatus())) {
             jpql.append("AND l.qtyLeft = 0 ");
         }
@@ -292,7 +292,7 @@ public class ProductLotRepository {
         } else if ("EXPIRING".equalsIgnoreCase(filter.getStatus())) {
             jpql.append("AND l.qtyLeft > 0 AND l.expiryDate >= :today AND l.expiryDate <= :expiringDeadline ");
         } else if ("EXPIRED".equalsIgnoreCase(filter.getStatus())) {
-            jpql.append("AND l.expiryDate < :today ");
+            jpql.append("AND l.qtyLeft > 0 AND l.expiryDate < :today ");
         } else if ("CONSUMED".equalsIgnoreCase(filter.getStatus())) {
             jpql.append("AND l.qtyLeft = 0 ");
         }
