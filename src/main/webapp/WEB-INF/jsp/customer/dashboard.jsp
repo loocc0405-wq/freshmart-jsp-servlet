@@ -11,15 +11,76 @@
         .container { max-width: 1100px; margin: 30px auto; }
         h1 { margin-bottom: 20px; }
         .msg-error { color: #c62828; margin-bottom: 12px; }
-        .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-        .card { background: #fff; padding: 18px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-        .card h3 { margin: 0 0 10px; font-size: 16px; color: #555; }
-        .card .value { font-size: 28px; font-weight: bold; color: #222; }
-        .panel { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { padding: 12px; border-bottom: 1px solid #e5e5e5; text-align: left; }
-        th { background: #f2f4f7; }
-        a.btn { text-decoration: none; background: #1565c0; color: #fff; padding: 6px 10px; border-radius: 6px; }
+        .msg-warning {
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            color: #7a5d00;
+            padding: 12px 14px;
+            border-radius: 8px;
+            margin-bottom: 18px;
+        }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #fff;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+        }
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+            color: #555;
+        }
+        .card .value {
+            font-size: 26px;
+            font-weight: bold;
+            color: #222;
+        }
+        .card .sub {
+            margin-top: 8px;
+            color: #666;
+            font-size: 13px;
+        }
+        .panel {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.08);
+            margin-bottom: 24px;
+        }
+        .panel h2 {
+            margin-top: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e5e5;
+            text-align: left;
+        }
+        th {
+            background: #f2f4f7;
+        }
+        a.btn {
+            text-decoration: none;
+            background: #1565c0;
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+        .empty {
+            text-align: center;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -32,26 +93,83 @@
         <div class="msg-error">${errorMessage}</div>
     </c:if>
 
+    <c:if test="${not empty summary && summary.overSpendingThreshold}">
+        <div class="msg-warning">
+            Spending in the last 30 days has reached
+            <strong>
+                <fmt:formatNumber value="${summary.spentLast30Days}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+            </strong>,
+            exceeding the alert threshold of
+            <strong>
+                <fmt:formatNumber value="${summary.spendingAlertThreshold}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+            </strong>.
+        </div>
+    </c:if>
+
     <c:if test="${not empty summary}">
         <div class="cards">
             <div class="card">
                 <h3>Total Orders</h3>
                 <div class="value">${summary.totalOrders}</div>
+                <div class="sub">All orders placed</div>
             </div>
+
             <div class="card">
                 <h3>Pending Orders</h3>
                 <div class="value">${summary.pendingOrders}</div>
+                <div class="sub">Orders waiting to complete</div>
             </div>
+
             <div class="card">
                 <h3>Completed Orders</h3>
                 <div class="value">${summary.completedOrders}</div>
+                <div class="sub">Successfully completed orders</div>
             </div>
+
             <div class="card">
                 <h3>Total Spent</h3>
                 <div class="value">
                     <fmt:formatNumber value="${summary.totalSpent}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
                 </div>
+                <div class="sub">Lifetime completed spending</div>
             </div>
+
+            <div class="card">
+                <h3>Spent Last 30 Days</h3>
+                <div class="value">
+                    <fmt:formatNumber value="${summary.spentLast30Days}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+                </div>
+                <div class="sub">Recent spending activity</div>
+            </div>
+
+            <div class="card">
+                <h3>Average Completed Order</h3>
+                <div class="value">
+                    <fmt:formatNumber value="${summary.averageCompletedOrderAmount}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+                </div>
+                <div class="sub">Average value of completed orders</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Latest Completed Order Insight</h2>
+            <c:choose>
+                <c:when test="${summary.latestCompletedAt != null}">
+                    <p>
+                        Latest completed order amount:
+                        <strong>
+                            <fmt:formatNumber value="${summary.latestCompletedOrderAmount}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+                        </strong>
+                    </p>
+                    <p>
+                        Completed at:
+                        <strong>${summary.latestCompletedAt}</strong>
+                    </p>
+                </c:when>
+                <c:otherwise>
+                    <p>No completed order yet.</p>
+                </c:otherwise>
+            </c:choose>
         </div>
     </c:if>
 
@@ -74,7 +192,9 @@
                         <tr>
                             <td>${o.orderCode}</td>
                             <td>${o.status}</td>
-                            <td><fmt:formatNumber value="${o.totalAmount}" type="number" minFractionDigits="0" maxFractionDigits="2"/></td>
+                            <td>
+                                <fmt:formatNumber value="${o.totalAmount}" type="number" minFractionDigits="0" maxFractionDigits="2"/>
+                            </td>
                             <td>${o.createdAt}</td>
                             <td>
                                 <a class="btn" href="${pageContext.request.contextPath}/customer/order-detail?id=${o.id}">View</a>
@@ -84,7 +204,7 @@
                 </c:when>
                 <c:otherwise>
                     <tr>
-                        <td colspan="5">No recent orders.</td>
+                        <td class="empty" colspan="5">No recent orders.</td>
                     </tr>
                 </c:otherwise>
             </c:choose>
