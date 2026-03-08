@@ -260,11 +260,25 @@ public class SupplierManagementServlet extends HttpServlet {
 
         final int pageSize = 10; // may adjust later or make configurable
 
+        // --- statistics for header cards (always global, not affected by filters) ---
+        long totalSuppliers = supplierService.totalSuppliers();
+        long withCert = supplierService.countWithCertificate();
+        long withoutCert = supplierService.countWithoutCertificate();
+        double avgLead = supplierService.averageLeadTime();
+        java.util.List<SupplierService.SupplierProductCount> topSuppliers =
+                supplierService.topSuppliersByProductCount(5);
+
+        // search result + paging
         List<Supplier> suppliers = supplierService.search(q, certificate, fromDate, toDate, page, pageSize);
         long total = supplierService.count(q, certificate, fromDate, toDate);
         int totalPages = (int) ((total + pageSize - 1) / pageSize);
 
         request.setAttribute("suppliers", suppliers);
+        request.setAttribute("statsTotal", totalSuppliers);
+        request.setAttribute("statsWithCert", withCert);
+        request.setAttribute("statsWithoutCert", withoutCert);
+        request.setAttribute("statsAvgLead", avgLead);
+        request.setAttribute("topSuppliers", topSuppliers);
         request.setAttribute("search", q);
         request.setAttribute("certificateFilter", certificate);
         request.setAttribute("fromDate", fromDateStr);
