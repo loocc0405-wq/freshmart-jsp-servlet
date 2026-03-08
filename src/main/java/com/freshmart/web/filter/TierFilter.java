@@ -4,6 +4,7 @@ import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.enums.Role;
 import com.freshmart.service.SubscriptionService;
+import com.freshmart.service.dto.SubscriptionStatusDTO;
 import com.freshmart.util.WebUtil;
 
 import jakarta.servlet.*;
@@ -35,8 +36,14 @@ public class TierFilter implements Filter {
 
             boolean ok = fresh.isProActive(LocalDate.now());
             if (!ok) {
-                response.sendRedirect(WebUtil.contextPath(request)
-                        + "/subscription/upgrade?expired=1");
+                // Compute status to check if user is still within grace period
+                SubscriptionStatusDTO status = subscriptionService.computeStatus(fresh);
+                String redirect = WebUtil.contextPath(request)
+                        + "/subscription/upgrade?expired=1";
+                if (status.isExpiredInGrace()) {
+                    redirect += "&grace=1";
+                }
+                response.sendRedirect(redirect);
                 return;
             }
         }

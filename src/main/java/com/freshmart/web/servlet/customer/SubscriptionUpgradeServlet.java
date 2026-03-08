@@ -4,6 +4,7 @@ import com.freshmart.config.AppConstants;
 import com.freshmart.entity.SubscriptionPayment;
 import com.freshmart.entity.User;
 import com.freshmart.service.SubscriptionService;
+import com.freshmart.service.dto.SubscriptionStatusDTO;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -23,6 +24,10 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
             req.getSession().setAttribute(AppConstants.SESSION_USER, fresh);
             req.setAttribute("paymentHistory", subscriptionService.getPaymentsByUser(fresh.getId()));
             req.setAttribute("tierHistory", subscriptionService.getTierHistoryByUser(fresh.getId()));
+
+            // Compute subscription status for JSP banners
+            SubscriptionStatusDTO subStatus = subscriptionService.computeStatus(fresh);
+            req.setAttribute("subStatus", subStatus);
         }
 
         req.setAttribute("planPrices", subscriptionService.getPlanPrices());
@@ -59,6 +64,11 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
             req.setAttribute("paymentHistory", subscriptionService.getPaymentsByUser(u.getId()));
             req.setAttribute("tierHistory", subscriptionService.getTierHistoryByUser(u.getId()));
             req.setAttribute("errorMessage", ex.getMessage());
+
+            // Also provide status on error path
+            SubscriptionStatusDTO subStatus = subscriptionService.computeStatus(u);
+            req.setAttribute("subStatus", subStatus);
+
             req.getRequestDispatcher("/WEB-INF/jsp/common/upgrade.jsp").forward(req, resp);
         }
     }
