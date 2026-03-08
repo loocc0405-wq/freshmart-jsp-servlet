@@ -4,11 +4,13 @@ import com.freshmart.entity.Product;
 import com.freshmart.entity.ProductLot;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.repository.ProductLotRepository;
+import com.freshmart.service.dto.InventoryLotFilter;
 import com.freshmart.util.JpaExecutor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +60,70 @@ public class InventoryReportService {
         public int getExpiredLotsCount() { return expiredLotsCount; }
         public LocalDate getNearestExpiry() { return nearestExpiry; }
         public BigDecimal getTotalValue() { return totalValue; }
+    }
+
+    /**
+     * DTO for inventory report snapshot with all metrics.
+     */
+    public static class InventoryReportSnapshot {
+        private final List<ProductInventoryOverview> allProductsOverview;
+        private final List<ProductInventoryOverview> lowStockProducts;
+        private final List<ProductInventoryOverview> upcomingExpiryProducts;
+        private final List<ProductLot> expiredLots;
+        private final BigDecimal totalInventoryValue;
+        private final Long totalActiveLots;
+        private final int upcomingExpiryCount;
+        private final int expiredLotsCount;
+
+        public InventoryReportSnapshot(List<ProductInventoryOverview> allProductsOverview,
+                                       List<ProductInventoryOverview> lowStockProducts,
+                                       List<ProductInventoryOverview> upcomingExpiryProducts,
+                                       List<ProductLot> expiredLots,
+                                       BigDecimal totalInventoryValue,
+                                       Long totalActiveLots,
+                                       int upcomingExpiryCount,
+                                       int expiredLotsCount) {
+            this.allProductsOverview = allProductsOverview;
+            this.lowStockProducts = lowStockProducts;
+            this.upcomingExpiryProducts = upcomingExpiryProducts;
+            this.expiredLots = expiredLots;
+            this.totalInventoryValue = totalInventoryValue;
+            this.totalActiveLots = totalActiveLots;
+            this.upcomingExpiryCount = upcomingExpiryCount;
+            this.expiredLotsCount = expiredLotsCount;
+        }
+
+        public List<ProductInventoryOverview> getAllProductsOverview() {
+            return allProductsOverview;
+        }
+
+        public List<ProductInventoryOverview> getLowStockProducts() {
+            return lowStockProducts;
+        }
+
+        public List<ProductInventoryOverview> getUpcomingExpiryProducts() {
+            return upcomingExpiryProducts;
+        }
+
+        public List<ProductLot> getExpiredLots() {
+            return expiredLots;
+        }
+
+        public BigDecimal getTotalInventoryValue() {
+            return totalInventoryValue;
+        }
+
+        public Long getTotalActiveLots() {
+            return totalActiveLots;
+        }
+
+        public int getUpcomingExpiryCount() {
+            return upcomingExpiryCount;
+        }
+
+        public int getExpiredLotsCount() {
+            return expiredLotsCount;
+        }
     }
 
     /**
@@ -187,5 +253,162 @@ public class InventoryReportService {
                 "WHERE l.expiryDate < CURRENT_DATE ORDER BY l.expiryDate ASC",
                 ProductLot.class
         ).getResultList());
+    }
+
+    /**
+     * Check if filter has no active conditions.
+     */
+    private boolean isEmptyFilter(InventoryLotFilter filter) {
+        return filter == null
+                || (filter.getProductId() == null
+                && filter.getSupplierId() == null
+                && (filter.getStatus() == null || filter.getStatus().isBlank())
+                && filter.getImportFrom() == null
+                && filter.getImportTo() == null
+                && filter.getExpiryFrom() == null
+                && filter.getExpiryTo() == null
+                && filter.getMinQtyLeft() == null
+                && filter.getMaxQtyLeft() == null);
+    }
+
+    /**
+     * Build overview for a product based on its lots.
+     */
+    private ProductInventoryOverview toOverview(Product product, List<ProductLot> lots, LocalDate today) {
+        int totalIn = lots.stream().mapToInt(ProductLot::getQtyIn).sum();
+
+        int totalRemainingAnyStatus = lots.stream()
+                .mapToInt(ProductLot::getQtyLeft)
+                .sum();
+
+        int availableQty = lots.stream()
+                .filter(l -> l.getQtyLeft() > 0)
+                .filter(l -> !l.getExpiryDate().isBefore(today))
+                .mapToInt(ProductLot::getQtyLeft)
+                .sum();
+
+        int expiredLotsCount = (int) lots.stream()
+                .filter(l -> l.getExpiryDate().isBefore(today))
+                .count();
+
+        LocalDate nearestExpiry = lots.stream()
+                .filter(l -> l.getQtyLeft() > 0)
+                .filter(l -> !l.getExpiryDate().isBefore(today))
+                .map(ProductLot::getExpiryDate)
+                .min(LocalDate::compareTo)
+                .orElse(null);
+
+        BigDecimal totalValue = lots.stream()
+                .filter(l -> l.getQtyLeft() > 0)
+                .filter(l -> !l.getExpiryDate().isBefore(today))
+                .map(l -> {
+                    BigDecimal price = l.getImportPrice() == null ? BigDecimal.ZERO : l.getImportPrice();
+                    return price.multiply(BigDecimal.valueOf(l.getQtyLeft()));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        ProductInventoryOverview overview = new ProductInventoryOverview(
+                product.getId(),
+                product.getName(),
+                totalIn,
+                availableQty,
+                lots.size(),
+                expiredLotsCount,
+                nearestExpiry,
+                totalValue
+        );
+
+        overview.totalQtyConsumed = totalIn - totalRemainingAnyStatus;
+        return overview;
+    }
+
+    /**
+     * Build report snapshot with all metrics based on filter conditions.
+     */
+    public InventoryReportSnapshot buildReportSnapshot(InventoryLotFilter filter,
+                                                       int lowStockThreshold,
+                                                       int upcomingExpiryDays) {
+        return executor.execute(em -> {
+            LocalDate today = LocalDate.now();
+            List<ProductLot> filteredLots = lotRepo.searchLots(em, filter, today);
+
+            Map<Long, List<ProductLot>> lotsByProductId = filteredLots.stream()
+                    .collect(Collectors.groupingBy(l -> l.getProduct().getId()));
+
+            List<ProductInventoryOverview> allProductsOverview = new ArrayList<>();
+
+            if (isEmptyFilter(filter)) {
+                List<Product> allProducts = productRepo.findAll(em, false);
+
+                for (Product p : allProducts) {
+                    List<ProductLot> productLots = lotsByProductId.getOrDefault(p.getId(), Collections.emptyList());
+                    allProductsOverview.add(toOverview(p, productLots, today));
+                }
+            } else {
+                List<Product> filteredProducts = filteredLots.stream()
+                        .map(ProductLot::getProduct)
+                        .collect(Collectors.toMap(Product::getId, Function.identity(), (a, b) -> a))
+                        .values()
+                        .stream()
+                        .sorted(Comparator.comparing(Product::getId))
+                        .collect(Collectors.toList());
+
+                for (Product p : filteredProducts) {
+                    List<ProductLot> productLots = lotsByProductId.getOrDefault(p.getId(), Collections.emptyList());
+                    allProductsOverview.add(toOverview(p, productLots, today));
+                }
+            }
+
+            List<ProductInventoryOverview> lowStockProducts = allProductsOverview.stream()
+                    .filter(o -> o.getTotalQtyLeft() < lowStockThreshold)
+                    .collect(Collectors.toList());
+
+            LocalDate expiryDeadline = today.plusDays(upcomingExpiryDays);
+
+            List<ProductInventoryOverview> upcomingExpiryProducts = allProductsOverview.stream()
+                    .filter(o -> o.getNearestExpiry() != null)
+                    .filter(o -> !o.getNearestExpiry().isBefore(today))
+                    .filter(o -> !o.getNearestExpiry().isAfter(expiryDeadline))
+                    .collect(Collectors.toList());
+
+            List<ProductLot> expiredLots = filteredLots.stream()
+                    .filter(l -> l.getExpiryDate().isBefore(today))
+                    .sorted(Comparator.comparing(ProductLot::getExpiryDate)
+                            .thenComparing(ProductLot::getId))
+                    .collect(Collectors.toList());
+
+            BigDecimal totalInventoryValue = filteredLots.stream()
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .filter(l -> !l.getExpiryDate().isBefore(today))
+                    .map(l -> {
+                        BigDecimal price = l.getImportPrice() == null ? BigDecimal.ZERO : l.getImportPrice();
+                        return price.multiply(BigDecimal.valueOf(l.getQtyLeft()));
+                    })
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            long totalActiveLots = filteredLots.stream()
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .filter(l -> !l.getExpiryDate().isBefore(today))
+                    .count();
+
+            int upcomingExpiryCount = (int) filteredLots.stream()
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .filter(l -> !l.getExpiryDate().isBefore(today))
+                    .filter(l -> !l.getExpiryDate().isAfter(expiryDeadline))
+                    .count();
+
+            int expiredLotsCount = (int) expiredLots.stream().count();
+
+            return new InventoryReportSnapshot(
+                    allProductsOverview,
+                    lowStockProducts,
+                    upcomingExpiryProducts,
+                    expiredLots,
+                    totalInventoryValue,
+                    totalActiveLots,
+                    upcomingExpiryCount,
+                    expiredLotsCount
+            );
+        });
     }
 }

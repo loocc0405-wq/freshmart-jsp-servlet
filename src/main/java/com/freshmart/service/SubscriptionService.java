@@ -8,12 +8,14 @@ import com.freshmart.enums.Tier;
 import com.freshmart.repository.SubscriptionPaymentRepository;
 import com.freshmart.repository.TierHistoryRepository;
 import com.freshmart.repository.UserRepository;
+import com.freshmart.service.dto.SubscriptionStatusDTO;
 import com.freshmart.util.JpaExecutor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -223,6 +225,62 @@ public class SubscriptionService {
 
     public List<TierHistory> getTierHistoryByUser(Long userId) {
         return executor.execute(em -> tierHistoryRepo.findByUserId(em, userId));
+    }
+
+    // ==================== Subscription Status ====================
+
+    private final AppSettingService appSettingService = new AppSettingService();
+
+    /**
+     * Compute subscription status for display/UX purposes.
+     * Works with both PRO users (active or expired but not yet normalized)
+     * AND FREE users who were recently downgraded (expiredDate still set).
+     */
+    public SubscriptionStatusDTO computeStatus(User user) {
+        int notifyDays = appSettingService.getSubNotifyDays();
+        int graceDays = appSettingService.getSubGracePeriodDays();
+        LocalDate today = LocalDate.now();
+
+        // Case 1: User is FREE and has no expiredDate → plain FREE
+        if (user.getTier() != Tier.PRO && user.getExpiredDate() == null) {
+            return new SubscriptionStatusDTO(SubscriptionStatusDTO.FREE, 0, 0, 0, notifyDays, graceDays);
+        }
+
+        LocalDate expDate = user.getExpiredDate();
+
+        // Case 2: User tier is still PRO
+        if (user.getTier() == Tier.PRO && expDate != null && !expDate.isBefore(today)) {
+            // PRO is active
+            long remaining = ChronoUnit.DAYS.between(today, expDate);
+            if (remaining <= notifyDays) {
+                return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRING_SOON,
+                        remaining, 0, 0, notifyDays, graceDays);
+            }
+            return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_ACTIVE,
+                    remaining, 0, 0, notifyDays, graceDays);
+        }
+
+        // Case 3: Expired — either tier is still PRO with past date, or tier was
+        // normalized to FREE
+        // but expiredDate is still present (recent downgrade)
+        if (expDate != null) {
+            long daysExpired = ChronoUnit.DAYS.between(expDate, today);
+            if (daysExpired <= 0) {
+                // Edge case: expDate == today, treat as expiring (last day)
+                return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRING_SOON,
+                        0, 0, graceDays, notifyDays, graceDays);
+            }
+            long graceRemaining = graceDays - daysExpired;
+            if (graceRemaining > 0) {
+                return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRED_IN_GRACE,
+                        0, daysExpired, graceRemaining, notifyDays, graceDays);
+            }
+            return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRED,
+                    0, daysExpired, 0, notifyDays, graceDays);
+        }
+
+        // Fallback: FREE
+        return new SubscriptionStatusDTO(SubscriptionStatusDTO.FREE, 0, 0, 0, notifyDays, graceDays);
     }
 
     // ==================== Internal helpers ====================

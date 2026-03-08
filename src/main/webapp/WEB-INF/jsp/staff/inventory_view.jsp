@@ -6,23 +6,167 @@
 <h3>Xem Tồn Kho (Inventory by Lot)</h3>
 
 <div class="row mb-3">
-    <div class="col-lg-8">
-        <form method="get" action="${pageContext.request.contextPath}/staff/inventory" class="d-flex gap-2">
-            <select class="form-select" name="productId" onchange="this.form.submit()">
-                <option value="">-- Chọn sản phẩm --</option>
-                <c:forEach items="${products}" var="p">
-                    <option value="${p.id}" <c:if test="${selectedProduct != null && selectedProduct.id == p.id}">selected</c:if>>
-                        <c:out value="${p.name}"/> (ID: ${p.id})
-                    </option>
-                </c:forEach>
-            </select>
-            <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/staff/import-lot">+ Nhập lô</a>
+    <div class="col-12">
+        <form method="get" action="${pageContext.request.contextPath}/staff/inventory" class="row g-2">
+
+            <div class="col-md-3">
+                <label class="form-label">Sản phẩm</label>
+                <select class="form-select" name="productId">
+                    <option value="">-- Tất cả sản phẩm --</option>
+                    <c:forEach items="${products}" var="p">
+                        <option value="${p.id}"
+                            <c:if test="${filter != null && filter.productId != null && filter.productId == p.id}">selected</c:if>>
+                            <c:out value="${p.name}"/> (ID: ${p.id})
+                        </option>
+                    </c:forEach>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Nhà cung cấp</label>
+                <select class="form-select" name="supplierId">
+                    <option value="">-- Tất cả nhà cung cấp --</option>
+                    <c:forEach items="${suppliers}" var="s">
+                        <option value="${s.id}"
+                            <c:if test="${filter != null && filter.supplierId != null && filter.supplierId == s.id}">selected</c:if>>
+                            <c:out value="${s.name}"/>
+                        </option>
+                    </c:forEach>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Trạng thái</label>
+                <select class="form-select" name="status">
+                    <option value="">-- Tất cả --</option>
+                    <option value="AVAILABLE" ${filter != null && filter.status == 'AVAILABLE' ? 'selected' : ''}>Khả dụng</option>
+                    <option value="EXPIRING" ${filter != null && filter.status == 'EXPIRING' ? 'selected' : ''}>Sắp hết hạn</option>
+                    <option value="EXPIRED" ${filter != null && filter.status == 'EXPIRED' ? 'selected' : ''}>Hết hạn</option>
+                    <option value="CONSUMED" ${filter != null && filter.status == 'CONSUMED' ? 'selected' : ''}>Đã dùng hết</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Tồn từ</label>
+                <input type="number" class="form-control" name="minQtyLeft"
+                       value="${filter != null ? filter.minQtyLeft : ''}" min="0">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Tồn đến</label>
+                <input type="number" class="form-control" name="maxQtyLeft"
+                       value="${filter != null ? filter.maxQtyLeft : ''}" min="0">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Ngày nhập từ</label>
+                <input type="date" class="form-control" name="importFrom"
+                       value="${filter != null ? filter.importFrom : ''}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Ngày nhập đến</label>
+                <input type="date" class="form-control" name="importTo"
+                       value="${filter != null ? filter.importTo : ''}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">HSD từ</label>
+                <input type="date" class="form-control" name="expiryFrom"
+                       value="${filter != null ? filter.expiryFrom : ''}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">HSD đến</label>
+                <input type="date" class="form-control" name="expiryTo"
+                       value="${filter != null ? filter.expiryTo : ''}">
+            </div>
+
+            <div class="col-md-12 d-flex align-items-end gap-2">
+                <button class="btn btn-primary" type="submit">Lọc dữ liệu</button>
+                <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/inventory">Reset</a>
+                <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/staff/import-lot">+ Nhập lô</a>
+            </div>
         </form>
     </div>
 </div>
 
 <c:if test="${not empty errorMessage}">
     <div class="alert alert-danger"><c:out value="${errorMessage}"/></div>
+</c:if>
+
+<c:if test="${not empty filteredLots}">
+    <div class="card mb-3">
+        <div class="card-header">
+            Kết quả lọc lô hàng (${filteredCount} lô)
+        </div>
+        <div class="card-body">
+            <table class="table table-sm table-bordered align-middle">
+                <thead>
+                <tr>
+                    <th>Lô ID</th>
+                    <th>Sản phẩm</th>
+                    <th>Nhà cung cấp</th>
+                    <th>Ngày nhập</th>
+                    <th>HSD</th>
+                    <th>Nhập</th>
+                    <th>Còn lại</th>
+                    <th>Đã dùng</th>
+                    <th>Giá nhập</th>
+                    <th>Trạng thái</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach items="${filteredLots}" var="lot">
+                    <c:set var="status" value="AVAILABLE" />
+                    <c:if test="${lot.expiryDate lt today}">
+                        <c:set var="status" value="EXPIRED" />
+                    </c:if>
+                    <c:if test="${lot.qtyLeft == 0}">
+                        <c:set var="status" value="CONSUMED" />
+                    </c:if>
+                    <c:if test="${lot.qtyLeft > 0 && lot.expiryDate ge today && (lot.expiryDate.toEpochDay() - today.toEpochDay()) <= 7}">
+                        <c:set var="status" value="EXPIRING" />
+                    </c:if>
+
+                    <tr>
+                        <td><c:out value="${lot.id}"/></td>
+                        <td><c:out value="${lot.product.name}"/></td>
+                        <td><c:out value="${lot.supplier != null ? lot.supplier.name : '-'}"/></td>
+                        <td><c:out value="${lot.importDate}"/></td>
+                        <td><c:out value="${lot.expiryDate}"/></td>
+                        <td><c:out value="${lot.qtyIn}"/></td>
+                        <td><strong><c:out value="${lot.qtyLeft}"/></strong></td>
+                        <td><c:out value="${lot.qtyIn - lot.qtyLeft}"/></td>
+                        <td><c:out value="${lot.importPrice}"/></td>
+                        <td>
+                            <c:choose>
+                                <c:when test="${status == 'EXPIRED'}">
+                                    <span class="badge bg-danger">Hết hạn</span>
+                                </c:when>
+                                <c:when test="${status == 'CONSUMED'}">
+                                    <span class="badge bg-secondary">Đã dùng hết</span>
+                                </c:when>
+                                <c:when test="${status == 'EXPIRING'}">
+                                    <span class="badge bg-warning text-dark">Sắp hết hạn</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="badge bg-success">Khả dụng</span>
+                                </c:otherwise>
+                            </c:choose>
+                        </td>
+                    </tr>
+                </c:forEach>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</c:if>
+
+<c:if test="${filteredLots != null && empty filteredLots}">
+    <div class="alert alert-warning">
+        Không tìm thấy lô nào khớp với điều kiện lọc.
+    </div>
 </c:if>
 
 <c:if test="${selectedProduct != null}">
@@ -89,6 +233,7 @@
                         <th>Còn lại</th>
                         <th>Đã dùng</th>
                         <th>Giá nhập</th>
+                        <th>Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -109,6 +254,12 @@
                             <td><strong><c:out value="${lot.qtyLeft}"/></strong></td>
                             <td><c:out value="${lot.qtyIn - lot.qtyLeft}"/></td>
                             <td><c:out value="${lot.importPrice}"/></td>
+                            <td>
+                                <a class="btn btn-sm btn-outline-primary"
+                                   href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
+                                   Sửa
+                                </a>
+                            </td>
                         </tr>
                     </c:forEach>
                     </tbody>
@@ -207,6 +358,7 @@
                     <th>Còn</th>
                     <th>Giá</th>
                     <th>Trạng thái</th>
+                    <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -233,6 +385,12 @@
                                 <c:when test="${status == 'consumed'}"><span class="badge bg-secondary">Đã dùng hết</span></c:when>
                                 <c:otherwise><span class="badge bg-success">Khả dụng</span></c:otherwise>
                             </c:choose>
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary"
+                               href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
+                               Sửa
+                            </a>
                         </td>
                     </tr>
                 </c:forEach>
