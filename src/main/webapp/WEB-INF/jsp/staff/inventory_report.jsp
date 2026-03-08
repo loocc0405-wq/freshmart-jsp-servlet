@@ -5,6 +5,113 @@
 
 <h3>Báo cáo Tồn Kho</h3>
 
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" action="${pageContext.request.contextPath}/staff/inventory-report" class="row g-2">
+
+            <div class="col-md-3">
+                <label class="form-label">Sản phẩm</label>
+                <select class="form-select" name="productId">
+                    <option value="">-- Tất cả sản phẩm --</option>
+                    <c:forEach items="${products}" var="p">
+                        <option value="${p.id}"
+                            <c:if test="${filter != null && filter.productId != null && filter.productId == p.id}">selected</c:if>>
+                            <c:out value="${p.name}"/> (ID: ${p.id})
+                        </option>
+                    </c:forEach>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Nhà cung cấp</label>
+                <select class="form-select" name="supplierId">
+                    <option value="">-- Tất cả nhà cung cấp --</option>
+                    <c:forEach items="${suppliers}" var="s">
+                        <option value="${s.id}"
+                            <c:if test="${filter != null && filter.supplierId != null && filter.supplierId == s.id}">selected</c:if>>
+                            <c:out value="${s.name}"/>
+                        </option>
+                    </c:forEach>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Trạng thái lot</label>
+                <select class="form-select" name="status">
+                    <option value="">-- Tất cả --</option>
+                    <option value="AVAILABLE" ${filter != null && filter.status == 'AVAILABLE' ? 'selected' : ''}>Khả dụng</option>
+                    <option value="EXPIRING" ${filter != null && filter.status == 'EXPIRING' ? 'selected' : ''}>Sắp hết hạn</option>
+                    <option value="EXPIRED" ${filter != null && filter.status == 'EXPIRED' ? 'selected' : ''}>Hết hạn</option>
+                    <option value="CONSUMED" ${filter != null && filter.status == 'CONSUMED' ? 'selected' : ''}>Đã dùng hết</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Tồn từ</label>
+                <input type="number" class="form-control" name="minQtyLeft"
+                       value="${filter != null ? filter.minQtyLeft : ''}" min="0">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Tồn đến</label>
+                <input type="number" class="form-control" name="maxQtyLeft"
+                       value="${filter != null ? filter.maxQtyLeft : ''}" min="0">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Ngày nhập từ</label>
+                <input type="date" class="form-control" name="importFrom"
+                       value="${filter != null ? filter.importFrom : ''}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">Ngày nhập đến</label>
+                <input type="date" class="form-control" name="importTo"
+                       value="${filter != null ? filter.importTo : ''}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">HSD từ</label>
+                <input type="date" class="form-control" name="expiryFrom"
+                       value="${filter != null ? filter.expiryFrom : ''}">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label">HSD đến</label>
+                <input type="date" class="form-control" name="expiryTo"
+                       value="${filter != null ? filter.expiryTo : ''}">
+            </div>
+
+            <div class="col-md-4 d-flex align-items-end">
+                <button class="btn btn-primary me-2" type="submit">Lọc báo cáo</button>
+                <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/inventory-report">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<c:if test="${not empty errorMessage}">
+    <div class="alert alert-danger mb-3">
+        <c:out value="${errorMessage}"/>
+    </div>
+</c:if>
+
+<c:if test="${filter != null && (
+    filter.productId != null ||
+    filter.supplierId != null ||
+    filter.status != null ||
+    filter.importFrom != null ||
+    filter.importTo != null ||
+    filter.expiryFrom != null ||
+    filter.expiryTo != null ||
+    filter.minQtyLeft != null ||
+    filter.maxQtyLeft != null
+)}">
+    <div class="alert alert-info">
+        Báo cáo đang hiển thị theo bộ lọc đã chọn.
+    </div>
+</c:if>
+
 <div class="row mb-3">
     <div class="col-md-3">
         <div class="card text-center bg-primary text-white">
@@ -25,7 +132,7 @@
     <div class="col-md-3">
         <div class="card text-center bg-warning text-white">
             <div class="card-body">
-                <h6>Hàng hsakotonghạn (7 ngày)</h6>
+                <h6>Hàng sắp hết hạn (${upcomingExpiryDays} ngày)</h6>
                 <h4>${upcomingExpiryCount}</h4>
             </div>
         </div>
@@ -94,7 +201,7 @@
     <!-- Low Stock -->
     <div id="low-stock" class="tab-pane fade">
         <div class="card">
-            <div class="card-header">Sản phẩm có số lượng tồn kho dưới 50 đơn vị</div>
+            <div class="card-header">Sản phẩm có số lượng tồn kho dưới ${lowStockThreshold} đơn vị</div>
             <div class="card-body">
                 <c:if test="${empty lowStockProducts}">
                     <div class="text-muted">Không có sản phẩm với tồn kho thấp.</div>
@@ -126,7 +233,7 @@
     <!-- Upcoming Expiry -->
     <div id="upcoming-expiry" class="tab-pane fade">
         <div class="card">
-            <div class="card-header bg-warning">Sản phẩm sắp hết hạn (7 ngày tới)</div>
+            <div class="card-header bg-warning">Sản phẩm sắp hết hạn (${upcomingExpiryDays} ngày tới)</div>
             <div class="card-body">
                 <c:if test="${empty upcomingExpiryProducts}">
                     <div class="text-muted">Không có sản phẩm sắp hết hạn.</div>
