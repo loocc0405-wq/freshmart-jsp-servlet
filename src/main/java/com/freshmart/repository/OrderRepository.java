@@ -6,6 +6,7 @@ import com.freshmart.enums.OrderStatus;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -67,6 +68,87 @@ public class OrderRepository {
         return q.getResultList();
     }
 
+    public List<Order> findByCustomerWithFilters(
+            EntityManager em,
+            Long customerId,
+            OrderStatus status,
+            LocalDateTime fromDate,
+            LocalDateTime toDate,
+            int page,
+            int size
+    ) {
+        StringBuilder jpql = new StringBuilder(
+                "SELECT o FROM Order o WHERE o.customer.id = :customerId "
+        );
+
+        if (status != null) {
+            jpql.append("AND o.status = :status ");
+        }
+        if (fromDate != null) {
+            jpql.append("AND o.createdAt >= :fromDate ");
+        }
+        if (toDate != null) {
+            jpql.append("AND o.createdAt <= :toDate ");
+        }
+
+        jpql.append("ORDER BY o.createdAt DESC");
+
+        TypedQuery<Order> q = em.createQuery(jpql.toString(), Order.class);
+        q.setParameter("customerId", customerId);
+
+        if (status != null) {
+            q.setParameter("status", status);
+        }
+        if (fromDate != null) {
+            q.setParameter("fromDate", fromDate);
+        }
+        if (toDate != null) {
+            q.setParameter("toDate", toDate);
+        }
+
+        q.setFirstResult(Math.max(0, page) * size);
+        q.setMaxResults(size);
+
+        return q.getResultList();
+    }
+
+    public long countByCustomerWithFilters(
+            EntityManager em,
+            Long customerId,
+            OrderStatus status,
+            LocalDateTime fromDate,
+            LocalDateTime toDate
+    ) {
+        StringBuilder jpql = new StringBuilder(
+                "SELECT COUNT(o) FROM Order o WHERE o.customer.id = :customerId "
+        );
+
+        if (status != null) {
+            jpql.append("AND o.status = :status ");
+        }
+        if (fromDate != null) {
+            jpql.append("AND o.createdAt >= :fromDate ");
+        }
+        if (toDate != null) {
+            jpql.append("AND o.createdAt <= :toDate ");
+        }
+
+        TypedQuery<Long> q = em.createQuery(jpql.toString(), Long.class);
+        q.setParameter("customerId", customerId);
+
+        if (status != null) {
+            q.setParameter("status", status);
+        }
+        if (fromDate != null) {
+            q.setParameter("fromDate", fromDate);
+        }
+        if (toDate != null) {
+            q.setParameter("toDate", toDate);
+        }
+
+        return q.getSingleResult();
+    }
+
     public Optional<Order> findByIdAndCustomerId(EntityManager em, Long orderId, Long customerId) {
         TypedQuery<Order> q = em.createQuery(
                 "SELECT DISTINCT o FROM Order o " +
@@ -94,6 +176,52 @@ public class OrderRepository {
 
         BigDecimal result = q.getSingleResult();
         return result != null ? result : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getTotalSpentByCustomerSince(EntityManager em, Long customerId, LocalDateTime since) {
+        TypedQuery<BigDecimal> q = em.createQuery(
+                "SELECT COALESCE(SUM(o.totalAmount), 0) " +
+                "FROM Order o " +
+                "WHERE o.customer.id = :customerId " +
+                "AND o.status = :status " +
+                "AND o.createdAt >= :since",
+                BigDecimal.class
+        );
+        q.setParameter("customerId", customerId);
+        q.setParameter("status", OrderStatus.COMPLETED);
+        q.setParameter("since", since);
+
+        BigDecimal result = q.getSingleResult();
+        return result != null ? result : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getAverageCompletedOrderAmount(EntityManager em, Long customerId) {
+        TypedQuery<BigDecimal> q = em.createQuery(
+                "SELECT AVG(o.totalAmount) " +
+                "FROM Order o " +
+                "WHERE o.customer.id = :customerId AND o.status = :status",
+                BigDecimal.class
+        );
+        q.setParameter("customerId", customerId);
+        q.setParameter("status", OrderStatus.COMPLETED);
+
+        BigDecimal result = q.getSingleResult();
+        return result != null ? result : BigDecimal.ZERO;
+    }
+
+    public Optional<Order> findLatestCompletedByCustomer(EntityManager em, Long customerId) {
+        TypedQuery<Order> q = em.createQuery(
+                "SELECT o FROM Order o " +
+                "WHERE o.customer.id = :customerId AND o.status = :status " +
+                "ORDER BY o.completedAt DESC, o.createdAt DESC",
+                Order.class
+        );
+        q.setParameter("customerId", customerId);
+        q.setParameter("status", OrderStatus.COMPLETED);
+        q.setMaxResults(1);
+
+        List<Order> result = q.getResultList();
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
     }
 
     public long countOrdersByCustomer(EntityManager em, Long customerId) {
