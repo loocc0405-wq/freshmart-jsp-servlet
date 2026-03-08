@@ -2,6 +2,7 @@ package com.freshmart.service;
 
 import com.freshmart.entity.RevenueDaily;
 import com.freshmart.repository.RevenueDailyRepository;
+import com.freshmart.service.dto.SeasonalityMonthStat;
 import com.freshmart.service.dto.SeasonalityPoint;
 import com.freshmart.util.JpaExecutor;
 
@@ -32,7 +33,6 @@ public class SeasonalityService {
 
             List<SeasonalityPoint> out = new ArrayList<>();
 
-            // rolling window (trailing): [i-window+1 .. i]
             for (int i = 0; i < dates.size(); i++) {
                 LocalDate d = dates.get(i);
                 double actual = series.getOrDefault(d, BigDecimal.ZERO).doubleValue();
@@ -72,6 +72,50 @@ public class SeasonalityService {
 
             return out;
         });
+    }
+
+    public List<SeasonalityMonthStat> summarizeByMonth(List<SeasonalityPoint> points) {
+        Map<Integer, List<SeasonalityPoint>> grouped = new TreeMap<>();
+        for (SeasonalityPoint p : points) {
+            int month = p.getDate().getMonthValue();
+            grouped.computeIfAbsent(month, k -> new ArrayList<>()).add(p);
+        }
+
+        List<SeasonalityMonthStat> result = new ArrayList<>();
+        for (Map.Entry<Integer, List<SeasonalityPoint>> entry : grouped.entrySet()) {
+            int month = entry.getKey();
+            List<SeasonalityPoint> list = entry.getValue();
+
+            BigDecimal sum = BigDecimal.ZERO;
+            BigDecimal min = null;
+            BigDecimal max = null;
+
+            for (SeasonalityPoint p : list) {
+                BigDecimal actual = p.getActual() != null ? p.getActual() : BigDecimal.ZERO;
+                sum = sum.add(actual);
+
+                if (min == null || actual.compareTo(min) < 0) {
+                    min = actual;
+                }
+                if (max == null || actual.compareTo(max) > 0) {
+                    max = actual;
+                }
+            }
+
+            BigDecimal avg = list.isEmpty()
+                    ? BigDecimal.ZERO
+                    : sum.divide(BigDecimal.valueOf(list.size()), 2, RoundingMode.HALF_UP);
+
+            result.add(new SeasonalityMonthStat(
+                    month,
+                    "Month " + month,
+                    avg,
+                    min != null ? min : BigDecimal.ZERO,
+                    max != null ? max : BigDecimal.ZERO
+            ));
+        }
+
+        return result;
     }
 
     private Map<LocalDate, BigDecimal> loadContinuousSeries(EntityManager em, LocalDate from, LocalDate toInclusive) {
