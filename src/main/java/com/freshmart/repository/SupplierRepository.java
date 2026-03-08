@@ -3,6 +3,7 @@ package com.freshmart.repository;
 import com.freshmart.entity.Supplier;
 
 import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,6 +30,8 @@ public class SupplierRepository {
     public List<Supplier> search(EntityManager em,
                                  String keyword,
                                  String certificate,
+                                 LocalDateTime fromDate,
+                                 LocalDateTime toDate,
                                  int offset,
                                  int limit) {
         StringBuilder jpql = new StringBuilder("SELECT s FROM Supplier s");
@@ -43,6 +46,19 @@ public class SupplierRepository {
             }
             where.append(" s.certificate = :cert");
         }
+        if (fromDate != null) {
+            if (where.length() > 0) {
+                where.append(" AND ");
+            }
+            // match either creation or last update
+            where.append(" (s.createdAt >= :fromDate OR s.updatedAt >= :fromDate)");
+        }
+        if (toDate != null) {
+            if (where.length() > 0) {
+                where.append(" AND ");
+            }
+            where.append(" (s.createdAt <= :toDate OR s.updatedAt <= :toDate)");
+        }
         if (where.length() > 0) {
             jpql.append(" WHERE").append(where);
         }
@@ -55,12 +71,18 @@ public class SupplierRepository {
         if (certificate != null && !certificate.isEmpty()) {
             query.setParameter("cert", certificate);
         }
+        if (fromDate != null) {
+            query.setParameter("fromDate", fromDate);
+        }
+        if (toDate != null) {
+            query.setParameter("toDate", toDate);
+        }
         query.setFirstResult(offset);
         query.setMaxResults(limit);
         return query.getResultList();
     }
 
-    public long count(EntityManager em, String keyword, String certificate) {
+    public long count(EntityManager em, String keyword, String certificate, LocalDateTime fromDate, LocalDateTime toDate) {
         StringBuilder jpql = new StringBuilder("SELECT COUNT(s) FROM Supplier s");
         StringBuilder where = new StringBuilder();
         if (keyword != null && !keyword.isEmpty()) {
@@ -72,6 +94,18 @@ public class SupplierRepository {
             }
             where.append(" s.certificate = :cert");
         }
+        if (fromDate != null) {
+            if (where.length() > 0) {
+                where.append(" AND ");
+            }
+            where.append(" (s.createdAt >= :fromDate OR s.updatedAt >= :fromDate)");
+        }
+        if (toDate != null) {
+            if (where.length() > 0) {
+                where.append(" AND ");
+            }
+            where.append(" (s.createdAt <= :toDate OR s.updatedAt <= :toDate)");
+        }
         if (where.length() > 0) {
             jpql.append(" WHERE").append(where);
         }
@@ -81,6 +115,12 @@ public class SupplierRepository {
         }
         if (certificate != null && !certificate.isEmpty()) {
             query.setParameter("cert", certificate);
+        }
+        if (fromDate != null) {
+            query.setParameter("fromDate", fromDate);
+        }
+        if (toDate != null) {
+            query.setParameter("toDate", toDate);
         }
         return query.getSingleResult();
     }

@@ -60,6 +60,19 @@ BEGIN
         email NVARCHAR(255) NOT NULL
     );
 END
+
+-- optional audit columns for supplier timestamps
+IF COL_LENGTH('suppliers','created_at') IS NULL
+BEGIN
+    ALTER TABLE suppliers ADD created_at DATETIME2 NULL CONSTRAINT df_suppliers_created_at DEFAULT (GETDATE());
+END
+GO
+
+IF COL_LENGTH('suppliers','updated_at') IS NULL
+BEGIN
+    ALTER TABLE suppliers ADD updated_at DATETIME2 NULL;
+END
+GO
 GO
 
 -- migration: ensure email column exists
