@@ -5,6 +5,67 @@
 <c:set var="pageTitle" value="Suppliers" />
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
+<!-- statistics row -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-2">
+    <div class="card text-white bg-primary h-100">
+      <div class="card-body">
+        <h6 class="card-title">Total suppliers</h6>
+        <p class="card-text fs-2">${statsTotal}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-2">
+    <div class="card text-white bg-success h-100">
+      <div class="card-body">
+        <h6 class="card-title">With certificate</h6>
+        <p class="card-text fs-2">${statsWithCert}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-2">
+    <div class="card text-white bg-warning h-100">
+      <div class="card-body">
+        <h6 class="card-title">Without certificate</h6>
+        <p class="card-text fs-2">${statsWithoutCert}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-2">
+    <div class="card text-white bg-info h-100">
+      <div class="card-body">
+        <h6 class="card-title">Avg lead time (days)</h6>
+        <p class="card-text fs-2">${statsAvgLead}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- top suppliers table (optional) -->
+<c:if test="${not empty topSuppliers}">
+  <div class="card mb-4">
+    <div class="card-header">Top suppliers by distinct products supplied</div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Supplier</th>
+            <th class="text-end"># Products</th>
+          </tr>
+        </thead>
+        <tbody>
+          <c:forEach var="tp" items="${topSuppliers}">
+            <tr>
+              <td>${fn:escapeXml(tp.supplier.name)}</td>
+              <td class="text-end">${tp.productCount}</td>
+            </tr>
+          </c:forEach>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</c:if>
+
 <!-- Flash Messages -->
 <c:if test="${not empty sessionScope.successMessage}">
   <div class="alert alert-success alert-dismissible fade show" role="alert">

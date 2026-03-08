@@ -124,4 +124,49 @@ public class SupplierRepository {
         }
         return query.getSingleResult();
     }
+
+    // -------------------------------------------------------------
+    // statistics helpers (used by SupplierService)
+    // -------------------------------------------------------------
+
+    /**
+     * Total count of suppliers (ignores filters).
+     */
+    public long countAll(EntityManager em) {
+        return em.createQuery("SELECT COUNT(s) FROM Supplier s", Long.class)
+                .getSingleResult();
+    }
+
+    /**
+     * Count suppliers that either have a non-empty certificate or not.
+     */
+    public long countByCertificate(EntityManager em, boolean hasCertificate) {
+        String jpql = hasCertificate
+                ? "SELECT COUNT(s) FROM Supplier s WHERE s.certificate IS NOT NULL AND s.certificate <> ''"
+                : "SELECT COUNT(s) FROM Supplier s WHERE s.certificate IS NULL OR s.certificate = ''";
+        return em.createQuery(jpql, Long.class).getSingleResult();
+    }
+
+    /**
+     * Average lead time (in days) among all suppliers. Returns null when there are no rows.
+     */
+    public Double averageLeadTime(EntityManager em) {
+        return em.createQuery("SELECT AVG(s.leadTimeDays) FROM Supplier s", Double.class)
+                .getSingleResult();
+    }
+
+    /**
+     * Top suppliers ordered by number of distinct products supplied (via product lots).
+     * Each element of the result list is an Object[]{ Supplier, Long count }.
+     */
+    public List<Object[]> topSuppliersByProductCount(EntityManager em, int limit) {
+        String jpql = "SELECT s, COUNT(DISTINCT l.product) " +
+                "FROM ProductLot l JOIN l.supplier s " +
+                "WHERE l.supplier IS NOT NULL " +
+                "GROUP BY s " +
+                "ORDER BY COUNT(DISTINCT l.product) DESC";
+        var query = em.createQuery(jpql, Object[].class);
+        query.setMaxResults(limit);
+        return query.getResultList();
+    }
 }

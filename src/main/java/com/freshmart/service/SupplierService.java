@@ -52,4 +52,63 @@ public class SupplierService {
         final LocalDateTime end = toDate != null ? toDate.atTime(java.time.LocalTime.MAX) : null;
         return executor.execute(em -> repo.count(em, keyword, certificate, start, end));
     }
+
+    // -------------------------------------------------------------
+    // statistics wrappers
+    // -------------------------------------------------------------
+
+    public long totalSuppliers() {
+        return executor.execute(repo::countAll);
+    }
+
+    public long countWithCertificate() {
+        return executor.execute(em -> repo.countByCertificate(em, true));
+    }
+
+    public long countWithoutCertificate() {
+        return executor.execute(em -> repo.countByCertificate(em, false));
+    }
+
+    public double averageLeadTime() {
+        Double result = executor.execute(repo::averageLeadTime);
+        return result == null ? 0.0 : result;
+    }
+
+    /**
+     * Simple DTO representing a supplier along with its connected product count.
+     */
+    public static class SupplierProductCount {
+        private final Supplier supplier;
+        private final long productCount;
+
+        public SupplierProductCount(Supplier supplier, long productCount) {
+            this.supplier = supplier;
+            this.productCount = productCount;
+        }
+
+        public Supplier getSupplier() {
+            return supplier;
+        }
+
+        public long getProductCount() {
+            return productCount;
+        }
+    }
+
+    /**
+     * Return list of top suppliers sorted by number of distinct products linked via lots.
+     * If there are fewer than `limit` suppliers, list will simply be shorter.
+     */
+    public java.util.List<SupplierProductCount> topSuppliersByProductCount(int limit) {
+        return executor.execute(em -> {
+            java.util.List<Object[]> rows = repo.topSuppliersByProductCount(em, limit);
+            java.util.List<SupplierProductCount> out = new java.util.ArrayList<>();
+            for (Object[] row : rows) {
+                Supplier s = (Supplier) row[0];
+                Long cnt = (Long) row[1];
+                out.add(new SupplierProductCount(s, cnt != null ? cnt : 0L));
+            }
+            return out;
+        });
+    }
 }
