@@ -36,12 +36,27 @@ public class StaffImportLotServlet extends HttpServlet {
 
         req.setAttribute("products", products);
         req.setAttribute("suppliers", suppliers);
+
+        // Check if editing an existing lot
+        String idRaw = req.getParameter("id");
+        if (idRaw != null && !idRaw.isBlank()) {
+            try {
+                Long lotId = Long.parseLong(idRaw);
+                ProductLot editingLot = lotService.getLotDetail(lotId)
+                    .orElseThrow(() -> new IllegalArgumentException("Lot not found"));
+                req.setAttribute("editingLot", editingLot);
+            } catch (NumberFormatException ex) {
+                req.setAttribute("errorMessage", "Invalid lot ID");
+            }
+        }
+
         req.getRequestDispatcher("/WEB-INF/jsp/staff/import_lot.jsp").forward(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
+            String lotIdRaw = req.getParameter("lotId");
             String productIdRaw = req.getParameter("productId");
             String supplierIdRaw = req.getParameter("supplierId");
             String importDateRaw = req.getParameter("importDate");
@@ -63,10 +78,18 @@ public class StaffImportLotServlet extends HttpServlet {
 
             BigDecimal importPrice = (priceRaw != null && !priceRaw.isBlank()) ? new BigDecimal(priceRaw) : BigDecimal.ZERO;
 
-            // Perform import inside transaction
+            // Perform import or update inside transaction
             executor.execute(em -> {
-                ProductLot lot = lotService.importLot(productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
-                req.setAttribute("successMessage", "Nhập lô thành công! Lô ID: " + lot.getId());
+                if (lotIdRaw != null && !lotIdRaw.isBlank()) {
+                    // Update existing lot
+                    Long lotId = Long.parseLong(lotIdRaw);
+                    ProductLot lot = lotService.updateLot(lotId, productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
+                    req.setAttribute("successMessage", "Cập nhật lô thành công! Lô ID: " + lot.getId());
+                } else {
+                    // Create new lot
+                    ProductLot lot = lotService.importLot(productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
+                    req.setAttribute("successMessage", "Nhập lô thành công! Lô ID: " + lot.getId());
+                }
                 return null;
             });
 
