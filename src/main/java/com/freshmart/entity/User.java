@@ -7,6 +7,7 @@ import com.freshmart.enums.Tier;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 
 @Entity
 @Table(name = "users",
@@ -67,10 +68,33 @@ public class User {
         this.role = role;
     }
 
+    public boolean isProActive() {
+        return isProActive(LocalDate.now());
+    }
+
     public boolean isProActive(LocalDate today) {
         if (tier != Tier.PRO) return false;
         if (expiredDate == null) return false;
         return !expiredDate.isBefore(today);
+    }
+
+    public boolean isProExpired() {
+        return isProExpired(LocalDate.now());
+    }
+
+    public boolean isProExpired(LocalDate today) {
+        if (tier != Tier.PRO) return false;
+        if (expiredDate == null) return true;
+        return expiredDate.isBefore(today);
+    }
+
+    public long getRemainingProDays() {
+        return getRemainingProDays(LocalDate.now());
+    }
+
+    public long getRemainingProDays(LocalDate today) {
+        if (!isProActive(today)) return 0;
+        return ChronoUnit.DAYS.between(today, expiredDate) + 1;
     }
 
     public Long getId() {
