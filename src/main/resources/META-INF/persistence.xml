@@ -31,9 +31,9 @@
 
             <!-- Hibernate -->
             <property name="hibernate.dialect" value="org.hibernate.dialect.SQLServerDialect"/>
-            <!-- 'update' may attempt DDL changes that fail on populated databases;
-                 switch to 'validate' once schema is in sync and manage migrations manually -->
-            <property name="hibernate.hbm2ddl.auto" value="validate"/>
+            <!-- during development we can have Hibernate create/alter tables automatically;
+                 change back to 'validate' for production once the schema has been created manually -->
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="true"/>
         </properties>

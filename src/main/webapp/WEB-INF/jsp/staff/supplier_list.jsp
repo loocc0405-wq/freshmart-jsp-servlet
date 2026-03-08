@@ -34,16 +34,25 @@
 
 <!-- search / filter form -->
 <form method="get" action="" class="row g-2 mb-3">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <input type="text" class="form-control" name="q" placeholder="Search name, email or phone"
            value="${fn:escapeXml(search)}" />
   </div>
-  <div class="col-md-3">
+  <div class="col-md-2">
     <input type="text" class="form-control" name="certificate" placeholder="Certificate"
            value="${fn:escapeXml(certificateFilter)}" />
   </div>
+  <div class="col-md-2">
+    <input type="date" class="form-control" name="fromDate" placeholder="From date"
+           value="${fn:escapeXml(fromDate)}" />
+  </div>
+  <div class="col-md-2">
+    <input type="date" class="form-control" name="toDate" placeholder="To date"
+           value="${fn:escapeXml(toDate)}" />
+  </div>
   <div class="col-auto">
     <button class="btn btn-outline-secondary" type="submit">Search</button>
+    <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/suppliers">Reset</a>
   </div>
 </form>
 
@@ -108,6 +117,8 @@
               <c:param name="page" value="${currentPage - 1}" />
               <c:if test="${not empty search}"><c:param name="q" value="${search}"/></c:if>
               <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
+              <c:if test="${not empty fromDate}"><c:param name="fromDate" value="${fromDate}"/></c:if>
+              <c:if test="${not empty toDate}"><c:param name="toDate" value="${toDate}"/></c:if>
             </c:url>
             <a class="page-link" href="${prevUrl}" aria-label="Previous">
               <span aria-hidden="true">&laquo;</span>
@@ -119,6 +130,8 @@
                 <c:param name="page" value="${i}" />
                 <c:if test="${not empty search}"><c:param name="q" value="${search}"/></c:if>
                 <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
+                <c:if test="${not empty fromDate}"><c:param name="fromDate" value="${fromDate}"/></c:if>
+                <c:if test="${not empty toDate}"><c:param name="toDate" value="${toDate}"/></c:if>
               </c:url>
               <a class="page-link" href="${linkUrl}">${i}</a>
             </li>
@@ -128,6 +141,8 @@
               <c:param name="page" value="${currentPage + 1}" />
               <c:if test="${not empty search}"><c:param name="q" value="${search}"/></c:if>
               <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
+              <c:if test="${not empty fromDate}"><c:param name="fromDate" value="${fromDate}"/></c:if>
+              <c:if test="${not empty toDate}"><c:param name="toDate" value="${toDate}"/></c:if>
             </c:url>
             <a class="page-link" href="${nextUrl}" aria-label="Next">
               <span aria-hidden="true">&raquo;</span>

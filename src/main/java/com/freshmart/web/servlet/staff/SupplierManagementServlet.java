@@ -8,6 +8,8 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @WebServlet("/staff/suppliers")
@@ -225,6 +227,26 @@ public class SupplierManagementServlet extends HttpServlet {
         if (certificate != null) certificate = certificate.trim();
         if (certificate != null && certificate.isEmpty()) certificate = null;
 
+        // date range filters
+        String fromDateStr = request.getParameter("fromDate");
+        String toDateStr = request.getParameter("toDate");
+        LocalDate fromDate = null;
+        LocalDate toDate = null;
+        try {
+            if (fromDateStr != null && !fromDateStr.isEmpty()) {
+                fromDate = LocalDate.parse(fromDateStr);
+            }
+        } catch (DateTimeParseException e) {
+            // ignore invalid input
+        }
+        try {
+            if (toDateStr != null && !toDateStr.isEmpty()) {
+                toDate = LocalDate.parse(toDateStr);
+            }
+        } catch (DateTimeParseException e) {
+            // ignore invalid input
+        }
+
         int page = 1;
         String pageParam = request.getParameter("page");
         try {
@@ -238,13 +260,15 @@ public class SupplierManagementServlet extends HttpServlet {
 
         final int pageSize = 10; // may adjust later or make configurable
 
-        List<Supplier> suppliers = supplierService.search(q, certificate, page, pageSize);
-        long total = supplierService.count(q, certificate);
+        List<Supplier> suppliers = supplierService.search(q, certificate, fromDate, toDate, page, pageSize);
+        long total = supplierService.count(q, certificate, fromDate, toDate);
         int totalPages = (int) ((total + pageSize - 1) / pageSize);
 
         request.setAttribute("suppliers", suppliers);
         request.setAttribute("search", q);
         request.setAttribute("certificateFilter", certificate);
+        request.setAttribute("fromDate", fromDateStr);
+        request.setAttribute("toDate", toDateStr);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalItems", total);
