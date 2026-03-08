@@ -41,6 +41,30 @@
   </div>
 </div>
 
+<!-- charts row -->
+<div class="row mb-4">
+  <!-- certificate status bar chart -->
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-header">Certificate Status</div>
+      <div class="card-body">
+        <canvas id="certChart"></canvas>
+      </div>
+    </div>
+  </div>
+  <!-- top suppliers chart (only when data available) -->
+  <c:if test="${not empty topSuppliers}">
+    <div class="col-md-6 mb-3">
+      <div class="card h-100">
+        <div class="card-header">Top Suppliers (by product count)</div>
+        <div class="card-body">
+          <canvas id="topChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </c:if>
+</div>
+
 <!-- top suppliers table (optional) -->
 <c:if test="${not empty topSuppliers}">
   <div class="card mb-4">
@@ -216,5 +240,68 @@
   </div>
 </div>
 </div>
+
+
+<!-- load Chart.js only on this page -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // certificate status chart
+  (function() {
+    var ctx = document.getElementById('certChart');
+    if (ctx) {
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['With certificate', 'Without certificate'],
+          datasets: [{
+            label: 'Suppliers',
+            data: [${statsWithCert}, ${statsWithoutCert}],
+            backgroundColor: ['#198754', '#ffc107']
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true, precision:0 }
+          }
+        }
+      });
+    }
+  })();
+
+  // top suppliers bar chart
+  (function() {
+    var ctx = document.getElementById('topChart');
+    if (ctx) {
+      var labels = [
+        <c:forEach var="tp" items="${topSuppliers}" varStatus="loop">
+          "${fn:escapeXml(tp.supplier.name)}"<c:if test="${!loop.last}">,</c:if>
+        </c:forEach>
+      ];
+      var data = [
+        <c:forEach var="tp" items="${topSuppliers}" varStatus="loop">
+          ${tp.productCount}<c:if test="${!loop.last}">,</c:if>
+        </c:forEach>
+      ];
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '# Products',
+            data: data,
+            backgroundColor: '#0d6efd'
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true, precision:0 }
+          }
+        }
+      });
+    }
+  })();
+</script>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
