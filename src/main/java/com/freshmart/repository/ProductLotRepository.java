@@ -60,7 +60,6 @@ public class ProductLotRepository {
                 .setParameter("today", today)
                 .getResultList();
 
-        // MIN(...) can still return null depending on JPA provider; guard it.
         return (res == null || res.isEmpty()) ? null : res.get(0);
     }
 
@@ -82,8 +81,6 @@ public class ProductLotRepository {
     /**
      * Total qtyLeft of lots that will expire within [today .. today+days] (inclusive),
      * and still have qtyLeft > 0.
-     *
-     * Example: days = 3 => expiring in next 3 days (including today).
      */
     public int getExpiringQty(EntityManager em, Long productId, LocalDate today, int days) {
         if (days < 0) days = 0;
@@ -123,5 +120,25 @@ public class ProductLotRepository {
                 .getSingleResult();
 
         return cnt == null ? 0 : cnt.intValue();
+    }
+
+    public Integer findSuggestedLeadTimeDays(EntityManager em, Long productId) {
+        List<Integer> result = em.createQuery(
+                        "SELECT s.leadTimeDays " +
+                        "FROM ProductLot l " +
+                        "JOIN l.supplier s " +
+                        "WHERE l.product.id = :pid " +
+                        "AND s.leadTimeDays IS NOT NULL " +
+                        "ORDER BY l.importDate DESC, l.id DESC",
+                        Integer.class
+                )
+                .setParameter("pid", productId)
+                .setMaxResults(1)
+                .getResultList();
+
+        if (result == null || result.isEmpty() || result.get(0) == null || result.get(0) <= 0) {
+            return 1;
+        }
+        return result.get(0);
     }
 }
