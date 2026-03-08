@@ -1,10 +1,12 @@
 package com.freshmart.service;
 
 import com.freshmart.entity.SubscriptionPayment;
+import com.freshmart.entity.TierHistory;
 import com.freshmart.entity.User;
 import com.freshmart.enums.Role;
 import com.freshmart.enums.Tier;
 import com.freshmart.repository.SubscriptionPaymentRepository;
+import com.freshmart.repository.TierHistoryRepository;
 import com.freshmart.repository.UserRepository;
 import com.freshmart.util.JpaExecutor;
 
@@ -22,6 +24,9 @@ public class SubscriptionService {
     private final JpaExecutor executor = new JpaExecutor();
     private final UserRepository userRepo = new UserRepository();
     private final SubscriptionPaymentRepository paymentRepo = new SubscriptionPaymentRepository();
+    private final TierHistoryRepository tierHistoryRepo = new TierHistoryRepository();
+
+    // ==================== Plan pricing ====================
 
     public Map<Integer, BigDecimal> getPlanPrices() {
         Map<Integer, BigDecimal> plans = new LinkedHashMap<>();
@@ -35,15 +40,21 @@ public class SubscriptionService {
         return getPlanPrices().getOrDefault(days, BigDecimal.valueOf(days * 3000L));
     }
 
+    // ==================== Upgrade / Purchase ====================
+
     public User upgradePro(Long userId, int days) {
-        if (days <= 0) throw new IllegalArgumentException("Số ngày phải > 0");
+        if (days <= 0)
+            throw new IllegalArgumentException("Số ngày phải > 0");
 
         return executor.execute(em -> {
             User u = userRepo.findById(em, userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
 
             LocalDate today = LocalDate.now();
-            normalizeTierInternal(u, today);
+            normalizeTierInternal(u, today, em);
+
+            Tier oldTier = u.getTier();
+            LocalDate oldExpired = u.getExpiredDate();
 
             LocalDate base = (u.getExpiredDate() != null && !u.getExpiredDate().isBefore(today))
                     ? u.getExpiredDate()
@@ -52,12 +63,20 @@ public class SubscriptionService {
             u.setTier(Tier.PRO);
             u.setExpiredDate(base.plusDays(days));
 
-            return userRepo.save(em, u);
+            User saved = userRepo.save(em, u);
+
+            // Record tier history
+            String changeType = (oldTier == Tier.PRO) ? "RENEW" : "UPGRADE";
+            recordTierHistory(em, saved, oldTier, Tier.PRO, oldExpired, saved.getExpiredDate(),
+                    changeType, "Upgrade PRO " + days + " days");
+
+            return saved;
         });
     }
 
     public SubscriptionPayment fakePurchase(Long userId, int days, String paymentMethod) {
-        if (days <= 0) throw new IllegalArgumentException("Số ngày phải > 0");
+        if (days <= 0)
+            throw new IllegalArgumentException("Số ngày phải > 0");
 
         String method = (paymentMethod == null || paymentMethod.isBlank()) ? "FAKE_CARD" : paymentMethod.trim();
         BigDecimal amount = getPlanPrice(days);
@@ -71,7 +90,10 @@ public class SubscriptionService {
             }
 
             LocalDate today = LocalDate.now();
-            normalizeTierInternal(u, today);
+            normalizeTierInternal(u, today, em);
+
+            Tier oldTier = u.getTier();
+            LocalDate oldExpired = u.getExpiredDate();
 
             LocalDate base = (u.getExpiredDate() != null && !u.getExpiredDate().isBefore(today))
                     ? u.getExpiredDate()
@@ -82,6 +104,11 @@ public class SubscriptionService {
             u.setTier(Tier.PRO);
             u.setExpiredDate(newExpiredDate);
             userRepo.save(em, u);
+
+            // Record tier history
+            String changeType = (oldTier == Tier.PRO) ? "RENEW" : "UPGRADE";
+            recordTierHistory(em, u, oldTier, Tier.PRO, oldExpired, newExpiredDate,
+                    changeType, "Fake payment " + method + " - PRO " + days + " days");
 
             SubscriptionPayment payment = new SubscriptionPayment();
             payment.setUser(u);
@@ -100,14 +127,18 @@ public class SubscriptionService {
     }
 
     public SubscriptionPayment adminGrant(Long userId, int days, String note) {
-        if (days <= 0) throw new IllegalArgumentException("Số ngày phải > 0");
+        if (days <= 0)
+            throw new IllegalArgumentException("Số ngày phải > 0");
 
         return executor.execute(em -> {
             User u = userRepo.findById(em, userId)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
 
             LocalDate today = LocalDate.now();
-            normalizeTierInternal(u, today);
+            normalizeTierInternal(u, today, em);
+
+            Tier oldTier = u.getTier();
+            LocalDate oldExpired = u.getExpiredDate();
 
             LocalDate base = (u.getExpiredDate() != null && !u.getExpiredDate().isBefore(today))
                     ? u.getExpiredDate()
@@ -118,6 +149,10 @@ public class SubscriptionService {
             u.setTier(Tier.PRO);
             u.setExpiredDate(newExpiredDate);
             userRepo.save(em, u);
+
+            // Record tier history
+            recordTierHistory(em, u, oldTier, Tier.PRO, oldExpired, newExpiredDate,
+                    "ADMIN_GRANT", note == null || note.isBlank() ? "Admin grant PRO" : note);
 
             SubscriptionPayment payment = new SubscriptionPayment();
             payment.setUser(u);
@@ -135,15 +170,40 @@ public class SubscriptionService {
         });
     }
 
+    // ==================== Revoke PRO ====================
+
+    public User revokePro(Long userId, String note) {
+        return executor.execute(em -> {
+            User u = userRepo.findById(em, userId)
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
+
+            Tier oldTier = u.getTier();
+            LocalDate oldExpired = u.getExpiredDate();
+
+            u.setTier(Tier.FREE);
+            u.setExpiredDate(null);
+            User saved = userRepo.save(em, u);
+
+            recordTierHistory(em, saved, oldTier, Tier.FREE, oldExpired, null,
+                    "ADMIN_REVOKE", note == null || note.isBlank() ? "Admin revoke PRO" : note);
+
+            return saved;
+        });
+    }
+
+    // ==================== Refresh / Sync ====================
+
     public User refreshAndSync(Long userId) {
         return executor.execute(em -> {
             User u = userRepo.findById(em, userId)
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy user"));
 
-            normalizeTierInternal(u, LocalDate.now());
+            normalizeTierInternal(u, LocalDate.now(), em);
             return userRepo.save(em, u);
         });
     }
+
+    // ==================== Query methods ====================
 
     public List<User> getCustomerUsers() {
         return executor.execute(userRepo::findCustomers);
@@ -157,14 +217,46 @@ public class SubscriptionService {
         return executor.execute(em -> paymentRepo.findByUserId(em, userId));
     }
 
-    private void normalizeTierInternal(User u, LocalDate today) {
+    public List<TierHistory> getAllTierHistory() {
+        return executor.execute(tierHistoryRepo::findAll);
+    }
+
+    public List<TierHistory> getTierHistoryByUser(Long userId) {
+        return executor.execute(em -> tierHistoryRepo.findByUserId(em, userId));
+    }
+
+    // ==================== Internal helpers ====================
+
+    private void normalizeTierInternal(User u, LocalDate today, jakarta.persistence.EntityManager em) {
         if (u.getRole() != Role.CUSTOMER) {
             return;
         }
 
         if (u.getTier() == Tier.PRO && (u.getExpiredDate() == null || u.getExpiredDate().isBefore(today))) {
+            Tier oldTier = u.getTier();
+            LocalDate oldExpired = u.getExpiredDate();
+
             u.setTier(Tier.FREE);
+
+            // Record expiry in tier history
+            recordTierHistory(em, u, oldTier, Tier.FREE, oldExpired, null,
+                    "EXPIRE", "PRO hết hạn, tự động chuyển về FREE");
         }
+    }
+
+    private void recordTierHistory(jakarta.persistence.EntityManager em,
+            User user, Tier oldTier, Tier newTier,
+            LocalDate oldExpired, LocalDate newExpired,
+            String changeType, String note) {
+        TierHistory history = new TierHistory();
+        history.setUser(user);
+        history.setOldTier(oldTier);
+        history.setNewTier(newTier);
+        history.setOldExpiredDate(oldExpired);
+        history.setNewExpiredDate(newExpired);
+        history.setChangeType(changeType);
+        history.setNote(note);
+        tierHistoryRepo.save(em, history);
     }
 
     private String generatePaymentCode() {

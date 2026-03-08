@@ -10,7 +10,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 
-@WebServlet(urlPatterns = {"/subscription/upgrade"})
+@WebServlet(urlPatterns = { "/subscription/upgrade" })
 public class SubscriptionUpgradeServlet extends HttpServlet {
 
     private final SubscriptionService subscriptionService = new SubscriptionService();
@@ -22,6 +22,7 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
             User fresh = subscriptionService.refreshAndSync(u.getId());
             req.getSession().setAttribute(AppConstants.SESSION_USER, fresh);
             req.setAttribute("paymentHistory", subscriptionService.getPaymentsByUser(fresh.getId()));
+            req.setAttribute("tierHistory", subscriptionService.getTierHistoryByUser(fresh.getId()));
         }
 
         req.setAttribute("planPrices", subscriptionService.getPlanPrices());
@@ -56,6 +57,7 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
         } catch (RuntimeException ex) {
             req.setAttribute("planPrices", subscriptionService.getPlanPrices());
             req.setAttribute("paymentHistory", subscriptionService.getPaymentsByUser(u.getId()));
+            req.setAttribute("tierHistory", subscriptionService.getTierHistoryByUser(u.getId()));
             req.setAttribute("errorMessage", ex.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/common/upgrade.jsp").forward(req, resp);
         }

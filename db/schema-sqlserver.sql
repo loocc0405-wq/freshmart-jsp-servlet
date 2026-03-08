@@ -194,3 +194,63 @@ BEGIN
     );
 END
 GO
+
+-- SUBSCRIPTION_PAYMENTS
+IF OBJECT_ID(N'dbo.subscription_payments', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.subscription_payments (
+        id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        payment_code NVARCHAR(30) NOT NULL,
+        plan_name NVARCHAR(50) NOT NULL,
+        plan_days INT NOT NULL,
+        amount DECIMAL(18,2) NOT NULL CONSTRAINT df_sub_pay_amount DEFAULT (0),
+        payment_method NVARCHAR(30) NOT NULL,
+        payment_status NVARCHAR(20) NOT NULL CONSTRAINT df_sub_pay_status DEFAULT N'SUCCESS',
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        note NVARCHAR(255) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT df_sub_pay_created_at DEFAULT (SYSDATETIME()),
+        CONSTRAINT uq_sub_pay_code UNIQUE (payment_code),
+        CONSTRAINT fk_subscription_payments_user FOREIGN KEY (user_id) REFERENCES dbo.users(id)
+    );
+
+    CREATE INDEX idx_subscription_payments_user ON dbo.subscription_payments(user_id);
+    CREATE INDEX idx_subscription_payments_created_at ON dbo.subscription_payments(created_at);
+END
+GO
+
+-- APP_SETTINGS
+IF OBJECT_ID(N'dbo.app_settings', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.app_settings (
+        id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        setting_key NVARCHAR(100) NOT NULL,
+        setting_value NVARCHAR(255) NOT NULL,
+        description NVARCHAR(255) NULL,
+        updated_at DATETIME2(0) NOT NULL CONSTRAINT df_app_settings_updated_at DEFAULT (SYSDATETIME()),
+        CONSTRAINT uq_app_settings_setting_key UNIQUE (setting_key)
+    );
+END
+GO
+
+-- TIER_HISTORY
+IF OBJECT_ID(N'dbo.tier_history', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.tier_history (
+        id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        old_tier NVARCHAR(10) NOT NULL,
+        new_tier NVARCHAR(10) NOT NULL,
+        old_expired_date DATE NULL,
+        new_expired_date DATE NULL,
+        change_type NVARCHAR(30) NOT NULL,
+        note NVARCHAR(255) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT df_tier_history_created_at DEFAULT (SYSDATETIME()),
+        CONSTRAINT fk_tier_history_user FOREIGN KEY (user_id) REFERENCES dbo.users(id)
+    );
+
+    CREATE INDEX idx_tier_history_user ON dbo.tier_history(user_id);
+    CREATE INDEX idx_tier_history_created_at ON dbo.tier_history(created_at);
+END
+GO

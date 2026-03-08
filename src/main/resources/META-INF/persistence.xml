@@ -17,6 +17,9 @@
         <class>com.freshmart.entity.Order</class>
         <class>com.freshmart.entity.OrderItem</class>
         <class>com.freshmart.entity.RevenueDaily</class>
+        <class>com.freshmart.entity.SubscriptionPayment</class>
+        <class>com.freshmart.entity.AppSetting</class>
+        <class>com.freshmart.entity.TierHistory</class>
 
         <properties>
             <!-- SQL Server (default for this project) -->

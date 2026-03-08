@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@WebServlet(urlPatterns = {"/admin/subscriptions"})
+@WebServlet(urlPatterns = { "/admin/subscriptions" })
 public class AdminSubscriptionServlet extends HttpServlet {
 
     private final SubscriptionService subscriptionService = new SubscriptionService();
@@ -20,6 +20,7 @@ public class AdminSubscriptionServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.setAttribute("users", subscriptionService.getCustomerUsers());
         req.setAttribute("payments", subscriptionService.getAllPayments());
+        req.setAttribute("tierHistory", subscriptionService.getAllTierHistory());
         req.setAttribute("settings", appSettingService.getAllAsMap());
         req.setAttribute("planPrices", subscriptionService.getPlanPrices());
 
@@ -52,6 +53,14 @@ public class AdminSubscriptionServlet extends HttpServlet {
 
                 subscriptionService.adminGrant(userId, days, note);
                 session.setAttribute("flashSuccess", "Cấp/gia hạn PRO thành công.");
+
+            } else if ("revokePro".equals(action)) {
+                Long userId = Long.parseLong(req.getParameter("userId"));
+                String note = req.getParameter("note");
+
+                subscriptionService.revokePro(userId, note);
+                session.setAttribute("flashSuccess", "Đã thu hồi PRO thành công.");
+
             } else if ("saveSettings".equals(action)) {
                 Map<String, String> values = new LinkedHashMap<>();
                 values.put(AppSettingService.LOW_STOCK_THRESHOLD, req.getParameter("lowStockThreshold"));
@@ -60,6 +69,10 @@ public class AdminSubscriptionServlet extends HttpServlet {
                 values.put(AppSettingService.REPLENISH_LEAD_DAYS, req.getParameter("replenishLeadDays"));
                 values.put(AppSettingService.REPLENISH_BUFFER_DAYS, req.getParameter("replenishBufferDays"));
                 values.put(AppSettingService.REPLENISH_SAFETY_DAYS, req.getParameter("replenishSafetyDays"));
+
+                // Subscription-specific settings
+                values.put(AppSettingService.SUB_NOTIFY_DAYS, req.getParameter("subNotifyDays"));
+                values.put(AppSettingService.SUB_GRACE_PERIOD_DAYS, req.getParameter("subGracePeriodDays"));
 
                 appSettingService.saveSettings(values);
                 session.setAttribute("flashSuccess", "Lưu cấu hình thành công.");
