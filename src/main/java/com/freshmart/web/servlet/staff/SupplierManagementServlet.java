@@ -261,6 +261,7 @@ public class SupplierManagementServlet extends HttpServlet {
         final int pageSize = 10; // may adjust later or make configurable
 
         // --- statistics for header cards (always global, not affected by filters) ---
+        // these values are also used by the new charts on supplier_list.jsp
         long totalSuppliers = supplierService.totalSuppliers();
         long withCert = supplierService.countWithCertificate();
         long withoutCert = supplierService.countWithoutCertificate();
