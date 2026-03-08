@@ -50,7 +50,6 @@ See `com.freshmart.bootstrap.AppBootstrapListener`.
 - `src/main/webapp/WEB-INF/jsp` : JSP views
 - `src/main/resources/META-INF/persistence.xml` : JPA config (**SQL Server default**)
 - `src/main/resources/META-INF/persistence-sqlserver.xml` : SQL Server config (reference)
-- `db/schema.sql` : reference schema (MySQL)
 - `db/schema-sqlserver.sql` : reference schema (SQL Server)
 
 ## Optional: Run with MySQL instead of SQL Server

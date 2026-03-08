@@ -1,6 +1,7 @@
 package com.freshmart.web.servlet.customer;
 
 import com.freshmart.config.AppConstants;
+import com.freshmart.entity.SubscriptionPayment;
 import com.freshmart.entity.User;
 import com.freshmart.service.SubscriptionService;
 
@@ -16,6 +17,14 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        User u = (User) req.getSession().getAttribute(AppConstants.SESSION_USER);
+        if (u != null) {
+            User fresh = subscriptionService.refreshAndSync(u.getId());
+            req.getSession().setAttribute(AppConstants.SESSION_USER, fresh);
+            req.setAttribute("paymentHistory", subscriptionService.getPaymentsByUser(fresh.getId()));
+        }
+
+        req.setAttribute("planPrices", subscriptionService.getPlanPrices());
         req.getRequestDispatcher("/WEB-INF/jsp/common/upgrade.jsp").forward(req, resp);
     }
 
@@ -29,13 +38,24 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
 
         int days = 30;
         String plan = req.getParameter("planDays");
-        try { if (plan != null) days = Integer.parseInt(plan); } catch (Exception ignored) {}
+        String paymentMethod = req.getParameter("paymentMethod");
 
         try {
-            User updated = subscriptionService.upgradePro(u.getId(), days);
+            if (plan != null && !plan.isBlank()) {
+                days = Integer.parseInt(plan);
+            }
+
+            SubscriptionPayment payment = subscriptionService.fakePurchase(u.getId(), days, paymentMethod);
+            User updated = subscriptionService.refreshAndSync(u.getId());
+
             req.getSession().setAttribute(AppConstants.SESSION_USER, updated);
-            resp.sendRedirect(req.getContextPath() + "/pro/dashboard");
+            req.setAttribute("payment", payment);
+            req.setAttribute("updatedUser", updated);
+
+            req.getRequestDispatcher("/WEB-INF/jsp/common/subscription_result.jsp").forward(req, resp);
         } catch (RuntimeException ex) {
+            req.setAttribute("planPrices", subscriptionService.getPlanPrices());
+            req.setAttribute("paymentHistory", subscriptionService.getPaymentsByUser(u.getId()));
             req.setAttribute("errorMessage", ex.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/common/upgrade.jsp").forward(req, resp);
         }

@@ -3,6 +3,7 @@ package com.freshmart.web.filter;
 import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.enums.Role;
+import com.freshmart.service.SubscriptionService;
 import com.freshmart.util.WebUtil;
 
 import jakarta.servlet.*;
@@ -11,11 +12,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 
-/**
- * Tier filter: gate PRO module for customers with active PRO tier.
- * Applies to /pro/*
- */
 public class TierFilter implements Filter {
+
+    private final SubscriptionService subscriptionService = new SubscriptionService();
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
@@ -29,9 +28,11 @@ public class TierFilter implements Filter {
             return;
         }
 
-        // Only gate customers; staff/admin can view dashboard for oversight
         if (u.getRole() == Role.CUSTOMER) {
-            boolean ok = u.isProActive(LocalDate.now());
+            User fresh = subscriptionService.refreshAndSync(u.getId());
+            request.getSession().setAttribute(AppConstants.SESSION_USER, fresh);
+
+            boolean ok = fresh.isProActive(LocalDate.now());
             if (!ok) {
                 response.sendRedirect(WebUtil.contextPath(request) + "/subscription/upgrade");
                 return;

@@ -1,18 +1,20 @@
 package com.freshmart.web.filter;
 
 import com.freshmart.config.AppConstants;
+import com.freshmart.entity.User;
+import com.freshmart.service.SubscriptionService;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Authentication filter: requires login for protected routes.
- */
 public class AuthenticationFilter implements Filter {
+
+    private final SubscriptionService subscriptionService = new SubscriptionService();
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
@@ -20,25 +22,36 @@ public class AuthenticationFilter implements Filter {
 
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) resp;
+        HttpSession session = request.getSession(false);
 
-        Object user = request.getSession().getAttribute(AppConstants.SESSION_USER);
+        User sessionUser = null;
+        if (session != null) {
+            Object raw = session.getAttribute(AppConstants.SESSION_USER);
+            if (raw instanceof User) {
+                sessionUser = (User) raw;
+            }
+        }
 
-        if (user == null) {
-
-            // ✅ Lấy path nội bộ (KHÔNG dùng full URL)
-            String uri = request.getRequestURI();       // ví dụ: /FreshMart/admin
-            String query = request.getQueryString();    // ví dụ: id=5
+        if (sessionUser == null) {
+            String uri = request.getRequestURI();
+            String query = request.getQueryString();
 
             String returnUrl = uri;
-
             if (query != null && !query.isBlank()) {
                 returnUrl += "?" + query;
             }
 
-            // Encode an toàn
             String encoded = URLEncoder.encode(returnUrl, StandardCharsets.UTF_8);
-
             response.sendRedirect(request.getContextPath() + "/login?return=" + encoded);
+            return;
+        }
+
+        try {
+            User fresh = subscriptionService.refreshAndSync(sessionUser.getId());
+            request.getSession().setAttribute(AppConstants.SESSION_USER, fresh);
+        } catch (RuntimeException ex) {
+            request.getSession().invalidate();
+            response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
 

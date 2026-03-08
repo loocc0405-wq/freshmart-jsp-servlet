@@ -1,5 +1,6 @@
 package com.freshmart.web.servlet.staff;
 
+import com.freshmart.service.AppSettingService;
 import com.freshmart.service.InventoryReportService;
 
 import jakarta.servlet.ServletException;
@@ -10,30 +11,22 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 
-/**
- * Servlet để xem báo cáo tồn kho.
- * Map: /staff/inventory-report
- */
 @WebServlet(urlPatterns = {"/staff/inventory-report"})
 public class StaffInventoryReportServlet extends HttpServlet {
 
     private final InventoryReportService reportService = new InventoryReportService();
+    private final AppSettingService appSettingService = new AppSettingService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Get all product inventory overview
+        int lowStockThreshold = appSettingService.getLowStockThreshold();
+        int upcomingExpiryDays = appSettingService.getUpcomingExpiryDays();
+
         var allProductsOverview = reportService.getAllProductInventoryOverview();
-        
-        // Get low stock products (< 50)
-        var lowStockProducts = reportService.getLowStockProducts(50);
-        
-        // Get products with upcoming expiry (7 days)
-        var upcomingExpiryProducts = reportService.getProductsWithUpcomingExpiry(7);
-        
-        // Get expired lots for cleanup
+        var lowStockProducts = reportService.getLowStockProducts(lowStockThreshold);
+        var upcomingExpiryProducts = reportService.getProductsWithUpcomingExpiry(upcomingExpiryDays);
         var expiredLots = reportService.getExpiredLotsForCleanup();
-        
-        // Get summary metrics
+
         var totalInventoryValue = reportService.getTotalInventoryValue();
         var totalActiveLots = reportService.getTotalActiveLots();
 
@@ -43,6 +36,10 @@ public class StaffInventoryReportServlet extends HttpServlet {
         req.setAttribute("expiredLots", expiredLots);
         req.setAttribute("totalInventoryValue", totalInventoryValue);
         req.setAttribute("totalActiveLots", totalActiveLots);
+
+        req.setAttribute("lowStockThreshold", lowStockThreshold);
+        req.setAttribute("upcomingExpiryDays", upcomingExpiryDays);
+
         req.setAttribute("upcomingExpiryCount", upcomingExpiryProducts.size());
         req.setAttribute("expiredLotsCount", expiredLots.size());
         req.setAttribute("today", LocalDate.now());
