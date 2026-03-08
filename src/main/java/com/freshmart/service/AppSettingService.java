@@ -16,6 +16,8 @@ public class AppSettingService {
     public static final String REPLENISH_LEAD_DAYS = "replenish_lead_days";
     public static final String REPLENISH_BUFFER_DAYS = "replenish_buffer_days";
     public static final String REPLENISH_SAFETY_DAYS = "replenish_safety_days";
+    public static final String SUB_NOTIFY_DAYS = "subscription_notify_days";
+    public static final String SUB_GRACE_PERIOD_DAYS = "subscription_grace_period_days";
 
     private final JpaExecutor executor = new JpaExecutor();
     private final AppSettingRepository repository = new AppSettingRepository();
@@ -28,8 +30,7 @@ public class AppSettingService {
                     AppSetting setting = new AppSetting(
                             entry.getKey(),
                             entry.getValue().value,
-                            entry.getValue().description
-                    );
+                            entry.getValue().description);
                     return repository.save(em, setting);
                 });
             }
@@ -106,6 +107,14 @@ public class AppSettingService {
         return getInt(REPLENISH_SAFETY_DAYS, 2);
     }
 
+    public int getSubNotifyDays() {
+        return getInt(SUB_NOTIFY_DAYS, 7);
+    }
+
+    public int getSubGracePeriodDays() {
+        return getInt(SUB_GRACE_PERIOD_DAYS, 3);
+    }
+
     private Map<String, DefaultSetting> defaultSettings() {
         Map<String, DefaultSetting> map = new LinkedHashMap<>();
         map.put(LOW_STOCK_THRESHOLD, new DefaultSetting("50", "Ngưỡng cảnh báo tồn kho thấp"));
@@ -114,6 +123,8 @@ public class AppSettingService {
         map.put(REPLENISH_LEAD_DAYS, new DefaultSetting("3", "Lead time mặc định"));
         map.put(REPLENISH_BUFFER_DAYS, new DefaultSetting("2", "Buffer days mặc định"));
         map.put(REPLENISH_SAFETY_DAYS, new DefaultSetting("2", "Safety days mặc định"));
+        map.put(SUB_NOTIFY_DAYS, new DefaultSetting("7", "Số ngày trước hết hạn để cảnh báo subscription"));
+        map.put(SUB_GRACE_PERIOD_DAYS, new DefaultSetting("3", "Số ngày gia hạn thêm (grace period) sau khi hết hạn"));
         return map;
     }
 
@@ -128,7 +139,8 @@ public class AppSettingService {
     private String sanitizeInt(String raw, String fallback) {
         int fallbackInt = parseInt(fallback, 0);
         int value = parseInt(raw, fallbackInt);
-        if (value < 0) value = fallbackInt;
+        if (value < 0)
+            value = fallbackInt;
         return String.valueOf(value);
     }
 

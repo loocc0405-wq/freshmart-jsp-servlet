@@ -152,6 +152,8 @@
                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/sellers">Manage sellers</a></li>
                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/products">Manage products</a></li>
                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/add-product">Add product</a></li>
+                            <li><hr class="dropdown-divider"/></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/subscriptions">Subscriptions</a></li>
                         </ul>
                     </li>
                 </c:if>

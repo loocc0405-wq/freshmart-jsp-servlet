@@ -29,12 +29,14 @@ public class TierFilter implements Filter {
         }
 
         if (u.getRole() == Role.CUSTOMER) {
+            // refreshAndSync now also records EXPIRE tier history if PRO expired
             User fresh = subscriptionService.refreshAndSync(u.getId());
             request.getSession().setAttribute(AppConstants.SESSION_USER, fresh);
 
             boolean ok = fresh.isProActive(LocalDate.now());
             if (!ok) {
-                response.sendRedirect(WebUtil.contextPath(request) + "/subscription/upgrade");
+                response.sendRedirect(WebUtil.contextPath(request)
+                        + "/subscription/upgrade?expired=1");
                 return;
             }
         }
