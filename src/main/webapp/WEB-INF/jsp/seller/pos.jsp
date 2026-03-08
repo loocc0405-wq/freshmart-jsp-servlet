@@ -5,6 +5,16 @@
 
 <h3>Seller POS (Bán tại quầy)</h3>
 
+<c:if test="${not empty sessionScope.sellerPosSuccessMessage}">
+    <div class="alert alert-success"><c:out value="${sessionScope.sellerPosSuccessMessage}"/></div>
+    <c:remove var="sellerPosSuccessMessage" scope="session"/>
+</c:if>
+
+<c:if test="${not empty sessionScope.sellerPosErrorMessage}">
+    <div class="alert alert-danger"><c:out value="${sessionScope.sellerPosErrorMessage}"/></div>
+    <c:remove var="sellerPosErrorMessage" scope="session"/>
+</c:if>
+
 <div class="row">
     <div class="col-lg-7">
         <div class="card mb-3">
@@ -34,7 +44,7 @@
                                     <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                                     <input type="hidden" name="productId" value="${p.id}"/>
                                     <input class="form-control form-control-sm" style="width: 90px" name="quantity" type="number" min="1" value="1"/>
-                                    <button class="btn btn-sm btn-primary" type="submit">Add</button>
+                                    <button class="btn btn-sm btn-primary" type="submit" ${availableMap[p.id] <= 0 ? 'disabled="disabled"' : ''}>Add</button>
                                 </form>
                             </td>
                         </tr>

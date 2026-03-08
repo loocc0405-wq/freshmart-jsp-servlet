@@ -6,7 +6,9 @@ import com.freshmart.entity.Supplier;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.repository.SupplierRepository;
+import com.freshmart.service.ProductLotService;
 import com.freshmart.service.dto.InventoryLotFilter;
+import com.freshmart.service.dto.StockSummaryDto;
 import com.freshmart.util.JpaExecutor;
 
 import jakarta.servlet.ServletException;
@@ -17,6 +19,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Servlet để xem tồn kho theo lô và FEFO.
@@ -29,6 +32,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
     private final ProductRepository productRepo = new ProductRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
     private final SupplierRepository supplierRepo = new SupplierRepository();
+    private final ProductLotService lotService = new ProductLotService();
 
     private Long parseLongOrNull(String raw) {
         if (raw == null || raw.isBlank()) return null;
@@ -103,11 +107,55 @@ public class StaffInventoryViewServlet extends HttpServlet {
 
                 req.setAttribute("filteredLots", filteredLots);
                 req.setAttribute("filteredCount", filteredCount);
+            }
 
-                if (filter.getProductId() != null) {
-                    Product selectedProduct = executor.execute(em -> productRepo.findById(em, filter.getProductId()).orElse(null));
-                    req.setAttribute("selectedProduct", selectedProduct);
+            // Load detailed data when product is selected (independent of hasFilter)
+            if (filter.getProductId() != null) {
+                Product selectedProduct = executor.execute(em ->
+                        productRepo.findById(em, filter.getProductId()).orElse(null)
+                );
+
+                if (selectedProduct == null || !selectedProduct.isActive()) {
+                    throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.");
                 }
+
+                req.setAttribute("selectedProduct", selectedProduct);
+
+                // Get comprehensive stock summary
+                StockSummaryDto stockSummary = lotService.getStockSummary(filter.getProductId());
+                req.setAttribute("stockSummary", stockSummary);
+
+                // Get all lots (regardless of expiry)
+                List<ProductLot> allLots = executor.execute(em ->
+                    em.createQuery(
+                            "SELECT l FROM ProductLot l WHERE l.product.id = :pid ORDER BY l.expiryDate ASC",
+                            ProductLot.class
+                    ).setParameter("pid", filter.getProductId())
+                     .getResultList()
+                );
+                req.setAttribute("allLots", allLots);
+
+                // Get available (non-expired) lots for FEFO display
+                List<ProductLot> availableLots = allLots.stream()
+                    .filter(l -> l.getExpiryDate().isAfter(today) || l.getExpiryDate().isEqual(today))
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .collect(Collectors.toList());
+                req.setAttribute("availableLots", availableLots);
+
+                // Get expired lots (with remaining qty)
+                List<ProductLot> expiredLots = allLots.stream()
+                    .filter(l -> l.getExpiryDate().isBefore(today) && l.getQtyLeft() > 0)
+                    .collect(Collectors.toList());
+                req.setAttribute("expiredLots", expiredLots);
+
+                // Get lots expiring within 7 days
+                LocalDate sevenDaysLater = today.plusDays(7);
+                List<ProductLot> upcomingExpiry = allLots.stream()
+                    .filter(l -> (l.getExpiryDate().isAfter(today) || l.getExpiryDate().isEqual(today)) &&
+                           (l.getExpiryDate().isBefore(sevenDaysLater) || l.getExpiryDate().isEqual(sevenDaysLater)))
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .collect(Collectors.toList());
+                req.setAttribute("upcomingExpiry", upcomingExpiry);
             }
 
         } catch (Exception ex) {

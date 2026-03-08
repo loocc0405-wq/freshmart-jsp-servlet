@@ -26,6 +26,9 @@ public class SellerPosServlet extends HttpServlet {
     private final ProductLotRepository lotRepo = new ProductLotRepository();
     private final InventoryService inventoryService = new InventoryService();
 
+    private static final String SESSION_POS_SUCCESS = "sellerPosSuccessMessage";
+    private static final String SESSION_POS_ERROR = "sellerPosErrorMessage";
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         @SuppressWarnings("unchecked")
@@ -89,14 +92,52 @@ public class SellerPosServlet extends HttpServlet {
             req.getSession().setAttribute(AppConstants.SESSION_SELLER_CART, cart);
         }
 
-        String pidRaw = req.getParameter("productId");
-        String qtyRaw = req.getParameter("quantity");
-        if (pidRaw != null && qtyRaw != null) {
-            Long pid = Long.parseLong(pidRaw);
-            int qty = Integer.parseInt(qtyRaw);
-            if (qty > 0) {
-                cart.put(pid, cart.getOrDefault(pid, 0) + qty);
+        try {
+            String pidRaw = req.getParameter("productId");
+            String qtyRaw = req.getParameter("quantity");
+
+            if (pidRaw == null || pidRaw.isBlank() || qtyRaw == null || qtyRaw.isBlank()) {
+                throw new IllegalArgumentException("Thiếu sản phẩm hoặc số lượng.");
             }
+
+            Long pid = Long.parseLong(pidRaw.trim());
+            int qty = Integer.parseInt(qtyRaw.trim());
+
+            if (qty <= 0) {
+                throw new IllegalArgumentException("Số lượng phải lớn hơn 0.");
+            }
+
+            final Map<Long, Integer> cartRef = cart;
+            String successMessage = executor.execute(em -> {
+                Product product = productRepo.findById(em, pid)
+                        .orElseThrow(() -> new IllegalArgumentException("Sản phẩm không tồn tại."));
+
+                if (!product.isActive()) {
+                    throw new IllegalStateException("Sản phẩm đã ngừng kinh doanh.");
+                }
+
+                int available = inventoryService.getAvailableQty(em, pid, LocalDate.now());
+                int currentQtyInCart = cartRef.getOrDefault(pid, 0);
+                int newQty = currentQtyInCart + qty;
+
+                if (available <= 0) {
+                    throw new IllegalStateException("Sản phẩm hiện đã hết tồn khả dụng.");
+                }
+
+                if (newQty > available) {
+                    throw new IllegalStateException(
+                            "Không thể thêm vượt tồn khả dụng. Trong kho còn " + available + " đơn vị, giỏ hiện có "
+                                    + currentQtyInCart + " đơn vị."
+                    );
+                }
+
+                cartRef.put(pid, newQty);
+                return "Đã thêm " + qty + " x " + product.getName() + " vào giỏ POS.";
+            });
+
+            req.getSession().setAttribute(SESSION_POS_SUCCESS, successMessage);
+        } catch (RuntimeException ex) {
+            req.getSession().setAttribute(SESSION_POS_ERROR, ex.getMessage());
         }
 
         resp.sendRedirect(req.getContextPath() + "/seller/pos");
