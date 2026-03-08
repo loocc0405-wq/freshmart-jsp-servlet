@@ -89,6 +89,7 @@
                         <th>Còn lại</th>
                         <th>Đã dùng</th>
                         <th>Giá nhập</th>
+                        <th>Hành động</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -109,6 +110,12 @@
                             <td><strong><c:out value="${lot.qtyLeft}"/></strong></td>
                             <td><c:out value="${lot.qtyIn - lot.qtyLeft}"/></td>
                             <td><c:out value="${lot.importPrice}"/></td>
+                            <td>
+                                <a class="btn btn-sm btn-outline-primary"
+                                   href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
+                                   Sửa
+                                </a>
+                            </td>
                         </tr>
                     </c:forEach>
                     </tbody>
@@ -207,6 +214,7 @@
                     <th>Còn</th>
                     <th>Giá</th>
                     <th>Trạng thái</th>
+                    <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -233,6 +241,12 @@
                                 <c:when test="${status == 'consumed'}"><span class="badge bg-secondary">Đã dùng hết</span></c:when>
                                 <c:otherwise><span class="badge bg-success">Khả dụng</span></c:otherwise>
                             </c:choose>
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary"
+                               href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
+                               Sửa
+                            </a>
                         </td>
                     </tr>
                 </c:forEach>
