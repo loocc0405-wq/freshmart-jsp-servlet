@@ -179,4 +179,68 @@ public class ProductLotService {
             return summary;
         });
     }
+
+    /**
+     * Update an existing lot with safety rules.
+     * Can edit: product, supplier, importDate, expiryDate, qtyIn, importPrice.
+     * Cannot edit: qtyLeft (recalculated from consumed quantity).
+     * MUST be called inside a transaction.
+     */
+    public ProductLot updateLot(Long lotId,
+                                Long productId,
+                                Long supplierId,
+                                LocalDate importDate,
+                                LocalDate expiryDate,
+                                int newQtyIn,
+                                BigDecimal importPrice,
+                                jakarta.persistence.EntityManager em) {
+        ProductLot lot = em.find(ProductLot.class, lotId);
+        if (lot == null) {
+            throw new IllegalArgumentException("Lot not found: " + lotId);
+        }
+
+        Product product = em.find(Product.class, productId);
+        if (product == null) {
+            throw new IllegalArgumentException("Product not found: " + productId);
+        }
+
+        Supplier supplier = null;
+        if (supplierId != null) {
+            supplier = em.find(Supplier.class, supplierId);
+        }
+
+        if (importDate == null || expiryDate == null) {
+            throw new IllegalArgumentException("Import date and expiry date are required");
+        }
+        if (expiryDate.isBefore(importDate)) {
+            throw new IllegalArgumentException("Expiry date must be after import date");
+        }
+        if (newQtyIn <= 0) {
+            throw new IllegalArgumentException("Quantity must be greater than 0");
+        }
+
+        int consumed = lot.getQtyIn() - lot.getQtyLeft();
+        if (newQtyIn < consumed) {
+            throw new IllegalArgumentException(
+                "New qtyIn cannot be smaller than already consumed quantity: " + consumed
+            );
+        }
+
+        lot.setProduct(product);
+        lot.setSupplier(supplier);
+        lot.setImportDate(importDate);
+        lot.setExpiryDate(expiryDate);
+        lot.setQtyIn(newQtyIn);
+        lot.setQtyLeft(newQtyIn - consumed);
+        lot.setImportPrice(importPrice != null ? importPrice : BigDecimal.ZERO);
+
+        return em.merge(lot);
+    }
+
+    /**
+     * Get lot detail with full references (product, supplier).
+     */
+    public Optional<ProductLot> getLotDetail(Long lotId) {
+        return executor.execute(em -> Optional.ofNullable(lotRepo.findByIdWithRefs(em, lotId)));
+    }
 }

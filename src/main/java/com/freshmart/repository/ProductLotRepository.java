@@ -124,4 +124,20 @@ public class ProductLotRepository {
 
         return cnt == null ? 0 : cnt.intValue();
     }
+
+    /**
+     * Find a lot by ID with eagerly loaded product and supplier references.
+     * Safe for editing operations.
+     */
+    public ProductLot findByIdWithRefs(EntityManager em, Long lotId) {
+        List<ProductLot> list = em.createQuery(
+            "SELECT l FROM ProductLot l " +
+            "JOIN FETCH l.product p " +
+            "LEFT JOIN FETCH l.supplier s " +
+            "WHERE l.id = :id",
+            ProductLot.class
+        ).setParameter("id", lotId).getResultList();
+
+        return list.isEmpty() ? null : list.get(0);
+    }
 }
