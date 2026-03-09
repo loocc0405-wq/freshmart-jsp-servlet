@@ -249,7 +249,7 @@ public class ProductManagementServlet extends HttpServlet {
 
         // Get total count
         long totalItems = (hasKeyword || hasCategory)
-                ? productService.countSearch(keyword, category, showInactive)
+                ? productService.countSearch(keyword, category, null, showInactive)
                 : productService.countAll(showInactive);
 
         // Calculate total pages
@@ -263,7 +263,7 @@ public class ProductManagementServlet extends HttpServlet {
 
         // Get paginated products
         List<Product> products = (hasKeyword || hasCategory)
-                ? productService.searchPaginated(keyword, category, showInactive, currentPage, pageSize)
+                ? productService.searchPaginated(keyword, category, null, showInactive, currentPage, pageSize)
                 : productService.listAllPaginated(showInactive, currentPage, pageSize);
 
         // Set attributes for JSP

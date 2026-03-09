@@ -31,11 +31,11 @@ public class ProductService {
      * Convenience wrapper keeping existing two‑argument search signature (only active products).
      */
     public List<Product> search(String keyword, String category) {
-        return search(keyword, category, false);
+        return search(keyword, category, null, false);
     }
 
-    public List<Product> search(String keyword, String category, boolean showInactive) {
-        return executor.execute(em -> productRepo.search(em, keyword, category, showInactive));
+    public List<Product> search(String keyword, String category, String stockStatus, boolean showInactive) {
+        return executor.execute(em -> productRepo.search(em, keyword, category, stockStatus, showInactive));
     }
     public Product getById(Long id) {
         return executor.execute(em -> productRepo.findById(em, id).orElse(null));
@@ -59,13 +59,13 @@ public class ProductService {
         return executor.execute(em -> productRepo.countAll(em, showInactive));
     }
 
-    public List<Product> searchPaginated(String keyword, String category, boolean showInactive, 
+    public List<Product> searchPaginated(String keyword, String category, String stockStatus, boolean showInactive, 
                                          int page, int size) {
         int offset = (page - 1) * size;
-        return executor.execute(em -> productRepo.searchPaginated(em, keyword, category, showInactive, offset, size));
+        return executor.execute(em -> productRepo.searchPaginated(em, keyword, category, stockStatus, showInactive, offset, size));
     }
 
-    public long countSearch(String keyword, String category, boolean showInactive) {
-        return executor.execute(em -> productRepo.countSearch(em, keyword, category, showInactive));
+    public long countSearch(String keyword, String category, String stockStatus, boolean showInactive) {
+        return executor.execute(em -> productRepo.countSearch(em, keyword, category, stockStatus, showInactive));
     }
 }
