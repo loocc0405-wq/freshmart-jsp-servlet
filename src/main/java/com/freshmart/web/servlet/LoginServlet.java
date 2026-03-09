@@ -5,12 +5,16 @@ import com.freshmart.entity.User;
 import com.freshmart.exception.AuthenticationException;
 import com.freshmart.security.LoginAttemptService;
 import com.freshmart.service.AuthService;
+import com.freshmart.service.CartService; // ===== ADDED FOR CART MERGE =====
+import com.freshmart.entity.CartItem; // ===== ADDED FOR CART MERGE =====
+import java.util.List; // ===== ADDED FOR CART MERGE =====
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession; // dùng lại session cho gọn
 
 import java.io.IOException;
 
@@ -19,6 +23,10 @@ public class LoginServlet extends HttpServlet {
 
     private final AuthService authService = new AuthService();
     private static final LoginAttemptService attemptService = new LoginAttemptService();
+
+    // ===== ADDED FOR CART MERGE =====
+    private final CartService cartService = new CartService();
+    // ===== END ADDED =====
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -52,10 +60,25 @@ public class LoginServlet extends HttpServlet {
             User user = authService.login(username, password);
             attemptService.loginSuccess(username);
 
-            req.getSession().setAttribute(AppConstants.SESSION_USER, user);
+            HttpSession session = req.getSession();
 
-            // Ensure CSRF token exists for later POST actions (e.g., logout)
-            jakarta.servlet.http.HttpSession session = req.getSession();
+            session.setAttribute(AppConstants.SESSION_USER, user);
+
+            // ===== ADDED: MERGE GUEST CART AFTER LOGIN =====
+
+            List<CartItem> sessionCart =
+                    (List<CartItem>) session.getAttribute("GUEST_CART_ITEMS");
+
+            if (sessionCart != null && !sessionCart.isEmpty()) {
+
+                // merge session cart into DB cart
+                cartService.mergeCart(user.getId(), sessionCart);
+
+                // clear guest cart after merge
+                session.removeAttribute("GUEST_CART_ITEMS");
+            }
+
+            // ===== END ADDED =====
             if (session.getAttribute("CSRF_TOKEN") == null) {
                 session.setAttribute("CSRF_TOKEN", java.util.UUID.randomUUID().toString());
             }
