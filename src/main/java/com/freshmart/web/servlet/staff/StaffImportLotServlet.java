@@ -32,10 +32,22 @@ public class StaffImportLotServlet extends HttpServlet {
      * Load products and suppliers for dropdowns (reference data).
      */
     private void loadReferenceData(HttpServletRequest req) {
-        var products = executor.execute(em -> productRepo.findAll(em, false));
+        var products = executor.execute(em -> productRepo.findAll(em, true));
         var suppliers = executor.execute(supplierRepo::findAll);
         req.setAttribute("products", products);
         req.setAttribute("suppliers", suppliers);
+    }
+
+    /**
+     * Preserve submitted form values when validation fails.
+     */
+    private void preserveSubmittedValues(HttpServletRequest req) {
+        req.setAttribute("formProductId", req.getParameter("productId"));
+        req.setAttribute("formSupplierId", req.getParameter("supplierId"));
+        req.setAttribute("formImportDate", req.getParameter("importDate"));
+        req.setAttribute("formExpiryDate", req.getParameter("expiryDate"));
+        req.setAttribute("formQuantity", req.getParameter("quantity"));
+        req.setAttribute("formImportPrice", req.getParameter("importPrice"));
     }
 
     /**
@@ -60,6 +72,11 @@ public class StaffImportLotServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         loadReferenceData(req);
         loadEditingLotIfAny(req, req.getParameter("id"));
+        // Prefill productId nếu là từ báo cáo low stock
+        if (req.getAttribute("editingLot") == null) {
+            req.setAttribute("formProductId", req.getParameter("productId"));
+            req.setAttribute("formSupplierId", req.getParameter("supplierId"));
+        }
         req.getRequestDispatcher("/WEB-INF/jsp/staff/import_lot.jsp").forward(req, resp);
     }
 
@@ -110,6 +127,7 @@ public class StaffImportLotServlet extends HttpServlet {
 
         } catch (RuntimeException ex) {
             req.setAttribute("errorMessage", ex.getMessage());
+            preserveSubmittedValues(req);
             loadEditingLotIfAny(req, lotIdRaw);
         }
 

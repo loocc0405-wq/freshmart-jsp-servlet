@@ -44,10 +44,22 @@ public class StaffInventoryReportServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
+            // Lấy flash message từ session nếu có
+            Object successMessage = req.getSession().getAttribute("successMessage");
+            Object errorFlash = req.getSession().getAttribute("errorMessage");
+            if (successMessage != null) {
+                req.setAttribute("successMessage", successMessage);
+                req.getSession().removeAttribute("successMessage");
+            }
+            if (errorFlash != null) {
+                req.setAttribute("errorMessage", errorFlash);
+                req.getSession().removeAttribute("errorMessage");
+            }
+
             int lowStockThreshold = appSettingService.getLowStockThreshold();
             int upcomingExpiryDays = appSettingService.getUpcomingExpiryDays();
 
-            java.util.List<Product> products = executor.execute(em -> productRepo.findAll(em, false));
+            java.util.List<Product> products = executor.execute(em -> productRepo.findAll(em, true));
             java.util.List<Supplier> suppliers = executor.execute(supplierRepo::findAll);
 
             InventoryLotFilter filter = new InventoryLotFilter();

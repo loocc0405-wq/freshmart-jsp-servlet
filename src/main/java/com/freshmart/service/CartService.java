@@ -75,6 +75,10 @@ public class CartService {
             Product product = productRepo.findById(em, productId)
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
+            if (!product.isActive()) {
+                throw new RuntimeException("Product is inactive");
+            }
+
             CartItem item = cartItemRepo
                     .findByCartAndProduct(em, cart.getId(), productId)
                     .orElse(null);
@@ -122,6 +126,12 @@ public class CartService {
             if (qty <= 0) {
                 em.remove(item);
             } else {
+                Product product = productRepo.findById(em, productId)
+                        .orElseThrow(() -> new RuntimeException("Product not found"));
+
+                if (!product.isActive()) {
+                    throw new RuntimeException("Product is inactive");
+                }
 
                 // ------------------------------
                 // CHECK STOCK
@@ -172,6 +182,11 @@ public class CartService {
                 Long productId = sessionItem.getProduct().getId();
                 int qty = sessionItem.getQuantity();
 
+                Product product = productRepo.findById(em, productId).orElse(null);
+                if (product == null || !product.isActive()) {
+                    continue;
+                }
+
                 int stock = getAvailableStock(em, productId);
 
                 if (qty > stock) {
@@ -185,9 +200,6 @@ public class CartService {
                         .orElse(null);
 
                 if (item == null) {
-
-                    Product product = productRepo.findById(em, productId)
-                            .orElseThrow();
 
                     CartItem newItem = new CartItem();
                     newItem.setCart(cart);
