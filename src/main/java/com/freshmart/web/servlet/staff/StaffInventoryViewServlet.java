@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
  * Servlet để xem tồn kho theo lô và FEFO.
  * Map: /staff/inventory
  */
-@WebServlet(urlPatterns = {"/staff/inventory"})
+@WebServlet(urlPatterns = {"/staff/inventory", "/staff/inventory/view"})
 public class StaffInventoryViewServlet extends HttpServlet {
 
     private final JpaExecutor executor = new JpaExecutor();

@@ -17,7 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 
-@WebServlet(urlPatterns = {"/staff/inventory-report"})
+@WebServlet(urlPatterns = {"/staff/inventory-report", "/staff/inventory/report"})
 public class StaffInventoryReportServlet extends HttpServlet {
 
     private final JpaExecutor executor = new JpaExecutor();
