@@ -225,6 +225,7 @@ public class ProductManagementServlet extends HttpServlet {
         String keyword = request.getParameter("keyword");
         String category = request.getParameter("category");
         String showInactiveParam = request.getParameter("showInactive");
+        String pageParam = request.getParameter("page");
 
         if (keyword != null) keyword = keyword.trim();
         if (category != null) category = category.trim();
@@ -233,17 +234,49 @@ public class ProductManagementServlet extends HttpServlet {
         boolean hasCategory = category != null && !category.isEmpty();
         boolean showInactive = "on".equalsIgnoreCase(showInactiveParam) || "true".equalsIgnoreCase(showInactiveParam);
 
+        // Pagination parameters
+        int pageSize = 10; // items per page
+        int currentPage = 1;
+        
+        if (pageParam != null && !pageParam.isBlank()) {
+            try {
+                currentPage = Integer.parseInt(pageParam);
+                if (currentPage < 1) currentPage = 1;
+            } catch (NumberFormatException e) {
+                currentPage = 1;
+            }
+        }
+
+        // Get total count
+        long totalItems = (hasKeyword || hasCategory)
+                ? productService.countSearch(keyword, category, showInactive)
+                : productService.countAll(showInactive);
+
+        // Calculate total pages
+        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+        if (totalPages < 1) totalPages = 1;
+
+        // Handle edge case: currentPage exceeds totalPages
+        if (currentPage > totalPages && totalItems > 0) {
+            currentPage = totalPages;
+        }
+
+        // Get paginated products
         List<Product> products = (hasKeyword || hasCategory)
-                ? productService.search(keyword, category, showInactive)
-                : productService.listAll(showInactive);
+                ? productService.searchPaginated(keyword, category, showInactive, currentPage, pageSize)
+                : productService.listAllPaginated(showInactive, currentPage, pageSize);
 
-        request.setAttribute("showInactive", showInactive);
-
+        // Set attributes for JSP
         request.setAttribute("products", products);
-
-        // để JSP set lại ô tìm kiếm
         request.setAttribute("keyword", keyword);
         request.setAttribute("category", category);
+        request.setAttribute("showInactive", showInactive);
+        
+        // Pagination attributes
+        request.setAttribute("currentPage", currentPage);
+        request.setAttribute("pageSize", pageSize);
+        request.setAttribute("totalItems", totalItems);
+        request.setAttribute("totalPages", totalPages);
 
         request.getRequestDispatcher("/WEB-INF/jsp/staff/product_list.jsp")
                 .forward(request, response);
