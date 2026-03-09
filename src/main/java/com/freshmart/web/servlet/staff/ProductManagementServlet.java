@@ -4,6 +4,7 @@ import com.freshmart.entity.Product;
 import com.freshmart.service.ProductService;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
@@ -12,6 +13,11 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @WebServlet("/staff/products")
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024,    // 1MB
+    maxFileSize = 1024 * 1024 * 5,      // 5MB
+    maxRequestSize = 1024 * 1024 * 10   // 10MB
+)
 public class ProductManagementServlet extends HttpServlet {
 
     private ProductService productService;
@@ -135,8 +141,27 @@ public class ProductManagementServlet extends HttpServlet {
             errors.append("Sell price is required. ");
         }
 
-        // validate imageUrl if provided
-        if (imageUrl != null && !imageUrl.isEmpty()) {
+        // Handle file upload
+        Part filePart = request.getPart("imageFile");
+        String uploadedImagePath = null;
+
+        if (filePart != null && filePart.getSize() > 0) {
+            String fileName = getSubmittedFileName(filePart);
+
+            // Validate file extension
+            if (!isValidImageFile(fileName)) {
+                errors.append("Invalid image file. Only JPG, PNG, GIF, WEBP are allowed. ");
+            } else {
+                try {
+                    uploadedImagePath = saveUploadedFile(filePart, fileName, request);
+                } catch (Exception e) {
+                    errors.append("Failed to upload image: " + e.getMessage() + " ");
+                }
+            }
+        }
+
+        // validate imageUrl if provided and no file uploaded
+        if (uploadedImagePath == null && imageUrl != null && !imageUrl.isEmpty()) {
             try {
                 new java.net.URL(imageUrl);
             } catch (Exception e) {
@@ -176,7 +201,14 @@ public class ProductManagementServlet extends HttpServlet {
             product.setSellPrice(new BigDecimal(priceStr.trim()));
         }
 
-        product.setImageUrl(imageUrl);
+        // Priority: uploaded file > imageUrl > keep old image
+        if (uploadedImagePath != null) {
+            product.setImageUrl(uploadedImagePath);
+        } else if (imageUrl != null && !imageUrl.isEmpty()) {
+            product.setImageUrl(imageUrl);
+        }
+        // else: keep existing imageUrl (for edit case)
+
         product.setDescription(description);
         product.setActive(active);
 
@@ -240,5 +272,81 @@ public class ProductManagementServlet extends HttpServlet {
 
         request.getSession().setAttribute("flash", "Product deleted successfully!");
         response.sendRedirect(request.getContextPath() + "/staff/products");
+    }
+
+    /**
+     * Extract filename from Part header
+     */
+    private String getSubmittedFileName(Part part) {
+        String contentDisposition = part.getHeader("content-disposition");
+        for (String token : contentDisposition.split(";")) {
+            if (token.trim().startsWith("filename")) {
+                return token.substring(token.indexOf('=') + 1).trim().replace("\"", "");
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Validate image file extension
+     */
+    private boolean isValidImageFile(String fileName) {
+        if (fileName == null || fileName.isEmpty()) {
+            return false;
+        }
+        String lower = fileName.toLowerCase();
+        return lower.endsWith(".jpg") || lower.endsWith(".jpeg")
+            || lower.endsWith(".png") || lower.endsWith(".gif")
+            || lower.endsWith(".webp");
+    }
+
+    /**
+     * Save uploaded file to disk and return web-accessible path
+     */
+    private String saveUploadedFile(Part filePart, String originalFileName, HttpServletRequest request)
+            throws IOException {
+
+        // Generate safe filename: timestamp + sanitized original name
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String safeFileName = sanitizeFileName(originalFileName);
+        String finalFileName = timestamp + "_" + safeFileName;
+
+        // Upload directory: webapp/assets/uploads/products/
+        String uploadDir = request.getServletContext().getRealPath("/assets/uploads/products");
+        java.io.File uploadDirFile = new java.io.File(uploadDir);
+        if (!uploadDirFile.exists()) {
+            uploadDirFile.mkdirs();
+        }
+
+        // Save file
+        String filePath = uploadDir + java.io.File.separator + finalFileName;
+        filePart.write(filePath);
+
+        // Return web-accessible path
+        return request.getContextPath() + "/assets/uploads/products/" + finalFileName;
+    }
+
+    /**
+     * Sanitize filename to prevent path traversal and special characters
+     */
+    private String sanitizeFileName(String fileName) {
+        if (fileName == null) return "image.jpg";
+
+        // Remove path separators and special characters
+        String safe = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+
+        // Limit length
+        if (safe.length() > 100) {
+            String ext = "";
+            int dotIndex = safe.lastIndexOf('.');
+            if (dotIndex > 0) {
+                ext = safe.substring(dotIndex);
+                safe = safe.substring(0, Math.min(95, dotIndex)) + ext;
+            } else {
+                safe = safe.substring(0, 100);
+            }
+        }
+
+        return safe;
     }
 }

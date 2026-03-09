@@ -31,6 +31,7 @@
 
     <form action="${pageContext.request.contextPath}/staff/products"
           method="post"
+          enctype="multipart/form-data"
           class="row g-3">
 
       <!-- CSRF TOKEN (THÊM MỚI) -->
@@ -88,6 +89,16 @@
                name="imageUrl"
                value="${product.imageUrl}"
                placeholder="https://example.com/image.jpg">
+        <div class="form-text">Or upload a file below</div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Upload Image File</label>
+        <input type="file"
+               class="form-control"
+               name="imageFile"
+               accept="image/jpeg,image/jpg,image/png,image/gif,image/webp">
+        <div class="form-text">JPG, PNG, GIF, WEBP (max 5MB)</div>
       </div>
 
       <div class="col-md-4 d-flex align-items-center">
