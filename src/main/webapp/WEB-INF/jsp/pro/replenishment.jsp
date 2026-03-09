@@ -55,6 +55,11 @@
         <hr class="my-2"/>
 
         <div class="small">
+          <b>Lưu ý:</b> Hệ thống ưu tiên dùng lead time theo supplier nếu có.
+          Nếu không có dữ liệu supplier, hệ thống mới dùng leadTimeDays nhập từ form.
+        </div>
+
+        <div class="small mt-2">
           <b>Rule thêm:</b> Nếu tồn kho có <b>nhiều lô sắp hết hạn</b> (≤ 3 ngày) thì hệ thống sẽ
           <b>giảm Suggested</b> để ưu tiên <b>xả hàng</b> trước khi nhập thêm.
         </div>
@@ -77,14 +82,8 @@
             <th class="text-end">SeasonFactor</th>
             <th class="text-end">Forecast/day</th>
             <th class="text-end">Stock</th>
-            <th class="text-end">ExpectedDemand</th>
-            <th class="text-end">SafetyStock</th>
-            <th class="text-end">ReorderPoint</th>
-
-            <!-- NEW -->
             <th class="text-end">ExpiringLots (≤3d)</th>
             <th class="text-end">ExpiringQty (≤3d)</th>
-
             <th class="text-center">Suggested</th>
             <th>Note</th>
           </tr>
@@ -92,26 +91,25 @@
 
           <tbody>
           <c:forEach var="r" items="${rows}">
-            <c:set var="expectedDemand" value="${r.forecastPerDay * (leadTimeDays + bufferDays)}"/>
-            <c:set var="safetyStock" value="${r.forecastPerDay * safetyDays}"/>
-            <c:set var="reorderPoint" value="${expectedDemand + safetyStock}"/>
-
             <tr>
               <td><c:out value="${r.productName}"/></td>
 
-              <td class="text-end"><fmt:formatNumber value="${r.avg7}" minFractionDigits="2" maxFractionDigits="2"/></td>
-              <td class="text-end"><fmt:formatNumber value="${r.avg30}" minFractionDigits="2" maxFractionDigits="2"/></td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.avg7}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.avg30}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
-              <td class="text-end"><fmt:formatNumber value="${r.seasonFactor}" minFractionDigits="2" maxFractionDigits="2"/></td>
-              <td class="text-end"><fmt:formatNumber value="${r.forecastPerDay}" minFractionDigits="2" maxFractionDigits="2"/></td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.seasonFactor}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
+              <td class="text-end">
+                <fmt:formatNumber value="${r.forecastPerDay}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
 
               <td class="text-end"><c:out value="${r.stock}"/></td>
 
-              <td class="text-end"><fmt:formatNumber value="${expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/></td>
-              <td class="text-end"><fmt:formatNumber value="${safetyStock}" minFractionDigits="2" maxFractionDigits="2"/></td>
-              <td class="text-end"><fmt:formatNumber value="${reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/></td>
-
-              <!-- NEW -->
               <td class="text-end"><c:out value="${r.expiringLots}"/></td>
               <td class="text-end"><c:out value="${r.expiringQty}"/></td>
 

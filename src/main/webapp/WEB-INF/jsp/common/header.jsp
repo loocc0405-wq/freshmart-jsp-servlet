@@ -101,6 +101,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/dashboard">Dashboard</a></li>
                             <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/seasonality">Seasonality</a></li>
+                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/replenishment">Replenishment</a></li>
                         </ul>
                     </li>
                 </c:if>
