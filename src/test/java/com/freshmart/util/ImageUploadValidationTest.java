@@ -193,7 +193,6 @@ class ImageUploadValidationTest {
     void testImagePriority_UploadedFileOverUrl() {
         // Logic: if (filePart != null && submittedFileName != null) → use uploaded file
         String uploadedFile = "/freshmart/assets/uploads/products/123_image.jpg";
-        String imageUrl = "https://example.com/image.jpg";
         
         // Uploaded file should take priority
         String finalImage = uploadedFile; // In servlet: use uploaded file path
@@ -204,7 +203,6 @@ class ImageUploadValidationTest {
     @Test
     void testImagePriority_UrlWhenNoUpload() {
         // Logic: if (filePart == null && imageUrl != null) → use URL
-        String uploadedFile = null;
         String imageUrl = "https://example.com/image.jpg";
         
         String finalImage = imageUrl;
@@ -215,8 +213,6 @@ class ImageUploadValidationTest {
     @Test
     void testImagePriority_KeepOldWhenNoChange() {
         // Logic: if (filePart == null && imageUrl.isEmpty() && existingProduct != null) → keep old
-        String uploadedFile = null;
-        String imageUrl = "";
         String existingImage = "/freshmart/assets/uploads/products/old_image.jpg";
         
         String finalImage = existingImage;
@@ -227,8 +223,6 @@ class ImageUploadValidationTest {
     @Test
     void testImagePriority_NullWhenNoInput() {
         // Logic: if (filePart == null && imageUrl.isEmpty() && existingProduct == null) → null
-        String uploadedFile = null;
-        String imageUrl = "";
         String existingImage = null;
         
         String finalImage = existingImage;

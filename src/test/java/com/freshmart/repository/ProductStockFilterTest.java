@@ -3,7 +3,6 @@ package com.freshmart.repository;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -187,10 +186,6 @@ class ProductStockFilterTest {
 
     @Test
     void testCalculateAvailableQty_ExpiredLotExcluded() {
-        LocalDate today = LocalDate.now();
-        LocalDate expiredDate = today.minusDays(1);
-        LocalDate validDate = today.plusDays(10);
-
         // Logic: only count lots where expiryDate >= today
         // Expired lot (10) should be excluded, valid lot (20) counted
         int availableQty = 20; // Only valid lot
@@ -200,9 +195,6 @@ class ProductStockFilterTest {
 
     @Test
     void testCalculateAvailableQty_ExpiringToday() {
-        LocalDate today = LocalDate.now();
-        LocalDate expiryDate = today;
-
         // Lot expiring today should still be counted (expiryDate >= today)
         int availableQty = 15;
 
