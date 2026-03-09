@@ -59,6 +59,9 @@ public class OrderService {
                 if (p == null) {
                     throw new IllegalArgumentException("Product not found: " + req.getProductId());
                 }
+                if (!p.isActive()) {
+                    throw new IllegalStateException("Product is inactive: " + p.getName());
+                }
 
                 if (completeNow) {
                     inventoryService.consumeStockFEFO(em, p.getId(), req.getQuantity(), today);
@@ -66,6 +69,10 @@ public class OrderService {
 
                 OrderItem item = new OrderItem(p, req.getQuantity(), p.getSellPrice());
                 order.addItem(item);
+            }
+
+            if (order.getItems().isEmpty()) {
+                throw new IllegalArgumentException("Order must contain at least one valid item.");
             }
 
             BigDecimal total = order.getItems().stream()
@@ -124,9 +131,8 @@ public class OrderService {
             User customer = requireUser(em, customerId);
 
             CartRepository cartRepo = new CartRepository();
-
             List<CartItem> cartItems = cartRepo.findItemsByUserId(em, customerId);
-            System.out.println("Cart items found: " + cartItems.size());
+
             if (cartItems.isEmpty()) {
                 throw new IllegalStateException("Cart is empty");
             }
@@ -134,14 +140,13 @@ public class OrderService {
             Order order = new Order();
             order.setOrderCode(CodeGenerator.orderCode());
 
-            // depending on entity design
-            order.setCreatedBy(customer);
+            // đúng quan hệ business
+            order.setCustomer(customer);
+            order.setCreatedBy(null);
 
             order.setType(OrderType.ONLINE);
             order.setStatus(OrderStatus.PENDING);
-
             order.setPaymentMethod(PaymentMethod.COD);
-
             order.setCreatedAt(LocalDateTime.now());
 
             LocalDate today = LocalDate.now();
@@ -154,12 +159,14 @@ public class OrderService {
                     throw new IllegalArgumentException("Product not found: " + ci.getProduct().getId());
                 }
 
-                inventoryService.consumeStockFEFO(
-                        em,
-                        p.getId(),
-                        ci.getQuantity(),
-                        today
-                );
+                if (!p.isActive()) {
+                    throw new IllegalStateException("Product is inactive: " + p.getName());
+                }
+
+                int availableQty = inventoryService.getAvailableQty(em, p.getId(), today);
+                if (ci.getQuantity() > availableQty) {
+                    throw new IllegalStateException("Not enough stock for product: " + p.getName());
+                }
 
                 OrderItem item = new OrderItem(
                         p,
@@ -178,8 +185,7 @@ public class OrderService {
 
             orderRepo.save(em, order);
 
-            revenueService.addRevenue(em, today, total);
-
+            // chỉ clear cart, KHÔNG trừ tồn, KHÔNG cộng revenue ở đây
             for (CartItem ci : cartItems) {
                 em.remove(ci);
             }
