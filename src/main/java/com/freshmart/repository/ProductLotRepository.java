@@ -124,24 +124,24 @@ public class ProductLotRepository {
     }
 
     public Integer findSuggestedLeadTimeDays(EntityManager em, Long productId) {
-        List<Integer> result = em.createQuery(
-                        "SELECT s.leadTimeDays " +
-                                "FROM ProductLot l " +
-                                "JOIN l.supplier s " +
-                                "WHERE l.product.id = :pid " +
-                                "AND s.leadTimeDays IS NOT NULL " +
-                                "ORDER BY l.importDate DESC, l.id DESC",
-                        Integer.class
-                )
-                .setParameter("pid", productId)
-                .setMaxResults(1)
-                .getResultList();
+    List<Integer> result = em.createQuery(
+                    "SELECT s.leadTimeDays " +
+                            "FROM ProductLot l " +
+                            "JOIN l.supplier s " +
+                            "WHERE l.product.id = :pid " +
+                            "AND s.leadTimeDays IS NOT NULL " +
+                            "ORDER BY l.importDate DESC, l.id DESC",
+                    Integer.class
+            )
+            .setParameter("pid", productId)
+            .setMaxResults(1)
+            .getResultList();
 
-        if (result == null || result.isEmpty() || result.get(0) == null || result.get(0) <= 0) {
-            return 1;
-        }
-        return result.get(0);
+    if (result == null || result.isEmpty() || result.get(0) == null || result.get(0) <= 0) {
+        return null;
     }
+    return result.get(0);
+}
 
     /**
      * Find a lot by ID with eagerly loaded product and supplier references.

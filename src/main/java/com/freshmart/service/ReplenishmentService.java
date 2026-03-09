@@ -22,106 +22,99 @@ public class ReplenishmentService {
     private final ProductRepository productRepo = new ProductRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
 
-    /**
-     * Rule-based replenishment suggestion.
-     *
-     * daysHistory: lấy lịch sử bán trong N ngày (vd 30)
-     * leadTimeDays: fallback thời gian nhập hàng về nếu chưa lấy được từ supplier (vd 3)
-     * bufferDays: buffer thêm cho delay (vd 1-2)
-     * safetyDays: tồn kho an toàn (vd 2)
-     */
-    public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int bufferDays, int safetyDays) {
-        return executor.execute(em -> {
-            LocalDate today = LocalDate.now();
-            List<Product> products = productRepo.findAll(em, false);
+public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int bufferDays, int safetyDays) {
+    final int safeDaysHistory = Math.max(daysHistory, 1);
+    final int safeLeadTimeDays = Math.max(leadTimeDays, 1);
+    final int safeBufferDays = Math.max(bufferDays, 0);
+    final int safeSafetyDays = Math.max(safetyDays, 0);
 
-            BigDecimal seasonFactor = getSeasonFactor(today);
+    return executor.execute(em -> {
+        LocalDate today = LocalDate.now();
+        List<Product> products = productRepo.findAll(em, false);
 
-            final int EXPIRING_DAYS = 3;
+        BigDecimal seasonFactor = getSeasonFactor(today);
 
-            List<ReplenishSuggestion> out = new ArrayList<>();
-            for (Product p : products) {
-                BigDecimal avg7 = avgDailySold(em, p.getId(), 7, today);
-                BigDecimal avgHistory = avgDailySold(em, p.getId(), daysHistory, today);
+        final int EXPIRING_DAYS = 3;
 
-                BigDecimal trend = BigDecimal.ONE;
-                if (avgHistory.compareTo(BigDecimal.ZERO) > 0) {
-                    trend = avg7.divide(avgHistory, 4, RoundingMode.HALF_UP);
+        List<ReplenishSuggestion> out = new ArrayList<>();
+        for (Product p : products) {
+            BigDecimal avg7 = avgDailySold(em, p.getId(), 7, today);
+            BigDecimal avgHistory = avgDailySold(em, p.getId(), safeDaysHistory, today);
 
-                    if (trend.compareTo(new BigDecimal("0.5")) < 0) trend = new BigDecimal("0.5");
-                    if (trend.compareTo(new BigDecimal("2.0")) > 0) trend = new BigDecimal("2.0");
-                }
+            BigDecimal trend = BigDecimal.ONE;
+            if (avgHistory.compareTo(BigDecimal.ZERO) > 0) {
+                trend = avg7.divide(avgHistory, 4, RoundingMode.HALF_UP);
 
-                BigDecimal forecastPerDay = avg7.multiply(trend).multiply(seasonFactor)
-                        .setScale(2, RoundingMode.HALF_UP);
-
-                int stock = lotRepo.getAvailableQty(em, p.getId(), today);
-
-                Integer supplierLeadTime = lotRepo.findSuggestedLeadTimeDays(em, p.getId());
-                int effectiveLeadTime = (supplierLeadTime != null && supplierLeadTime > 0)
-                        ? supplierLeadTime
-                        : leadTimeDays;
-
-                BigDecimal expectedDemand = forecastPerDay.multiply(BigDecimal.valueOf(effectiveLeadTime + bufferDays));
-                BigDecimal safetyStock = forecastPerDay.multiply(BigDecimal.valueOf(safetyDays));
-                BigDecimal reorderPoint = expectedDemand.add(safetyStock);
-
-                int suggestedQty = reorderPoint.setScale(0, RoundingMode.CEILING).intValue() - stock;
-                if (suggestedQty < 0) suggestedQty = 0;
-
-                int expiringQty = lotRepo.getExpiringQty(em, p.getId(), today, EXPIRING_DAYS);
-                int expiringLots = lotRepo.countExpiringLots(em, p.getId(), today, EXPIRING_DAYS);
-
-                String note = "Lead time from supplier: " + effectiveLeadTime + " day(s).";
-
-                if (stock > 0) {
-                    BigDecimal expiringRatio = BigDecimal.valueOf(expiringQty)
-                            .divide(BigDecimal.valueOf(stock), 4, RoundingMode.HALF_UP);
-
-                    boolean manyExpiringLots = expiringLots >= 2;
-                    boolean bigExpiringQty = expiringRatio.compareTo(new BigDecimal("0.30")) >= 0;
-
-                    if ((manyExpiringLots || bigExpiringQty) && suggestedQty > 0) {
-                        int old = suggestedQty;
-                        suggestedQty = (int) Math.ceil(old * 0.5);
-
-                        note += " Lots expiring <= " + EXPIRING_DAYS + "d: " + expiringLots +
-                                " lots / " + expiringQty + " units. Reduce suggestion to prioritize clearance.";
-                    } else if (expiringQty > 0 || expiringLots > 0) {
-                        note += " Lots expiring <= " + EXPIRING_DAYS + "d: " + expiringLots +
-                                " lots / " + expiringQty + " units.";
-                    }
-                } else {
-                    if (expiringQty > 0 || expiringLots > 0) {
-                        note += " Lots expiring <= " + EXPIRING_DAYS + "d: " + expiringLots +
-                                " lots / " + expiringQty + " units.";
-                    }
-                }
-
-                out.add(new ReplenishSuggestion(
-                        p.getId(),
-                        p.getName(),
-                        avg7,
-                        avgHistory,
-                        seasonFactor,
-                        forecastPerDay,
-                        stock,
-                        suggestedQty,
-                        expiringQty,
-                        expiringLots,
-                        note
-                ));
+                if (trend.compareTo(new BigDecimal("0.5")) < 0) trend = new BigDecimal("0.5");
+                if (trend.compareTo(new BigDecimal("2.0")) > 0) trend = new BigDecimal("2.0");
             }
 
-            out.sort((a, b) -> Integer.compare(b.getSuggestedQty(), a.getSuggestedQty()));
-            return out;
-        });
-    }
+            BigDecimal forecastPerDay = avg7.multiply(trend).multiply(seasonFactor)
+                    .setScale(2, RoundingMode.HALF_UP);
 
-    /**
-     * avgDailySold = tổng quantity bán / số ngày.
-     * Lấy từ order_items join orders (COMPLETED) theo created_at.
-     */
+            int stock = lotRepo.getAvailableQty(em, p.getId(), today);
+
+            Integer supplierLeadTime = lotRepo.findSuggestedLeadTimeDays(em, p.getId());
+            int effectiveLeadTime = (supplierLeadTime != null && supplierLeadTime > 0)
+                    ? supplierLeadTime
+                    : safeLeadTimeDays;
+
+            BigDecimal expectedDemand = forecastPerDay.multiply(BigDecimal.valueOf(effectiveLeadTime + safeBufferDays));
+            BigDecimal safetyStock = forecastPerDay.multiply(BigDecimal.valueOf(safeSafetyDays));
+            BigDecimal reorderPoint = expectedDemand.add(safetyStock);
+
+            int suggestedQty = reorderPoint.setScale(0, RoundingMode.CEILING).intValue() - stock;
+            if (suggestedQty < 0) suggestedQty = 0;
+
+            int expiringQty = lotRepo.getExpiringQty(em, p.getId(), today, EXPIRING_DAYS);
+            int expiringLots = lotRepo.countExpiringLots(em, p.getId(), today, EXPIRING_DAYS);
+
+            String note = "Lead time from supplier: " + effectiveLeadTime + " day(s).";
+
+            if (stock > 0) {
+                BigDecimal expiringRatio = BigDecimal.valueOf(expiringQty)
+                        .divide(BigDecimal.valueOf(stock), 4, RoundingMode.HALF_UP);
+
+                boolean manyExpiringLots = expiringLots >= 2;
+                boolean bigExpiringQty = expiringRatio.compareTo(new BigDecimal("0.30")) >= 0;
+
+                if ((manyExpiringLots || bigExpiringQty) && suggestedQty > 0) {
+                    int old = suggestedQty;
+                    suggestedQty = (int) Math.ceil(old * 0.5);
+
+                    note += " Lots expiring <= " + EXPIRING_DAYS + "d: " + expiringLots +
+                            " lots / " + expiringQty + " units. Reduce suggestion to prioritize clearance.";
+                } else if (expiringQty > 0 || expiringLots > 0) {
+                    note += " Lots expiring <= " + EXPIRING_DAYS + "d: " + expiringLots +
+                            " lots / " + expiringQty + " units.";
+                }
+            } else {
+                if (expiringQty > 0 || expiringLots > 0) {
+                    note += " Lots expiring <= " + EXPIRING_DAYS + "d: " + expiringLots +
+                            " lots / " + expiringQty + " units.";
+                }
+            }
+
+            out.add(new ReplenishSuggestion(
+                    p.getId(),
+                    p.getName(),
+                    avg7,
+                    avgHistory,
+                    seasonFactor,
+                    forecastPerDay,
+                    stock,
+                    suggestedQty,
+                    expiringQty,
+                    expiringLots,
+                    note
+            ));
+        }
+
+        out.sort((a, b) -> Integer.compare(b.getSuggestedQty(), a.getSuggestedQty()));
+        return out;
+    });
+}
+
     private BigDecimal avgDailySold(EntityManager em, Long productId, int days, LocalDate today) {
         LocalDateTime to = today.plusDays(1).atStartOfDay();
         LocalDateTime from = today.minusDays(days).atStartOfDay();
@@ -144,12 +137,6 @@ public class ReplenishmentService {
                 .divide(BigDecimal.valueOf(days), 2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Season rules:
-     * - Tháng 12,1 (Tết/đầu năm): +30%
-     * - Tháng 5-8 (mùa nóng): +15%
-     * - Cuối tuần (T7,CN): +10%
-     */
     private BigDecimal getSeasonFactor(LocalDate today) {
         BigDecimal factor = BigDecimal.ONE;
         int m = today.getMonthValue();
