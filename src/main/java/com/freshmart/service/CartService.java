@@ -15,7 +15,7 @@ public class CartService {
     private final CartItemRepository cartItemRepo = new CartItemRepository();
     private final ProductRepository productRepo = new ProductRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
-    private final InventoryService inventoryService = new InventoryService();
+    private final OrderService orderService = new OrderService();
 
     // =====================================================
     // HELPER: GET TOTAL STOCK
@@ -93,7 +93,7 @@ public class CartService {
                 em.persist(item);
 
             } else {
-int newQty = item.getQuantity() + qty;
+                int newQty = item.getQuantity() + qty;
 
                 if (newQty > stock) {
                     throw new RuntimeException("Not enough stock");
@@ -190,7 +190,7 @@ int newQty = item.getQuantity() + qty;
                             .orElseThrow();
 
                     CartItem newItem = new CartItem();
-newItem.setCart(cart);
+                    newItem.setCart(cart);
                     newItem.setProduct(product);
                     newItem.setQuantity(qty);
 
@@ -212,68 +212,10 @@ newItem.setCart(cart);
     }
 
     // ===============================
-// CHECKOUT (FEFO)
-// ===============================
-public void checkout(Long userId) {
-
-    executor.executeVoid(em -> {
-
-        Cart cart = cartRepo.findByUserId(em, userId)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
-
-        List<CartItem> items = cartItemRepo.findByCartId(em, cart.getId());
-
-        // ===============================
-        // [ADDED] CHECK CART EMPTY
-        // ===============================
-        if (items.isEmpty()) {
-            throw new RuntimeException("Cart is empty");
-        }
-
-        // ===============================
-        // [ADDED] VALIDATE STOCK FIRST
-        // ===============================
-        for (CartItem ci : items) {
-
-            Long productId = ci.getProduct().getId();
-            int qty = ci.getQuantity();
-
-            int stock = getAvailableStock(em, productId);
-
-            if (qty > stock) {
-                throw new RuntimeException(
-                        "Not enough stock for product: "
-                                + ci.getProduct().getName()
-                );
-            }
-        }
-
-        // ===============================
-        // CONSUME STOCK (FEFO)
-        // ===============================
-        for (CartItem ci : items) {
-
-            inventoryService.consumeStockFEFO(
-                    em,
-                    ci.getProduct().getId(),
-                    ci.getQuantity(),
-                    LocalDate.now()
-            );
-        }
-
-        // ===============================
-        // CLEAR CART
-        // ===============================
-        for (CartItem ci : items) {
-            em.remove(ci);
-        }
-
-        // ===============================
-        // [ADDED] FLUSH CHANGES
-        // ===============================
-        em.flush();
-
-    });
-}
+    // CHECKOUT - Wrapper to OrderService
+    // ===============================
+    public void checkout(Long userId) {
+        orderService.createCustomerOrder(userId);
+    }
    
 }
