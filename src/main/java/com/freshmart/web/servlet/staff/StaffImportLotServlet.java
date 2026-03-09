@@ -20,7 +20,7 @@ import java.time.format.DateTimeFormatter;
  * Servlet để nhập lô sản phẩm (import lot / import stock).
  * Map: /staff/import-lot
  */
-@WebServlet(urlPatterns = {"/staff/import-lot"})
+@WebServlet(urlPatterns = {"/staff/import-lot", "/staff/inventory/import"})
 public class StaffImportLotServlet extends HttpServlet {
 
     private final JpaExecutor executor = new JpaExecutor();
