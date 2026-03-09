@@ -101,7 +101,8 @@
 
 <c:if test="${not empty sessionScope.errorMessage}">
   <div class="alert alert-danger alert-dismissible fade show" role="alert">
-    <i class="bi bi-exclamation-circle me-2"></i>${sessionScope.errorMessage}
+    <i class="bi bi-exclamation-circle me-2"></i>
+    <span>${sessionScope.errorMessage}</span>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
   <c:set var="temp" value="${sessionScope.remove('errorMessage')}" />
@@ -112,9 +113,53 @@
     <h3 class="mb-0">Suppliers</h3>
     <div class="text-muted">Manage supplier info</div>
   </div>
-  <a class="btn btn-primary" href="${pageContext.request.contextPath}/staff/suppliers?action=create">
-    + Add Supplier
-  </a>
+  <div>
+    <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#importModal">
+      <i class="bi bi-upload"></i> Import CSV
+    </button>
+    <a class="btn btn-primary" href="${pageContext.request.contextPath}/staff/suppliers?action=create">
+      + Add Supplier
+    </a>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="importModalLabel">Import Suppliers from CSV</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="${pageContext.request.contextPath}/staff/suppliers" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+        <input type="hidden" name="action" value="import" />
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="csvFile" class="form-label">Select CSV File (UTF-8)</label>
+            <input type="file" class="form-control" id="csvFile" name="csvFile" accept=".csv" required />
+            <div class="form-text">
+              CSV format: name,email,phone,address,certificate,leadTimeDays,note<br/>
+              Example: "ABC Supplier,abc@example.com,0123456789,123 Street,ISO9001,3,Good supplier"
+            </div>
+          </div>
+          <div class="alert alert-info mb-0">
+            <small>
+              <strong>Notes:</strong><br/>
+              - First line is header (will be skipped)<br/>
+              - Email is used to detect duplicates (update if exists)<br/>
+              - Required fields: name, email, phone<br/>
+              - leadTimeDays must be positive number (default: 1)
+            </small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Upload & Import</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- search / filter form -->
