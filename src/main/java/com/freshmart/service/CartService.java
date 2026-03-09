@@ -212,26 +212,68 @@ newItem.setCart(cart);
     }
 
     // ===============================
-    // CHECKOUT (FEFO)
-    // ===============================
-    public void checkout(Long userId) {
+// CHECKOUT (FEFO)
+// ===============================
+public void checkout(Long userId) {
 
-        executor.executeVoid(em -> {
+    executor.executeVoid(em -> {
 
-            Cart cart = cartRepo.findByUserId(em, userId)
-                    .orElseThrow(() -> new RuntimeException("Cart not found"));
+        Cart cart = cartRepo.findByUserId(em, userId)
+                .orElseThrow(() -> new RuntimeException("Cart not found"));
 
-            List<CartItem> items = cartItemRepo.findByCartId(em, cart.getId());
+        List<CartItem> items = cartItemRepo.findByCartId(em, cart.getId());
 
-            for (CartItem ci : items) {
-                // Use centralized FEFO logic from InventoryService
-                inventoryService.consumeStockFEFO(em, ci.getProduct().getId(), ci.getQuantity(), LocalDate.now());
+        // ===============================
+        // [ADDED] CHECK CART EMPTY
+        // ===============================
+        if (items.isEmpty()) {
+            throw new RuntimeException("Cart is empty");
+        }
+
+        // ===============================
+        // [ADDED] VALIDATE STOCK FIRST
+        // ===============================
+        for (CartItem ci : items) {
+
+            Long productId = ci.getProduct().getId();
+            int qty = ci.getQuantity();
+
+            int stock = getAvailableStock(em, productId);
+
+            if (qty > stock) {
+                throw new RuntimeException(
+                        "Not enough stock for product: "
+                                + ci.getProduct().getName()
+                );
             }
+        }
 
-            // Clear cart
-            for (CartItem ci : items) {
-                em.remove(ci);
-            }
-        });
-    }
+        // ===============================
+        // CONSUME STOCK (FEFO)
+        // ===============================
+        for (CartItem ci : items) {
+
+            inventoryService.consumeStockFEFO(
+                    em,
+                    ci.getProduct().getId(),
+                    ci.getQuantity(),
+                    LocalDate.now()
+            );
+        }
+
+        // ===============================
+        // CLEAR CART
+        // ===============================
+        for (CartItem ci : items) {
+            em.remove(ci);
+        }
+
+        // ===============================
+        // [ADDED] FLUSH CHANGES
+        // ===============================
+        em.flush();
+
+    });
+}
+   
 }

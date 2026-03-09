@@ -5,16 +5,16 @@ import com.freshmart.entity.User;
 import com.freshmart.exception.AuthenticationException;
 import com.freshmart.security.LoginAttemptService;
 import com.freshmart.service.AuthService;
-import com.freshmart.service.CartService; // ===== ADDED FOR CART MERGE =====
-import com.freshmart.entity.CartItem; // ===== ADDED FOR CART MERGE =====
-import java.util.List; // ===== ADDED FOR CART MERGE =====
+import com.freshmart.service.CartService; 
+import com.freshmart.entity.CartItem;
+import java.util.List;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession; // dùng lại session cho gọn
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
@@ -24,9 +24,7 @@ public class LoginServlet extends HttpServlet {
     private final AuthService authService = new AuthService();
     private static final LoginAttemptService attemptService = new LoginAttemptService();
 
-    // ===== ADDED FOR CART MERGE =====
     private final CartService cartService = new CartService();
-    // ===== END ADDED =====
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -64,21 +62,25 @@ public class LoginServlet extends HttpServlet {
 
             session.setAttribute(AppConstants.SESSION_USER, user);
 
-            // ===== ADDED: MERGE GUEST CART AFTER LOGIN =====
+            // ===== MERGE GUEST CART AFTER LOGIN =====
 
-            List<CartItem> sessionCart =
-                    (List<CartItem>) session.getAttribute("GUEST_CART_ITEMS");
+            Object cartObj = session.getAttribute("GUEST_CART_ITEMS");
 
-            if (sessionCart != null && !sessionCart.isEmpty()) {
+            if (cartObj instanceof List<?>) {
 
-                // merge session cart into DB cart
-                cartService.mergeCart(user.getId(), sessionCart);
+                @SuppressWarnings("unchecked")
+                List<CartItem> sessionCart = (List<CartItem>) cartObj;
 
-                // clear guest cart after merge
-                session.removeAttribute("GUEST_CART_ITEMS");
+                if (!sessionCart.isEmpty()) {
+
+                    cartService.mergeCart(user.getId(), sessionCart);
+
+                    session.removeAttribute("GUEST_CART_ITEMS");
+                }
             }
 
-            // ===== END ADDED =====
+            // ===== END MERGE =====
+
             if (session.getAttribute("CSRF_TOKEN") == null) {
                 session.setAttribute("CSRF_TOKEN", java.util.UUID.randomUUID().toString());
             }
