@@ -1,13 +1,12 @@
 package com.freshmart.web.servlet;
 
 import com.freshmart.config.AppConstants;
+import com.freshmart.entity.CartItem;
 import com.freshmart.entity.User;
 import com.freshmart.exception.AuthenticationException;
 import com.freshmart.security.LoginAttemptService;
 import com.freshmart.service.AuthService;
-import com.freshmart.service.CartService; 
-import com.freshmart.entity.CartItem;
-import java.util.List;
+import com.freshmart.service.CartService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -17,13 +16,13 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.util.List;
 
 @WebServlet(urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
 
     private final AuthService authService = new AuthService();
     private static final LoginAttemptService attemptService = new LoginAttemptService();
-
     private final CartService cartService = new CartService();
 
     @Override
@@ -59,27 +58,18 @@ public class LoginServlet extends HttpServlet {
             attemptService.loginSuccess(username);
 
             HttpSession session = req.getSession();
-
             session.setAttribute(AppConstants.SESSION_USER, user);
 
-            // ===== MERGE GUEST CART AFTER LOGIN =====
-
             Object cartObj = session.getAttribute("GUEST_CART_ITEMS");
-
             if (cartObj instanceof List<?>) {
-
                 @SuppressWarnings("unchecked")
                 List<CartItem> sessionCart = (List<CartItem>) cartObj;
 
                 if (!sessionCart.isEmpty()) {
-
                     cartService.mergeCart(user.getId(), sessionCart);
-
                     session.removeAttribute("GUEST_CART_ITEMS");
                 }
             }
-
-            // ===== END MERGE =====
 
             if (session.getAttribute("CSRF_TOKEN") == null) {
                 session.setAttribute("CSRF_TOKEN", java.util.UUID.randomUUID().toString());
@@ -114,7 +104,7 @@ public class LoginServlet extends HttpServlet {
                 break;
 
             case STAFF:
-                resp.sendRedirect(contextPath + "/staff/forecast");
+                resp.sendRedirect(contextPath + "/pro/dashboard");
                 break;
 
             case SELLER:
@@ -122,7 +112,11 @@ public class LoginServlet extends HttpServlet {
                 break;
 
             case CUSTOMER:
-                resp.sendRedirect(contextPath + "/customer/dashboard");
+                if (user.getTier() != null && "PRO".equalsIgnoreCase(user.getTier().toString())) {
+                    resp.sendRedirect(contextPath + "/pro/dashboard");
+                } else {
+                    resp.sendRedirect(contextPath + "/customer/dashboard");
+                }
                 break;
 
             default:
