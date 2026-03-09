@@ -7,6 +7,7 @@
 
 <c:set var="suppliersActive" value="${fn:startsWith(path, '/staff/suppliers')}" />
 <c:set var="productsActive" value="${fn:startsWith(path, '/staff/products')}" />
+<c:set var="ordersActive" value="${fn:startsWith(path, '/staff/orders')}" />
 
 <c:set var="inventoryActive"
        value="${fn:startsWith(path, '/staff/inventory')
@@ -90,6 +91,13 @@
               </a>
             </li>
           </ul>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link ${ordersActive ? 'active fw-semibold' : ''}"
+             href="${ctx}/staff/orders">
+            Orders / OMS
+          </a>
         </li>
 
       </ul>
