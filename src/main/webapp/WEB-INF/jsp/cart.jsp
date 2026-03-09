@@ -54,6 +54,24 @@
     </tbody>
 </table>
 
-<a href="${pageContext.request.contextPath}/catalog" class="btn btn-secondary">← Continue Shopping</a>
+<div class="mt-3">
+
+    <a href="${pageContext.request.contextPath}/catalog" class="btn btn-secondary">
+        ← Continue Shopping
+    </a>
+
+    <form action="${pageContext.request.contextPath}/customer/checkout"
+          method="post"
+          class="d-inline">
+
+        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
+        <button type="submit" class="btn btn-success">
+            Checkout
+        </button>
+
+    </form>
+
+</div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
