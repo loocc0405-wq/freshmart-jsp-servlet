@@ -6,6 +6,13 @@
 
 <h3>Xem Tồn Kho (Inventory by Lot)</h3>
 
+<c:if test="${not empty successMessage}">
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <c:out value="${successMessage}"/>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</c:if>
+
 <div class="row mb-3">
     <div class="col-12">
         <form method="get" action="${pageContext.request.contextPath}/staff/inventory" class="row g-2">
@@ -16,7 +23,7 @@
                     <option value="">-- Tất cả sản phẩm --</option>
                     <c:forEach items="${products}" var="p">
                         <option value="${p.id}" ${filter != null && filter.productId != null && filter.productId == p.id ? 'selected="selected"' : ''}>
-                            <c:out value="${p.name}"/> (ID: ${p.id})
+                            <c:out value="${p.name}"/>${!p.active ? ' - ngừng bán' : ''} (ID: ${p.id})
                         </option>
                     </c:forEach>
                 </select>
@@ -115,6 +122,7 @@
                     <th>Đã dùng</th>
                     <th>Giá nhập</th>
                     <th>Trạng thái</th>
+                    <th>Hành động</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -156,7 +164,9 @@
                                 </c:otherwise>
                             </c:choose>
                         </td>
-                    </tr>
+                        <td>
+                            <a href="${pageContext.request.contextPath}/staff/import-lot?lotId=${lot.id}" class="btn btn-sm btn-outline-primary">SỚ lô</a>
+                        </td>
                 </c:forEach>
                 </tbody>
             </table>

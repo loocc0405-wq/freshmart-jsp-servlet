@@ -47,8 +47,8 @@
                             <select class="form-select" name="productId" required>
                                 <option value="">-- Chọn sản phẩm --</option>
                                 <c:forEach items="${products}" var="p">
-                                    <option value="${p.id}" ${isEdit && editingLot.product.id == p.id ? 'selected="selected"' : ''}>
-                                        <c:out value="${p.name}"/> (ID: ${p.id})
+                                    <option value="${p.id}" ${isEdit ? (editingLot.product.id == p.id ? 'selected="selected"' : '') : (formProductId == p.id ? 'selected="selected"' : '')}>
+                                        <c:out value="${p.name}"/>${!p.active ? ' - ngừng bán' : ''} (ID: ${p.id})
                                     </option>
                                 </c:forEach>
                             </select>
@@ -71,25 +71,25 @@
                 <div class="mb-3">
                     <label class="form-label">Ngày nhập *</label>
                     <input class="form-control" type="date" name="importDate" 
-                           value="${isEdit ? editingLot.importDate : ''}" required/>
+                           value="${isEdit ? editingLot.importDate : formImportDate}" required/>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Ngày HSD (Hạn sử dụng) *</label>
                     <input class="form-control" type="date" name="expiryDate" 
-                           value="${isEdit ? editingLot.expiryDate : ''}" required/>
+                           value="${isEdit ? editingLot.expiryDate : formExpiryDate}" required/>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Số lượng nhập *</label>
                     <input class="form-control" type="number" name="quantity" min="1" 
-                           value="${isEdit ? editingLot.qtyIn : ''}" required/>
+                           value="${isEdit ? editingLot.qtyIn : formQuantity}" required/>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Giá nhập (đơn vị)</label>
                     <input class="form-control" type="number" step="0.01" name="importPrice" min="0"
-                           value="${isEdit ? editingLot.importPrice : ''}"/>
+                           value="${isEdit ? editingLot.importPrice : formImportPrice}"/>
                 </div>
 
                 <!-- Warning message if lot has been consumed -->

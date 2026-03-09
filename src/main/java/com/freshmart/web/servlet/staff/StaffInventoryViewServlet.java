@@ -52,10 +52,22 @@ public class StaffInventoryViewServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         try {
+            // Lấy flash message từ session nếu có
+            Object successMessage = req.getSession().getAttribute("successMessage");
+            Object errorFlash = req.getSession().getAttribute("errorMessage");
+            if (successMessage != null) {
+                req.setAttribute("successMessage", successMessage);
+                req.getSession().removeAttribute("successMessage");
+            }
+            if (errorFlash != null) {
+                req.setAttribute("errorMessage", errorFlash);
+                req.getSession().removeAttribute("errorMessage");
+            }
+
             LocalDate today = LocalDate.now();
             req.setAttribute("today", today);
 
-            List<Product> products = executor.execute(em -> productRepo.findAll(em, false));
+            List<Product> products = executor.execute(em -> productRepo.findAll(em, true));
             List<Supplier> suppliers = executor.execute(supplierRepo::findAll);
 
             req.setAttribute("products", products);
@@ -115,8 +127,8 @@ public class StaffInventoryViewServlet extends HttpServlet {
                         productRepo.findById(em, filter.getProductId()).orElse(null)
                 );
 
-                if (selectedProduct == null || !selectedProduct.isActive()) {
-                    throw new IllegalArgumentException("Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.");
+                if (selectedProduct == null) {
+                    throw new IllegalArgumentException("Sản phẩm không tồn tại.");
                 }
 
                 req.setAttribute("selectedProduct", selectedProduct);

@@ -138,7 +138,7 @@ public class InventoryReportService {
      */
     public List<ProductInventoryOverview> getAllProductInventoryOverview() {
         return executor.execute(em -> {
-            List<Product> products = productRepo.findAll(em, false);
+            List<Product> products = productRepo.findAll(em, true);
             List<ProductInventoryOverview> result = new ArrayList<>();
             LocalDate today = LocalDate.now();
 
@@ -147,6 +147,11 @@ public class InventoryReportService {
                         "SELECT l FROM ProductLot l WHERE l.product.id = :pid ORDER BY l.expiryDate ASC",
                         ProductLot.class
                 ).setParameter("pid", p.getId()).getResultList();
+
+                // Bỏ qua product inactive nếu không có lot nào
+                if (!p.isActive() && productLots.isEmpty()) {
+                    continue;
+                }
 
                 result.add(toOverview(p, productLots, today));
             }
@@ -336,10 +341,14 @@ public class InventoryReportService {
             List<ProductInventoryOverview> allProductsOverview = new ArrayList<>();
 
             if (isEmptyFilter(filter)) {
-                List<Product> allProducts = productRepo.findAll(em, false);
+                List<Product> allProducts = productRepo.findAll(em, true);
 
                 for (Product p : allProducts) {
                     List<ProductLot> productLots = lotsByProductId.getOrDefault(p.getId(), Collections.emptyList());
+                    // Bỏ qua product inactive nếu không có lot nào
+                    if (!p.isActive() && productLots.isEmpty()) {
+                        continue;
+                    }
                     allProductsOverview.add(toOverview(p, productLots, today));
                 }
             } else {
@@ -358,7 +367,9 @@ public class InventoryReportService {
             }
 
             List<ProductInventoryOverview> lowStockProducts = allProductsOverview.stream()
-                    .filter(o -> o.getTotalQtyLeft() < lowStockThreshold)
+                    .filter(o -> o.getAvailableQty() < lowStockThreshold)
+                    .sorted(Comparator.comparingInt(ProductInventoryOverview::getAvailableQty)
+                            .thenComparing(ProductInventoryOverview::getProductName))
                     .collect(Collectors.toList());
 
             LocalDate expiryDeadline = today.plusDays(upcomingExpiryDays);

@@ -5,6 +5,13 @@
 
 <h3>Báo cáo Tồn Kho</h3>
 
+<c:if test="${not empty successMessage}">
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <c:out value="${successMessage}"/>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</c:if>
+
 <div class="card mb-3">
     <div class="card-body">
         <form method="get" action="${pageContext.request.contextPath}/staff/inventory-report" class="row g-2">
@@ -16,7 +23,7 @@
                     <c:forEach items="${products}" var="p">
                         <option value="${p.id}"
                             <c:if test="${filter != null && filter.productId != null && filter.productId == p.id}">selected</c:if>>
-                            <c:out value="${p.name}"/> (ID: ${p.id})
+                            <c:out value="${p.name}"/>${!p.active ? ' - ngừng bán' : ''} (ID: ${p.id})
                         </option>
                     </c:forEach>
                 </select>
@@ -222,7 +229,12 @@
                             <tr>
                                 <td><c:out value="${o.productName}"/></td>
                                 <td><c:out value="${o.availableQty}"/></td>
-                                <td><a class="btn btn-sm btn-primary" href="${pageContext.request.contextPath}/staff/import-lot">Nhập thêm</a></td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/staff/inventory?productId=${o.productId}">Xem lot</a>
+                                        <a class="btn btn-primary" href="${pageContext.request.contextPath}/staff/import-lot?productId=${o.productId}">Nhập thêm</a>
+                                    </div>
+                                </td>
                             </tr>
                         </c:forEach>
                         </tbody>

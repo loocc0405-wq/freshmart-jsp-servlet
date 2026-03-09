@@ -42,6 +42,8 @@ public class SellerPosServlet extends HttpServlet {
 
         Map<Long, Integer> availableMap = new HashMap<>();
         Map<Long, LocalDate> nearestExpiryMap = new HashMap<>();
+        Map<Long, Integer> cartShortageMap = new HashMap<>();
+        boolean cartHasShortage = false;
         List<Product> products = new ArrayList<>();
         List<PosLine> lines = new ArrayList<>();
 
@@ -71,11 +73,21 @@ public class SellerPosServlet extends HttpServlet {
 
         for (PosLine l : lines) {
             total = total.add(l.getLineTotal());
+            // Check shortage
+            int available = availableMap.getOrDefault(l.getProduct().getId(), 0);
+            int shortage = Math.max(0, l.getQuantity() - available);
+            if (shortage > 0) {
+                cartShortageMap.put(l.getProduct().getId(), shortage);
+                cartHasShortage = true;
+            }
         }
 
         req.setAttribute("products", products);
         req.setAttribute("availableMap", availableMap);
         req.setAttribute("nearestExpiryMap", nearestExpiryMap);
+        req.setAttribute("today", today);
+        req.setAttribute("cartShortageMap", cartShortageMap);
+        req.setAttribute("cartHasShortage", cartHasShortage);
 
         req.setAttribute("lines", lines);
         req.setAttribute("total", total);

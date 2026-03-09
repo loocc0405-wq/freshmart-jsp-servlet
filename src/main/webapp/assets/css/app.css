@@ -186,6 +186,36 @@ body.app-body{
 .table.fm-table thead th{
   background: rgba(15, 23, 42, .92);
   color: #fff;
+  white-space: nowrap;
+}
+
+/* KPI Cards */
+.fm-kpi{
+  border: 1px solid rgba(15, 23, 42, .06);
+  box-shadow: var(--fm-shadow);
+  border-radius: var(--fm-radius);
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.fm-kpi h6{
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--fm-muted);
+  margin-bottom: .5rem;
+}
+
+.fm-kpi h4{
+  font-size: 1.875rem;
+  font-weight: 800;
+}
+
+/* Surface cards */
+.card.fm-surface > .card-header{
+  background: linear-gradient(135deg, rgba(15, 23, 42, .92), rgba(15, 23, 42, .80));
+  color: #fff;
+  font-weight: 600;
+  border-color: rgba(15, 23, 42, .12);
 }
 
 /* Small helpers */

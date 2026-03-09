@@ -25,6 +25,11 @@ public class StaffDeleteLotServlet extends HttpServlet {
             redirect = "/staff/inventory";
         }
 
+        // Sanitize redirect để chỉ cho redirect về 2 màn quản lý lot/report
+        if (!(redirect.startsWith("/staff/inventory") || redirect.startsWith("/staff/inventory-report"))) {
+            redirect = "/staff/inventory";
+        }
+
         try {
             if (lotIdRaw != null) {
                 Long lotId = Long.parseLong(lotIdRaw);
