@@ -232,4 +232,49 @@ public class OrderRepository {
         q.setParameter("customerId", customerId);
         return q.getSingleResult();
     }
+
+    public List<Order> findForStaffList(EntityManager em, OrderStatus status, int limit) {
+        String base = "SELECT o.id FROM Order o ";
+        if (status != null) {
+            base += "WHERE o.status = :st ";
+        }
+        base += "ORDER BY o.createdAt DESC";
+
+        TypedQuery<Long> idQuery = em.createQuery(base, Long.class);
+        if (status != null) {
+            idQuery.setParameter("st", status);
+        }
+        idQuery.setMaxResults(limit);
+        List<Long> ids = idQuery.getResultList();
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+
+        List<Order> orders = em.createQuery(
+                "SELECT DISTINCT o FROM Order o " +
+                "LEFT JOIN FETCH o.customer " +
+                "LEFT JOIN FETCH o.createdBy " +
+                "LEFT JOIN FETCH o.items i " +
+                "LEFT JOIN FETCH i.product " +
+                "WHERE o.id IN :ids",
+                Order.class
+        ).setParameter("ids", ids).getResultList();
+
+        orders.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+        return orders;
+    }
+
+    public Optional<Order> findByIdWithRefs(EntityManager em, Long orderId) {
+        List<Order> result = em.createQuery(
+                "SELECT DISTINCT o FROM Order o " +
+                "LEFT JOIN FETCH o.customer " +
+                "LEFT JOIN FETCH o.createdBy " +
+                "LEFT JOIN FETCH o.items i " +
+                "LEFT JOIN FETCH i.product " +
+                "WHERE o.id = :id",
+                Order.class
+        ).setParameter("id", orderId).getResultList();
+
+        return result.isEmpty() ? Optional.empty() : Optional.of(result.get(0));
+    }
 }
