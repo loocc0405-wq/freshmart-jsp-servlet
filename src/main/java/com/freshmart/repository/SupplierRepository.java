@@ -23,6 +23,17 @@ public class SupplierRepository {
         if (s != null) em.remove(s);
     }
 
+    public Optional<Supplier> findByEmail(EntityManager em, String email) {
+        try {
+            Supplier s = em.createQuery("SELECT s FROM Supplier s WHERE s.email = :email", Supplier.class)
+                    .setParameter("email", email)
+                    .getSingleResult();
+            return Optional.of(s);
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
     /**
      * Search suppliers with optional keyword and certificate filter, with paging.
      * keyword will be matched against name, email or phone (case‑insensitive, partial).
