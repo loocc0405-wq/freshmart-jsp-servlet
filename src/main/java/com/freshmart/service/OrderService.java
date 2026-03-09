@@ -18,6 +18,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// ===== ADDED FOR CUSTOMER CHECKOUT =====
+import com.freshmart.entity.CartItem;
+import com.freshmart.repository.CartRepository;
+// ===== END ADDED =====
+
 public class OrderService {
 
     private final JpaExecutor executor = new JpaExecutor();
@@ -55,7 +60,6 @@ public class OrderService {
                     throw new IllegalArgumentException("Product not found: " + req.getProductId());
                 }
 
-                // If completed, deduct inventory FEFO right away
                 if (completeNow) {
                     inventoryService.consumeStockFEFO(em, p.getId(), req.getQuantity(), today);
                 }
@@ -64,15 +68,14 @@ public class OrderService {
                 order.addItem(item);
             }
 
-            // compute total
             BigDecimal total = order.getItems().stream()
                     .map(OrderItem::getLineTotal)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             order.setTotalAmount(total);
 
             orderRepo.save(em, order);
 
-            // update revenue_daily only when COMPLETED
             if (completeNow) {
                 revenueService.addRevenue(em, order.getCompletedAt().toLocalDate(), total);
             }
@@ -87,26 +90,104 @@ public class OrderService {
                     .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
             if (order.getStatus() == OrderStatus.COMPLETED) return order;
+
             if (order.getStatus() == OrderStatus.CANCELED) {
                 throw new IllegalStateException("Cannot complete a canceled order.");
             }
 
             LocalDate today = LocalDate.now();
 
-            // Deduct inventory FEFO per item
             for (OrderItem item : order.getItems()) {
-                inventoryService.consumeStockFEFO(em, item.getProduct().getId(), item.getQuantity(), today);
+                
+                inventoryService.consumeStockFEFO(em,
+                        item.getProduct().getId(),
+                        item.getQuantity(),
+                        today);
             }
 
             order.setStatus(OrderStatus.COMPLETED);
             order.setCompletedAt(LocalDateTime.now());
 
-            // update revenue
-            revenueService.addRevenue(em, order.getCompletedAt().toLocalDate(), order.getTotalAmount());
+            revenueService.addRevenue(em,
+                    order.getCompletedAt().toLocalDate(),
+                    order.getTotalAmount());
 
             return orderRepo.save(em, order);
         });
     }
+
+    // ===== ADDED FOR CUSTOMER CHECKOUT =====
+    public Order createCustomerOrder(Long customerId) {
+
+        return executor.execute(em -> {
+
+            User customer = requireUser(em, customerId);
+
+            CartRepository cartRepo = new CartRepository();
+
+            List<CartItem> cartItems = cartRepo.findItemsByUserId(em, customerId);
+            System.out.println("Cart items found: " + cartItems.size());
+            if (cartItems.isEmpty()) {
+                throw new IllegalStateException("Cart is empty");
+            }
+
+            Order order = new Order();
+            order.setOrderCode(CodeGenerator.orderCode());
+
+            // depending on entity design
+            order.setCreatedBy(customer);
+
+            order.setType(OrderType.ONLINE);
+            order.setStatus(OrderStatus.PENDING);
+
+            order.setPaymentMethod(PaymentMethod.COD);
+
+            order.setCreatedAt(LocalDateTime.now());
+
+            LocalDate today = LocalDate.now();
+
+            for (CartItem ci : cartItems) {
+
+                Product p = em.find(Product.class, ci.getProduct().getId());
+
+                if (p == null) {
+                    throw new IllegalArgumentException("Product not found: " + ci.getProduct().getId());
+                }
+
+                inventoryService.consumeStockFEFO(
+                        em,
+                        p.getId(),
+                        ci.getQuantity(),
+                        today
+                );
+
+                OrderItem item = new OrderItem(
+                        p,
+                        ci.getQuantity(),
+                        p.getSellPrice()
+                );
+
+                order.addItem(item);
+            }
+
+            BigDecimal total = order.getItems().stream()
+                    .map(OrderItem::getLineTotal)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            order.setTotalAmount(total);
+
+            orderRepo.save(em, order);
+
+            revenueService.addRevenue(em, today, total);
+
+            for (CartItem ci : cartItems) {
+                em.remove(ci);
+            }
+
+            return order;
+        });
+    }
+    // ===== END ADDED =====
 
     private User requireUser(EntityManager em, Long id) {
         User u = em.find(User.class, id);
