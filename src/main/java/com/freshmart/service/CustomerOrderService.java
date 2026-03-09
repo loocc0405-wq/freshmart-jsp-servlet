@@ -20,11 +20,11 @@ public class CustomerOrderService {
     }
 
     public List<Order> getOrdersByCustomerAndStatus(Long customerId, String status) {
-        if (status == null || status.isBlank()) {
+        OrderStatus orderStatus = parseStatus(status);
+        if (orderStatus == null) {
             return getOrdersByCustomer(customerId);
         }
 
-        OrderStatus orderStatus = OrderStatus.valueOf(status.trim().toUpperCase());
         return executor.execute(em -> orderRepository.findByCustomerIdAndStatus(em, customerId, orderStatus));
     }
 
@@ -81,7 +81,19 @@ public class CustomerOrderService {
         if (status == null || status.isBlank()) {
             return null;
         }
-        return OrderStatus.valueOf(status.trim().toUpperCase());
+
+        String normalized = status.trim().toUpperCase();
+
+        // hỗ trợ cả 2 cách viết
+        if ("CANCELLED".equals(normalized)) {
+            normalized = "CANCELED";
+        }
+
+        try {
+            return OrderStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private LocalDateTime parseFromDate(String fromDate) {

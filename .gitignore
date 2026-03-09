@@ -16,3 +16,7 @@ Thumbs.db
 
 # Local config (optional)
 .env
+
+# Uploaded files
+src/main/webapp/assets/uploads/products/*
+!src/main/webapp/assets/uploads/products/.gitkeep

@@ -28,19 +28,45 @@ public class StaffImportLotServlet extends HttpServlet {
     private final SupplierRepository supplierRepo = new SupplierRepository();
     private final ProductLotService lotService = new ProductLotService();
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        // Load products and suppliers for dropdown
+    /**
+     * Load products and suppliers for dropdowns (reference data).
+     */
+    private void loadReferenceData(HttpServletRequest req) {
         var products = executor.execute(em -> productRepo.findAll(em, false));
         var suppliers = executor.execute(supplierRepo::findAll);
-
         req.setAttribute("products", products);
         req.setAttribute("suppliers", suppliers);
+    }
+
+    /**
+     * Load editing lot if editing mode is active.
+     */
+    private void loadEditingLotIfAny(HttpServletRequest req, String rawLotId) {
+        if (rawLotId == null || rawLotId.isBlank()) {
+            return;
+        }
+
+        try {
+            Long lotId = Long.parseLong(rawLotId.trim());
+            ProductLot editingLot = lotService.getLotDetail(lotId)
+                    .orElseThrow(() -> new IllegalArgumentException("Lot not found"));
+            req.setAttribute("editingLot", editingLot);
+        } catch (NumberFormatException ex) {
+            req.setAttribute("errorMessage", "Invalid lot ID");
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        loadReferenceData(req);
+        loadEditingLotIfAny(req, req.getParameter("id"));
         req.getRequestDispatcher("/WEB-INF/jsp/staff/import_lot.jsp").forward(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String lotIdRaw = req.getParameter("lotId");
+        
         try {
             String productIdRaw = req.getParameter("productId");
             String supplierIdRaw = req.getParameter("supplierId");
@@ -63,17 +89,31 @@ public class StaffImportLotServlet extends HttpServlet {
 
             BigDecimal importPrice = (priceRaw != null && !priceRaw.isBlank()) ? new BigDecimal(priceRaw) : BigDecimal.ZERO;
 
-            // Perform import inside transaction
-            executor.execute(em -> {
-                ProductLot lot = lotService.importLot(productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
-                req.setAttribute("successMessage", "Nhập lô thành công! Lô ID: " + lot.getId());
-                return null;
+            // Perform import or update inside transaction
+            ProductLot savedLot = executor.execute(em -> {
+                if (lotIdRaw != null && !lotIdRaw.isBlank()) {
+                    // Update existing lot
+                    Long lotId = Long.parseLong(lotIdRaw.trim());
+                    return lotService.updateLot(lotId, productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
+                } else {
+                    // Create new lot
+                    return lotService.importLot(productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
+                }
             });
 
-            doGet(req, resp);
+            if (lotIdRaw != null && !lotIdRaw.isBlank()) {
+                req.setAttribute("successMessage", "Cập nhật lô thành công! Lô ID: " + savedLot.getId());
+                req.setAttribute("editingLot", savedLot);
+            } else {
+                req.setAttribute("successMessage", "Nhập lô thành công! Lô ID: " + savedLot.getId());
+            }
+
         } catch (RuntimeException ex) {
             req.setAttribute("errorMessage", ex.getMessage());
-            doGet(req, resp);
+            loadEditingLotIfAny(req, lotIdRaw);
         }
+
+        loadReferenceData(req);
+        req.getRequestDispatcher("/WEB-INF/jsp/staff/import_lot.jsp").forward(req, resp);
     }
 }

@@ -2,10 +2,13 @@ package com.freshmart.web.servlet.staff;
 
 import com.freshmart.entity.Supplier;
 import com.freshmart.service.SupplierService;
+import com.freshmart.service.SupplierImportService;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
+import jakarta.servlet.http.Part;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -13,13 +16,20 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @WebServlet("/staff/suppliers")
+@MultipartConfig(
+    fileSizeThreshold = 1024 * 1024,    // 1 MB
+    maxFileSize = 1024 * 1024 * 5,      // 5 MB
+    maxRequestSize = 1024 * 1024 * 10   // 10 MB
+)
 public class SupplierManagementServlet extends HttpServlet {
 
     private SupplierService supplierService;
+    private SupplierImportService importService;
 
     @Override
     public void init() {
         supplierService = new SupplierService();
+        importService = new SupplierImportService();
     }
 
     // ==========================
@@ -69,8 +79,68 @@ public class SupplierManagementServlet extends HttpServlet {
 
         if (action != null && action.equals("delete")) {
             handleDelete(request, response);
+        } else if (action != null && action.equals("import")) {
+            handleImport(request, response);
         } else {
             handleCreateOrUpdate(request, response);
+        }
+    }
+
+    // ==========================
+    // Handle IMPORT
+    // ==========================
+    private void handleImport(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        try {
+            Part filePart = request.getPart("csvFile");
+            
+            if (filePart == null || filePart.getSize() == 0) {
+                HttpSession session = request.getSession();
+                session.setAttribute("errorMessage", "Please select a CSV file to import.");
+                response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+                return;
+            }
+
+            // Check file type
+            String fileName = filePart.getSubmittedFileName();
+            if (fileName == null || !fileName.toLowerCase().endsWith(".csv")) {
+                HttpSession session = request.getSession();
+                session.setAttribute("errorMessage", "Only CSV files are supported.");
+                response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+                return;
+            }
+
+            // Process import
+            SupplierImportService.ImportResult result = importService.importFromCsv(filePart.getInputStream());
+
+            // Build result message
+            StringBuilder message = new StringBuilder();
+            message.append("Import completed: ");
+            message.append(result.getSuccessCount()).append(" success, ");
+            message.append(result.getErrorCount()).append(" errors ");
+            message.append("(Total: ").append(result.getTotalRows()).append(" rows)");
+
+            HttpSession session = request.getSession();
+            
+            if (result.getErrorCount() > 0) {
+                // Show errors
+                StringBuilder errorDetail = new StringBuilder();
+                errorDetail.append(message).append("<br/><br/><strong>Errors:</strong><ul>");
+                for (String error : result.getErrors()) {
+                    errorDetail.append("<li>").append(error).append("</li>");
+                }
+                errorDetail.append("</ul>");
+                session.setAttribute("errorMessage", errorDetail.toString());
+            } else {
+                session.setAttribute("successMessage", message.toString());
+            }
+
+            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+            
+        } catch (Exception e) {
+            HttpSession session = request.getSession();
+            session.setAttribute("errorMessage", "Import failed: " + e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
         }
     }
 
