@@ -51,6 +51,10 @@ public class ProductLotService {
             throw new IllegalArgumentException("Quantity must be greater than 0");
         }
 
+        if (importPrice != null && importPrice.signum() < 0) {
+            throw new IllegalArgumentException("Import price must be >= 0");
+        }
+
         ProductLot lot = new ProductLot();
         lot.setProduct(product);
         lot.setSupplier(supplier);
@@ -237,6 +241,10 @@ public class ProductLotService {
         }
         if (newQtyIn <= 0) {
             throw new IllegalArgumentException("Quantity must be greater than 0");
+        }
+
+        if (importPrice != null && importPrice.signum() < 0) {
+            throw new IllegalArgumentException("Import price must be >= 0");
         }
 
         int consumed = lot.getQtyIn() - lot.getQtyLeft();
