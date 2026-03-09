@@ -80,6 +80,37 @@
         overflow-x: auto;
     }
 
+    .preset-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 6px;
+    }
+
+    .preset-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .preset-btn {
+        text-decoration: none;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid #d0d7de;
+        background: #fff;
+        color: #333;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .preset-btn.active {
+        background: #0d6efd;
+        color: #fff;
+        border-color: #0d6efd;
+    }
+
     @media (max-width: 992px) {
         .kpi-grid {
             grid-template-columns: repeat(2, 1fr);
@@ -97,7 +128,7 @@
 
 <div class="pro-tabs">
     <a class="pro-tab ${tab == 'forecast' ? 'active' : ''}"
-       href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&method=${method}&history=${history}&horizon=${horizon}">
+       href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&method=${method}&history=${history}&horizon=${horizon}&granularity=${granularity}&window=${window}&alpha=${alpha}">
         9.1 Forecast
     </a>
     <a class="pro-tab ${tab == 'seasonality' ? 'active' : ''}"
@@ -135,11 +166,28 @@
         <div class="row g-3 mb-3">
             <div class="col-lg-4">
                 <div class="panel-card">
+                    <div class="preset-label">Quick history</div>
+                    <div class="preset-group">
+                        <a class="preset-btn ${seasonalityHistory == 7 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=7&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
+                            7 days
+                        </a>
+                        <a class="preset-btn ${seasonalityHistory == 14 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=14&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
+                            14 days
+                        </a>
+                        <a class="preset-btn ${seasonalityHistory == 30 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=30&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
+                            30 days
+                        </a>
+                    </div>
+
                     <form method="get" action="${pageContext.request.contextPath}/pro/dashboard" class="vstack gap-2">
                         <input type="hidden" name="tab" value="seasonality" />
+
                         <label class="form-label mb-0">History (days)</label>
                         <input class="form-control" type="number" name="seasonalityHistory"
-                               value="${seasonalityHistory}" min="30" max="730" />
+                               value="${seasonalityHistory}" min="7" max="730" />
 
                         <label class="form-label mb-0">Rolling window</label>
                         <input class="form-control" type="number" name="rollingWindow"
@@ -232,8 +280,25 @@
         <div class="row g-3 mb-3">
             <div class="col-lg-4">
                 <div class="panel-card">
+                    <div class="preset-label">Quick history</div>
+                    <div class="preset-group">
+                        <a class="preset-btn ${replenishmentHistory == 7 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=7&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
+                            7 days
+                        </a>
+                        <a class="preset-btn ${replenishmentHistory == 14 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=14&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
+                            14 days
+                        </a>
+                        <a class="preset-btn ${replenishmentHistory == 30 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=30&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
+                            30 days
+                        </a>
+                    </div>
+
                     <form method="get" action="${pageContext.request.contextPath}/pro/dashboard" class="vstack gap-2">
                         <input type="hidden" name="tab" value="replenishment" />
+
                         <label class="form-label mb-0">History (days)</label>
                         <input class="form-control" type="number" name="replenishmentHistory"
                                value="${replenishmentHistory}" min="7" max="90" />
@@ -395,6 +460,38 @@
 
             <div class="col-lg-4">
                 <div class="panel-card">
+                    <div class="preset-label">Quick history</div>
+                    <div class="preset-group">
+                        <a class="preset-btn ${history == 7 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=7&horizon=${horizon}&window=${window}&alpha=${alpha}">
+                            7 days
+                        </a>
+                        <a class="preset-btn ${history == 14 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=14&horizon=${horizon}&window=${window}&alpha=${alpha}">
+                            14 days
+                        </a>
+                        <a class="preset-btn ${history == 30 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=30&horizon=${horizon}&window=${window}&alpha=${alpha}">
+                            30 days
+                        </a>
+                    </div>
+
+                    <div class="preset-label">Quick horizon</div>
+                    <div class="preset-group">
+                        <a class="preset-btn ${horizon == 7 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=${history}&horizon=7&window=${window}&alpha=${alpha}">
+                            7 days
+                        </a>
+                        <a class="preset-btn ${horizon == 14 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=${history}&horizon=14&window=${window}&alpha=${alpha}">
+                            14 days
+                        </a>
+                        <a class="preset-btn ${horizon == 30 ? 'active' : ''}"
+                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=${history}&horizon=30&window=${window}&alpha=${alpha}">
+                            30 days
+                        </a>
+                    </div>
+
                     <form method="get" action="${pageContext.request.contextPath}/pro/dashboard" class="vstack gap-2">
                         <input type="hidden" name="tab" value="forecast" />
 
