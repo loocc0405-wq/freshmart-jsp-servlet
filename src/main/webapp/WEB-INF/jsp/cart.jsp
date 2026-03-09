@@ -6,6 +6,14 @@
 
 <h3 class="mb-3">🛒 Your Cart</h3>
 
+<!-- ===== ADDED: SHOW ERROR MESSAGE ===== -->
+<c:if test="${not empty error}">
+    <div class="alert alert-danger">
+        ${error}
+    </div>
+</c:if>
+<!-- ===== END ADDED ===== -->
+
 <table class="table table-bordered bg-white">
     <thead class="table-dark">
     <tr>

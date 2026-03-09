@@ -1,5 +1,9 @@
 package com.freshmart.web.servlet.customer;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
+import com.freshmart.repository.CartRepository;
 import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.service.OrderService;
@@ -34,11 +38,49 @@ public class CustomerCheckoutServlet extends HttpServlet {
             resp.sendRedirect(req.getContextPath()
                 + "/customer/order-success?id=" + order.getId());
 
-        }catch (Exception e) {
+        } catch (Exception e) {
 
+            // ===== DEBUG =====
+            e.printStackTrace();
+
+            // gửi message lỗi sang JSP
             req.setAttribute("error", e.getMessage());
-            req.getRequestDispatcher("/WEB-INF/jsp/cart.jsp").forward(req, resp);
 
+            // ===== LOAD LẠI CART ITEMS =====
+            EntityManagerFactory emf =
+                    Persistence.createEntityManagerFactory("freshmartPU");
+
+            EntityManager em = emf.createEntityManager();
+
+            try {
+
+                CartRepository cartRepo = new CartRepository();
+
+                var items = cartRepo.findItemsByUserId(em, user.getId());
+
+                req.setAttribute("items", items);
+
+            } catch (Exception ex) {
+
+                ex.printStackTrace();
+                req.setAttribute("error", "Failed to reload cart items");
+
+            } finally {
+
+                // đóng entity manager
+                if (em != null && em.isOpen()) {
+                    em.close();
+                }
+
+                // đóng factory để tránh leak
+                if (emf != null && emf.isOpen()) {
+                    emf.close();
+                }
+            }
+            // ===== END LOAD =====
+
+            req.getRequestDispatcher("/WEB-INF/jsp/cart.jsp")
+               .forward(req, resp);
         }
     }
 }

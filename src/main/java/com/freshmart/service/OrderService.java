@@ -126,7 +126,7 @@ public class OrderService {
             CartRepository cartRepo = new CartRepository();
 
             List<CartItem> cartItems = cartRepo.findItemsByUserId(em, customerId);
-
+            System.out.println("Cart items found: " + cartItems.size());
             if (cartItems.isEmpty()) {
                 throw new IllegalStateException("Cart is empty");
             }
