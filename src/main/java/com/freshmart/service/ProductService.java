@@ -48,4 +48,24 @@ public class ProductService {
     public void deleteById(Long id) {
         executor.executeVoid(em -> productRepo.deleteById(em, id));
     }
+
+    // Pagination support
+    public List<Product> listAllPaginated(boolean showInactive, int page, int size) {
+        int offset = (page - 1) * size;
+        return executor.execute(em -> productRepo.findAllPaginated(em, showInactive, offset, size));
+    }
+
+    public long countAll(boolean showInactive) {
+        return executor.execute(em -> productRepo.countAll(em, showInactive));
+    }
+
+    public List<Product> searchPaginated(String keyword, String category, boolean showInactive, 
+                                         int page, int size) {
+        int offset = (page - 1) * size;
+        return executor.execute(em -> productRepo.searchPaginated(em, keyword, category, showInactive, offset, size));
+    }
+
+    public long countSearch(String keyword, String category, boolean showInactive) {
+        return executor.execute(em -> productRepo.countSearch(em, keyword, category, showInactive));
+    }
 }

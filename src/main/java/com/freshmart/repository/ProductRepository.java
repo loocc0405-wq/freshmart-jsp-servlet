@@ -65,4 +65,68 @@ public class ProductRepository {
         Product p = em.find(Product.class, id);
         if (p != null) em.remove(p);
     }
+
+    // Pagination support
+    public List<Product> findAllPaginated(EntityManager em, boolean showInactive, int offset, int limit) {
+        String jpql = "SELECT p FROM Product p";
+        if (!showInactive) {
+            jpql += " WHERE p.active = true";
+        }
+        jpql += " ORDER BY p.id ASC";
+        
+        return em.createQuery(jpql, Product.class)
+                .setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
+    public long countAll(EntityManager em, boolean showInactive) {
+        String jpql = "SELECT COUNT(p) FROM Product p";
+        if (!showInactive) {
+            jpql += " WHERE p.active = true";
+        }
+        return em.createQuery(jpql, Long.class).getSingleResult();
+    }
+
+    public List<Product> searchPaginated(EntityManager em, String keyword, String category, 
+                                         boolean showInactive, int offset, int limit) {
+        StringBuilder jpql = new StringBuilder("SELECT p FROM Product p WHERE 1=1");
+        if (!showInactive) {
+            jpql.append(" AND p.active = true");
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            jpql.append(" AND LOWER(p.name) LIKE :kw");
+        }
+        if (category != null && !category.isBlank()) {
+            jpql.append(" AND p.category = :cat");
+        }
+        jpql.append(" ORDER BY p.id ASC");
+
+        TypedQuery<Product> q = em.createQuery(jpql.toString(), Product.class);
+        if (keyword != null && !keyword.isBlank()) q.setParameter("kw", "%" + keyword.toLowerCase() + "%");
+        if (category != null && !category.isBlank()) q.setParameter("cat", category);
+        
+        return q.setFirstResult(offset)
+                .setMaxResults(limit)
+                .getResultList();
+    }
+
+    public long countSearch(EntityManager em, String keyword, String category, boolean showInactive) {
+        StringBuilder jpql = new StringBuilder("SELECT COUNT(p) FROM Product p WHERE 1=1");
+        if (!showInactive) {
+            jpql.append(" AND p.active = true");
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            jpql.append(" AND LOWER(p.name) LIKE :kw");
+        }
+        if (category != null && !category.isBlank()) {
+            jpql.append(" AND p.category = :cat");
+        }
+
+        TypedQuery<Long> q = em.createQuery(jpql.toString(), Long.class);
+        if (keyword != null && !keyword.isBlank()) q.setParameter("kw", "%" + keyword.toLowerCase() + "%");
+        if (category != null && !category.isBlank()) q.setParameter("cat", category);
+        
+        return q.getSingleResult();
+    }
 }
