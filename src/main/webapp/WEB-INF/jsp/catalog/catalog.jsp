@@ -196,6 +196,21 @@
                             <span class="badge rounded-pill fm-badge"><c:out value="${p.category}"/></span>
                         </div>
 
+                        <div class="mt-2">
+                            <c:choose>
+                                <c:when test="${availableQtyMap[p.id] > 0}">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle me-1"></i>Còn hàng: ${availableQtyMap[p.id]}
+                                    </span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                        <i class="bi bi-x-circle me-1"></i>Hết hàng
+                                    </span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+
                         <div class="mt-3 d-flex align-items-baseline justify-content-between">
                             <div>
                                 <span class="fm-price">
@@ -214,22 +229,31 @@
                                 <i class="bi bi-eye me-1"></i>Chi tiết
                             </a>
 
-                            <form action="${pageContext.request.contextPath}/cart"
-                                  method="post"
-                                  class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
-                                <input type="hidden" name="action" value="add"/>
-                                <input type="hidden" name="productId" value="${p.id}"/>
+                            <c:choose>
+                                <c:when test="${availableQtyMap[p.id] > 0}">
+                                    <form action="${pageContext.request.contextPath}/cart"
+                                          method="post"
+                                          class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                        <input type="hidden" name="action" value="add"/>
+                                        <input type="hidden" name="productId" value="${p.id}"/>
 
-                                <div class="input-group input-group-sm" style="width: 140px;">
-                                    <span class="input-group-text">SL</span>
-                                    <input type="number" name="qty" value="1" min="1" class="form-control"/>
-                                </div>
+                                        <div class="input-group input-group-sm" style="width: 140px;">
+                                            <span class="input-group-text">SL</span>
+                                            <input type="number" name="qty" value="1" min="1" max="${availableQtyMap[p.id]}" class="form-control"/>
+                                        </div>
 
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-cart-plus me-1"></i>Thêm
-                                </button>
-                            </form>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-cart-plus me-1"></i>Thêm
+                                        </button>
+                                    </form>
+                                </c:when>
+                                <c:otherwise>
+                                    <button type="button" class="btn btn-secondary btn-sm ms-auto" disabled>
+                                        <i class="bi bi-cart-x me-1"></i>Hết hàng
+                                    </button>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </div>
                 </div>
