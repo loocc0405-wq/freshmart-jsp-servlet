@@ -123,6 +123,54 @@ public class OrderService {
         });
     }
 
+    public Order updateStatus(Long orderId, OrderStatus newStatus) {
+
+        return executor.execute(em -> {
+
+            Order order = orderRepo.findById(em, orderId)
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+
+            OrderStatus current = order.getStatus();
+
+            // không cho thay đổi khi đã kết thúc
+            if (current == OrderStatus.COMPLETED || current == OrderStatus.CANCELED) {
+                throw new IllegalStateException("Order already finished: " + current);
+            }
+
+            if (!isValidTransition(current, newStatus)) {
+                throw new IllegalStateException(
+                        "Invalid status transition: " + current + " -> " + newStatus);
+            }
+
+            // SHIPPING -> COMPLETED cần trừ tồn và cộng revenue
+            if (newStatus == OrderStatus.COMPLETED) {
+
+                LocalDate today = LocalDate.now();
+
+                for (OrderItem item : order.getItems()) {
+                    inventoryService.consumeStockFEFO(
+                            em,
+                            item.getProduct().getId(),
+                            item.getQuantity(),
+                            today
+                    );
+                }
+
+                order.setCompletedAt(LocalDateTime.now());
+
+                revenueService.addRevenue(
+                        em,
+                        order.getCompletedAt().toLocalDate(),
+                        order.getTotalAmount()
+                );
+            }
+
+            order.setStatus(newStatus);
+
+            return orderRepo.save(em, order);
+        });
+    }
+
     // ===== ADDED FOR CUSTOMER CHECKOUT =====
     public Order createCustomerOrder(Long customerId) {
 
@@ -199,5 +247,25 @@ public class OrderService {
         User u = em.find(User.class, id);
         if (u == null) throw new IllegalArgumentException("User not found: " + id);
         return u;
+    }
+
+    private boolean isValidTransition(OrderStatus from, OrderStatus to) {
+
+        switch (from) {
+
+            case PENDING:
+                return to == OrderStatus.PROCESSING
+                        || to == OrderStatus.CANCELED;
+
+            case PROCESSING:
+                return to == OrderStatus.SHIPPING
+                        || to == OrderStatus.CANCELED;
+
+            case SHIPPING:
+                return to == OrderStatus.COMPLETED;
+
+            default:
+                return false;
+        }
     }
 }
