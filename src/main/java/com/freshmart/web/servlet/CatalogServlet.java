@@ -2,6 +2,8 @@ package com.freshmart.web.servlet;
 
 import com.freshmart.entity.Product;
 import com.freshmart.service.ProductService;
+import com.freshmart.service.InventoryService;
+import com.freshmart.util.JpaExecutor;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -9,6 +11,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,8 @@ import java.util.stream.Collectors;
 public class CatalogServlet extends HttpServlet {
 
     private final ProductService productService = new ProductService();
+    private final InventoryService inventoryService = new InventoryService();
+    private final JpaExecutor executor = new JpaExecutor();
 
     // helper for null-safe string comparison
     private static int compareString(String a, String b) {
@@ -32,19 +37,22 @@ public class CatalogServlet extends HttpServlet {
         String q = req.getParameter("q");
         String cat = req.getParameter("category");
         String sort = req.getParameter("sort");
+        String stockStatus = req.getParameter("stockStatus");
         String pageParam = req.getParameter("page");
 
         // normalize inputs
         if (q != null) q = q.trim();
         if (cat != null) cat = cat.trim();
         if (sort != null) sort = sort.trim();
+        if (stockStatus != null) stockStatus = stockStatus.trim();
 
         boolean hasFilter =
                 (q != null && !q.isBlank()) ||
-                (cat != null && !cat.isBlank());
+                (cat != null && !cat.isBlank()) ||
+                (stockStatus != null && !stockStatus.isBlank() && !"all".equals(stockStatus));
 
         List<Product> products = hasFilter
-                ? productService.search(q, cat, false)
+                ? productService.search(q, cat, stockStatus, false)
                 : productService.listAll(false);
 
         // apply sort in memory (list is fairly small)
@@ -85,6 +93,15 @@ public class CatalogServlet extends HttpServlet {
         int toIndex = Math.min(fromIndex + pageSize, total);
         List<Product> pageItems = products.subList(fromIndex, toIndex);
 
+        // Calculate available quantity for each product
+        LocalDate today = LocalDate.now();
+        Map<Long, Integer> availableQtyMap = new java.util.HashMap<>();
+        for (Product p : products) {
+            int qty = executor.execute(em -> inventoryService.getAvailableQty(em, p.getId(), today));
+            availableQtyMap.put(p.getId(), qty);
+        }
+        req.setAttribute("availableQtyMap", availableQtyMap);
+
         // dropdown categories
         List<String> categories = productService.listCategories();
         req.setAttribute("categories", categories);
@@ -115,6 +132,7 @@ public class CatalogServlet extends HttpServlet {
         req.setAttribute("totalPages", totalPages);
         req.setAttribute("pageSize", pageSize);
         req.setAttribute("sort", sort);
+        req.setAttribute("stockStatus", stockStatus);
         req.getRequestDispatcher("/WEB-INF/jsp/catalog/catalog.jsp").forward(req, resp);
     }
 }

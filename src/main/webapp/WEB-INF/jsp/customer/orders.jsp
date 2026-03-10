@@ -56,7 +56,7 @@
                 <option value="">All</option>
                 <option value="PENDING" ${selectedStatus == 'PENDING' ? 'selected' : ''}>PENDING</option>
                 <option value="COMPLETED" ${selectedStatus == 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
-                <option value="CANCELLED" ${selectedStatus == 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+                <option value="CANCELED" ${(selectedStatus == 'CANCELED' || selectedStatus == 'CANCELLED') ? 'selected' : ''}>CANCELED</option>
             </select>
         </div>
 

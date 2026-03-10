@@ -50,6 +50,13 @@
   </div>
 </div>
 
+<!-- Pagination info -->
+<c:if test="${totalItems > 0}">
+  <div class="mb-2 text-muted">
+    Showing ${(currentPage - 1) * pageSize + 1} to ${currentPage * pageSize > totalItems ? totalItems : currentPage * pageSize} of ${totalItems} products
+  </div>
+</c:if>
+
 <!-- Table card -->
 <div class="card">
   <div class="card-body">
@@ -141,7 +148,7 @@
 
         <c:if test="${empty products}">
           <tr>
-            <td colspan="8" class="text-center text-muted py-4">
+            <td colspan="9" class="text-center text-muted py-4">
               No products found.
             </td>
           </tr>
@@ -151,5 +158,82 @@
     </div>
   </div>
 </div>
+
+<!-- Pagination controls -->
+<c:if test="${totalPages > 1}">
+  <nav aria-label="Product pagination" class="mt-3">
+    <ul class="pagination justify-content-center">
+      <!-- Previous button -->
+      <li class="page-item ${currentPage == 1 ? 'disabled' : ''}">
+        <a class="page-link" 
+           href="${pageContext.request.contextPath}/staff/products?page=${currentPage - 1}&keyword=${keyword}&category=${category}&showInactive=${showInactive}">
+          Previous
+        </a>
+      </li>
+
+      <!-- Page numbers -->
+      <c:choose>
+        <c:when test="${totalPages <= 7}">
+          <!-- Show all pages if 7 or fewer -->
+          <c:forEach var="i" begin="1" end="${totalPages}">
+            <li class="page-item ${i == currentPage ? 'active' : ''}">
+              <a class="page-link" 
+                 href="${pageContext.request.contextPath}/staff/products?page=${i}&keyword=${keyword}&category=${category}&showInactive=${showInactive}">
+                ${i}
+              </a>
+            </li>
+          </c:forEach>
+        </c:when>
+        <c:otherwise>
+          <!-- Show first page -->
+          <li class="page-item ${1 == currentPage ? 'active' : ''}">
+            <a class="page-link" 
+               href="${pageContext.request.contextPath}/staff/products?page=1&keyword=${keyword}&category=${category}&showInactive=${showInactive}">
+              1
+            </a>
+          </li>
+
+          <!-- Show ellipsis if needed -->
+          <c:if test="${currentPage > 3}">
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          </c:if>
+
+          <!-- Show pages around current page -->
+          <c:forEach var="i" begin="${currentPage - 1}" end="${currentPage + 1}">
+            <c:if test="${i > 1 && i < totalPages}">
+              <li class="page-item ${i == currentPage ? 'active' : ''}">
+                <a class="page-link" 
+                   href="${pageContext.request.contextPath}/staff/products?page=${i}&keyword=${keyword}&category=${category}&showInactive=${showInactive}">
+                  ${i}
+                </a>
+              </li>
+            </c:if>
+          </c:forEach>
+
+          <!-- Show ellipsis if needed -->
+          <c:if test="${currentPage < totalPages - 2}">
+            <li class="page-item disabled"><span class="page-link">...</span></li>
+          </c:if>
+
+          <!-- Show last page -->
+          <li class="page-item ${totalPages == currentPage ? 'active' : ''}">
+            <a class="page-link" 
+               href="${pageContext.request.contextPath}/staff/products?page=${totalPages}&keyword=${keyword}&category=${category}&showInactive=${showInactive}">
+              ${totalPages}
+            </a>
+          </li>
+        </c:otherwise>
+      </c:choose>
+
+      <!-- Next button -->
+      <li class="page-item ${currentPage == totalPages ? 'disabled' : ''}">
+        <a class="page-link" 
+           href="${pageContext.request.contextPath}/staff/products?page=${currentPage + 1}&keyword=${keyword}&category=${category}&showInactive=${showInactive}">
+          Next
+        </a>
+      </li>
+    </ul>
+  </nav>
+</c:if>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

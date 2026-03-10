@@ -15,6 +15,7 @@ public class CartService {
     private final CartItemRepository cartItemRepo = new CartItemRepository();
     private final ProductRepository productRepo = new ProductRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
+    private final OrderService orderService = new OrderService();
 
     // =====================================================
     // HELPER: GET TOTAL STOCK
@@ -74,6 +75,10 @@ public class CartService {
             Product product = productRepo.findById(em, productId)
                     .orElseThrow(() -> new RuntimeException("Product not found"));
 
+            if (!product.isActive()) {
+                throw new RuntimeException("Product is inactive");
+            }
+
             CartItem item = cartItemRepo
                     .findByCartAndProduct(em, cart.getId(), productId)
                     .orElse(null);
@@ -92,7 +97,7 @@ public class CartService {
                 em.persist(item);
 
             } else {
-int newQty = item.getQuantity() + qty;
+                int newQty = item.getQuantity() + qty;
 
                 if (newQty > stock) {
                     throw new RuntimeException("Not enough stock");
@@ -121,6 +126,12 @@ int newQty = item.getQuantity() + qty;
             if (qty <= 0) {
                 em.remove(item);
             } else {
+                Product product = productRepo.findById(em, productId)
+                        .orElseThrow(() -> new RuntimeException("Product not found"));
+
+                if (!product.isActive()) {
+                    throw new RuntimeException("Product is inactive");
+                }
 
                 // ------------------------------
                 // CHECK STOCK
@@ -171,6 +182,11 @@ int newQty = item.getQuantity() + qty;
                 Long productId = sessionItem.getProduct().getId();
                 int qty = sessionItem.getQuantity();
 
+                Product product = productRepo.findById(em, productId).orElse(null);
+                if (product == null || !product.isActive()) {
+                    continue;
+                }
+
                 int stock = getAvailableStock(em, productId);
 
                 if (qty > stock) {
@@ -185,11 +201,8 @@ int newQty = item.getQuantity() + qty;
 
                 if (item == null) {
 
-                    Product product = productRepo.findById(em, productId)
-                            .orElseThrow();
-
                     CartItem newItem = new CartItem();
-newItem.setCart(cart);
+                    newItem.setCart(cart);
                     newItem.setProduct(product);
                     newItem.setQuantity(qty);
 
@@ -211,46 +224,10 @@ newItem.setCart(cart);
     }
 
     // ===============================
-    // CHECKOUT (FEFO)
+    // CHECKOUT - Wrapper to OrderService
     // ===============================
     public void checkout(Long userId) {
-
-        executor.executeVoid(em -> {
-
-            Cart cart = cartRepo.findByUserId(em, userId)
-                    .orElseThrow(() -> new RuntimeException("Cart not found"));
-
-            List<CartItem> items = cartItemRepo.findByCartId(em, cart.getId());
-
-            for (CartItem ci : items) {
-
-                int qtyNeed = ci.getQuantity();
-
-                List<ProductLot> lots = lotRepo.findAvailableLotsFEFO(
-                        em,
-                        ci.getProduct().getId(),
-                        LocalDate.now()
-                );
-
-                for (ProductLot lot : lots) {
-
-                    if (qtyNeed <= 0) break;
-
-                    int take = Math.min(qtyNeed, lot.getQtyLeft());
-                    lot.setQtyLeft(lot.getQtyLeft() - take);
-                    em.merge(lot);
-                    qtyNeed -= take;
-                }
-
-                if (qtyNeed > 0) {
-                    throw new RuntimeException("Not enough stock");
-                }
-            }
-
-            // Clear cart
-            for (CartItem ci : items) {
-                em.remove(ci);
-            }
-        });
+        orderService.createCustomerOrder(userId);
     }
+   
 }

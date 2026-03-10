@@ -40,9 +40,12 @@
             </div>
             <div class="card-body">
                 <p class="card-text">Hệ thống bán tại quầy, tự động trừ tồn kho theo FEFO, cập nhật doanh thu.</p>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap">
                     <a class="btn btn-success btn-sm" href="${pageContext.request.contextPath}/seller/pos">
                         💼 Seller POS
+                    </a>
+                    <a class="btn btn-outline-primary btn-sm" href="${pageContext.request.contextPath}/staff/orders">
+                        📋 Staff OMS
                     </a>
                     <a class="btn btn-info btn-sm" href="${pageContext.request.contextPath}/pro/dashboard">
                         📈 Dashboard doanh thu

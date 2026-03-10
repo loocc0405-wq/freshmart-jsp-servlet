@@ -29,14 +29,31 @@
             <div class="card-body">
                 <div class="mb-3">
                     <label class="form-label">Sản phẩm *</label>
-                    <select class="form-select" name="productId" required>
-                        <option value="">-- Chọn sản phẩm --</option>
-                        <c:forEach items="${products}" var="p">
-                            <option value="${p.id}" ${isEdit && editingLot.product.id == p.id ? 'selected' : ''}>
-                                <c:out value="${p.name}"/> (ID: ${p.id})
-                            </option>
-                        </c:forEach>
-                    </select>
+                    <c:choose>
+                        <c:when test="${isEdit && editingLot.qtyIn != editingLot.qtyLeft}">
+                            <input type="hidden" name="productId" value="${editingLot.product.id}"/>
+                            <select class="form-select" disabled>
+                                <c:forEach items="${products}" var="p">
+                                    <option value="${p.id}" ${editingLot.product.id == p.id ? 'selected="selected"' : ''}>
+                                        <c:out value="${p.name}"/> (ID: ${p.id})
+                                    </option>
+                                </c:forEach>
+                            </select>
+                            <div class="form-text text-warning">
+                                Lô đã phát sinh xuất kho nên không được đổi sang sản phẩm khác.
+                            </div>
+                        </c:when>
+                        <c:otherwise>
+                            <select class="form-select" name="productId" required>
+                                <option value="">-- Chọn sản phẩm --</option>
+                                <c:forEach items="${products}" var="p">
+                                    <option value="${p.id}" ${isEdit ? (editingLot.product.id == p.id ? 'selected="selected"' : '') : (formProductId == p.id ? 'selected="selected"' : '')}>
+                                        <c:out value="${p.name}"/>${!p.active ? ' - ngừng bán' : ''} (ID: ${p.id})
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
 
                 <div class="mb-3">
@@ -54,25 +71,25 @@
                 <div class="mb-3">
                     <label class="form-label">Ngày nhập *</label>
                     <input class="form-control" type="date" name="importDate" 
-                           value="${isEdit ? editingLot.importDate : ''}" required/>
+                           value="${isEdit ? editingLot.importDate : formImportDate}" required/>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Ngày HSD (Hạn sử dụng) *</label>
                     <input class="form-control" type="date" name="expiryDate" 
-                           value="${isEdit ? editingLot.expiryDate : ''}" required/>
+                           value="${isEdit ? editingLot.expiryDate : formExpiryDate}" required/>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Số lượng nhập *</label>
                     <input class="form-control" type="number" name="quantity" min="1" 
-                           value="${isEdit ? editingLot.qtyIn : ''}" required/>
+                           value="${isEdit ? editingLot.qtyIn : formQuantity}" required/>
                 </div>
 
                 <div class="mb-3">
                     <label class="form-label">Giá nhập (đơn vị)</label>
                     <input class="form-control" type="number" step="0.01" name="importPrice" min="0"
-                           value="${isEdit ? editingLot.importPrice : ''}"/>
+                           value="${isEdit ? editingLot.importPrice : formImportPrice}"/>
                 </div>
 
                 <!-- Warning message if lot has been consumed -->
@@ -114,7 +131,8 @@
                 <c:if test="${isEdit}">
                     <p><strong>Chỉnh sửa lô:</strong></p>
                     <ul>
-                        <li>Bạn có thể sửa: sản phẩm, nhà cung cấp, ngày nhập, HSD, số lượng, giá nhập</li>
+                        <li>Bạn có thể sửa: nhà cung cấp, ngày nhập, HSD, số lượng, giá nhập</li>
+                        <li>Nếu lô đã phát sinh xuất kho, hệ thống sẽ khóa việc đổi sang sản phẩm khác để tránh lệch lịch sử tồn kho</li>
                         <li>Số lượng còn lại (qtyLeft) sẽ tự động tính lại dựa trên lượng đã tiêu thụ</li>
                     </ul>
                 </c:if>

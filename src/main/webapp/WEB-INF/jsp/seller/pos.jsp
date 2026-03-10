@@ -5,6 +5,23 @@
 
 <h3>Seller POS (Bán tại quầy)</h3>
 
+<c:if test="${not empty sessionScope.sellerPosSuccessMessage}">
+    <div class="alert alert-success"><c:out value="${sessionScope.sellerPosSuccessMessage}"/></div>
+    <c:remove var="sellerPosSuccessMessage" scope="session"/>
+</c:if>
+
+<c:if test="${not empty sessionScope.sellerPosErrorMessage}">
+    <div class="alert alert-danger"><c:out value="${sessionScope.sellerPosErrorMessage}"/></div>
+    <c:remove var="sellerPosErrorMessage" scope="session"/>
+</c:if>
+
+<c:if test="${cartHasShortage}">
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <strong>⚠️ Cảnh báo!</strong> Giỏ hàng có sản phẩm vượt quá tồn khả dụng. Vui lòng kiểm tra lại.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+</c:if>
+
 <div class="row">
     <div class="col-lg-7">
         <div class="card mb-3">
@@ -34,7 +51,7 @@
                                     <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                                     <input type="hidden" name="productId" value="${p.id}"/>
                                     <input class="form-control form-control-sm" style="width: 90px" name="quantity" type="number" min="1" value="1"/>
-                                    <button class="btn btn-sm btn-primary" type="submit">Add</button>
+                                    <button class="btn btn-sm btn-primary" type="submit" ${availableMap[p.id] <= 0 ? 'disabled="disabled"' : ''}>Add</button>
                                 </form>
                             </td>
                         </tr>
@@ -59,7 +76,9 @@
                         <tr>
                             <th>Sản phẩm</th>
                             <th>SL</th>
+                            <th>Khả dụng</th>
                             <th>Thành tiền</th>
+                            <th>Trạng thái</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -67,7 +86,18 @@
                             <tr>
                                 <td><c:out value="${l.product.name}"/></td>
                                 <td><c:out value="${l.quantity}"/></td>
+                                <td><c:out value="${availableMap[l.product.id]}"/></td>
                                 <td><c:out value="${l.lineTotal}"/></td>
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${cartShortageMap[l.product.id] > 0}">
+                                            <span class="badge bg-danger">Vượt ${cartShortageMap[l.product.id]}</span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="badge bg-success">OK</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </td>
                             </tr>
                         </c:forEach>
                         </tbody>
@@ -87,7 +117,7 @@
                             <option value="BANK_TRANSFER">Chuyển khoản</option>
                             <option value="QR">QR</option>
                         </select>
-                        <button class="btn btn-success" type="submit">Checkout (COMPLETED)</button>
+                        <button class="btn btn-success" type="submit" ${cartHasShortage ? 'disabled="disabled"' : ''}>Checkout (COMPLETED)</button>
                     </form>
 
                     <form method="post" action="${pageContext.request.contextPath}/seller/pos/clear" class="mt-2">

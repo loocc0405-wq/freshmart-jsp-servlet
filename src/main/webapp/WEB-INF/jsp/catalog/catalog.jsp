@@ -14,7 +14,7 @@
 
 <section class="fm-surface padded mb-4">
     <form class="row g-2 align-items-end" method="get" action="${pageContext.request.contextPath}/catalog">
-        <div class="col-12 col-md-5">
+        <div class="col-12 col-md-4">
             <label class="form-label small fm-muted">Tìm theo tên</label>
             <div class="input-group">
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
@@ -22,7 +22,7 @@
             </div>
         </div>
 
-        <div class="col-12 col-md-3">
+        <div class="col-12 col-md-2">
             <label class="form-label small fm-muted">Danh mục</label>
             <select class="form-select" name="category">
                 <option value="">Tất cả danh mục</option>
@@ -33,7 +33,17 @@
                 </c:forEach>
             </select>
         </div>
-        <div class="col-12 col-md-3">
+        
+        <div class="col-12 col-md-2">
+            <label class="form-label small fm-muted">Trạng thái</label>
+            <select class="form-select" name="stockStatus">
+                <option value="all" <c:if test="${empty param.stockStatus or param.stockStatus eq 'all'}">selected</c:if>>Tất cả</option>
+                <option value="inStock" <c:if test="${param.stockStatus eq 'inStock'}">selected</c:if>>Còn hàng</option>
+                <option value="outOfStock" <c:if test="${param.stockStatus eq 'outOfStock'}">selected</c:if>>Hết hàng</option>
+            </select>
+        </div>
+        
+        <div class="col-12 col-md-2">
             <label class="form-label small fm-muted">Sắp xếp</label>
             <select class="form-select" name="sort">
                 <option value="">Mặc định</option>
@@ -44,9 +54,7 @@
             </select>
         </div>
 
-        <!-- preserve sort parameter when submitting -->
-        <input type="hidden" name="sort" value="${param.sort}"/>
-        <div class="col-12 col-md-3 d-flex gap-2">
+        <div class="col-12 col-md-2 d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-grow-1">
                 <i class="bi bi-search me-1"></i>Tìm
             </button>
@@ -92,6 +100,21 @@
                                 <span class="badge rounded-pill fm-badge"><c:out value="${p.category}"/></span>
                             </div>
 
+                            <div class="mt-2">
+                                <c:choose>
+                                    <c:when test="${availableQtyMap[p.id] > 0}">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            <i class="bi bi-check-circle me-1"></i>Còn hàng: ${availableQtyMap[p.id]}
+                                        </span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                            <i class="bi bi-x-circle me-1"></i>Hết hàng
+                                        </span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+
                             <div class="mt-3 d-flex align-items-baseline justify-content-between">
                                 <div>
                                     <span class="fm-price">
@@ -110,22 +133,31 @@
                                     <i class="bi bi-eye me-1"></i>Chi tiết
                                 </a>
 
-                                <form action="${pageContext.request.contextPath}/cart"
-                                      method="post"
-class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
-                                    <input type="hidden" name="action" value="add"/>
-                                    <input type="hidden" name="productId" value="${p.id}"/>
+                                <c:choose>
+                                    <c:when test="${availableQtyMap[p.id] > 0}">
+                                        <form action="${pageContext.request.contextPath}/cart"
+                                              method="post"
+                                              class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                                            <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                            <input type="hidden" name="action" value="add"/>
+                                            <input type="hidden" name="productId" value="${p.id}"/>
 
-                                    <div class="input-group input-group-sm" style="width: 140px;">
-                                        <span class="input-group-text">SL</span>
-                                        <input type="number" name="qty" value="1" min="1" class="form-control"/>
-                                    </div>
+                                            <div class="input-group input-group-sm" style="width: 140px;">
+                                                <span class="input-group-text">SL</span>
+                                                <input type="number" name="qty" value="1" min="1" max="${availableQtyMap[p.id]}" class="form-control"/>
+                                            </div>
 
-                                    <button type="submit" class="btn btn-primary btn-sm">
-                                        <i class="bi bi-cart-plus me-1"></i>Thêm
-                                    </button>
-                                </form>
+                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-cart-plus me-1"></i>Thêm
+                                            </button>
+                                        </form>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <button type="button" class="btn btn-secondary btn-sm ms-auto" disabled>
+                                            <i class="bi bi-cart-x me-1"></i>Hết hàng
+                                        </button>
+                                    </c:otherwise>
+                                </c:choose>
                             </div>
                         </div>
                     </div>
@@ -164,6 +196,21 @@ class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                             <span class="badge rounded-pill fm-badge"><c:out value="${p.category}"/></span>
                         </div>
 
+                        <div class="mt-2">
+                            <c:choose>
+                                <c:when test="${availableQtyMap[p.id] > 0}">
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                        <i class="bi bi-check-circle me-1"></i>Còn hàng: ${availableQtyMap[p.id]}
+                                    </span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                        <i class="bi bi-x-circle me-1"></i>Hết hàng
+                                    </span>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
+
                         <div class="mt-3 d-flex align-items-baseline justify-content-between">
                             <div>
                                 <span class="fm-price">
@@ -182,22 +229,31 @@ class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                                 <i class="bi bi-eye me-1"></i>Chi tiết
                             </a>
 
-                            <form action="${pageContext.request.contextPath}/cart"
-                                  method="post"
-                                  class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
-                                <input type="hidden" name="action" value="add"/>
-                                <input type="hidden" name="productId" value="${p.id}"/>
+                            <c:choose>
+                                <c:when test="${availableQtyMap[p.id] > 0}">
+                                    <form action="${pageContext.request.contextPath}/cart"
+                                          method="post"
+                                          class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                                        <input type="hidden" name="action" value="add"/>
+                                        <input type="hidden" name="productId" value="${p.id}"/>
 
-                                <div class="input-group input-group-sm" style="width: 140px;">
-                                    <span class="input-group-text">SL</span>
-                                    <input type="number" name="qty" value="1" min="1" class="form-control"/>
-                                </div>
+                                        <div class="input-group input-group-sm" style="width: 140px;">
+                                            <span class="input-group-text">SL</span>
+                                            <input type="number" name="qty" value="1" min="1" max="${availableQtyMap[p.id]}" class="form-control"/>
+                                        </div>
 
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-cart-plus me-1"></i>Thêm
-                                </button>
-                            </form>
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-cart-plus me-1"></i>Thêm
+                                        </button>
+                                    </form>
+                                </c:when>
+                                <c:otherwise>
+                                    <button type="button" class="btn btn-secondary btn-sm ms-auto" disabled>
+                                        <i class="bi bi-cart-x me-1"></i>Hết hàng
+                                    </button>
+                                </c:otherwise>
+                            </c:choose>
                         </div>
                     </div>
                 </div>
@@ -214,6 +270,7 @@ class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                         <c:url var="prevUrl" value="/catalog">
                             <c:param name="q" value="${param.q}"/>
                             <c:param name="category" value="${param.category}"/>
+                            <c:param name="stockStatus" value="${param.stockStatus}"/>
                             <c:param name="sort" value="${param.sort}"/>
                             <c:param name="page" value="${currentPage - 1}"/>
                         </c:url>
@@ -225,7 +282,8 @@ class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                         <c:url var="pageUrl" value="/catalog">
                             <c:param name="q" value="${param.q}"/>
                             <c:param name="category" value="${param.category}"/>
-<c:param name="sort" value="${param.sort}"/>
+                            <c:param name="stockStatus" value="${param.stockStatus}"/>
+                            <c:param name="sort" value="${param.sort}"/>
                             <c:param name="page" value="${i}"/>
                         </c:url>
                         <a class="page-link" href="${pageUrl}">${i}</a>
@@ -236,6 +294,7 @@ class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                         <c:url var="nextUrl" value="/catalog">
                             <c:param name="q" value="${param.q}"/>
                             <c:param name="category" value="${param.category}"/>
+                            <c:param name="stockStatus" value="${param.stockStatus}"/>
                             <c:param name="sort" value="${param.sort}"/>
                             <c:param name="page" value="${currentPage + 1}"/>
                         </c:url>

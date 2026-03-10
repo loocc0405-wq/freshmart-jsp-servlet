@@ -1,0 +1,6 @@
+name,email,phone,address,certificate,leadTimeDays,note
+"ABC Fresh Produce",abc@freshproduce.com,0123456789,"123 Market Street, Hanoi",ISO9001,3,Reliable supplier
+"XYZ Organic Farm",xyz@organic.vn,0987654321,"456 Farm Road, Da Lat",VietGAP,5,Organic certified
+"Green Valley Co.",green@valley.com,0912345678,"789 Valley Ave, HCMC",,2,New supplier
+"Fresh Direct Ltd",fresh@direct.vn,0909123456,"321 Direct St, Hanoi",HACCP,4,Fast delivery
+"Quality Foods",quality@foods.com,0898765432,"654 Quality Rd, Da Nang",ISO22000,3,Premium quality
