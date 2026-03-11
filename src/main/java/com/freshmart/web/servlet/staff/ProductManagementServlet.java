@@ -142,22 +142,35 @@ public class ProductManagementServlet extends HttpServlet {
         }
 
         // Handle file upload
-        Part filePart = request.getPart("imageFile");
+        Part filePart = null;
+        try {
+            filePart = request.getPart("imageFile");
+        } catch (Exception e) {
+            System.err.println("[UPLOAD] Error getting file part: " + e.getMessage());
+        }
+        
         String uploadedImagePath = null;
 
         if (filePart != null && filePart.getSize() > 0) {
             String fileName = getSubmittedFileName(filePart);
+            System.out.println("[UPLOAD] File detected: " + fileName + ", size: " + filePart.getSize() + " bytes");
 
             // Validate file extension
             if (!isValidImageFile(fileName)) {
                 errors.append("Invalid image file. Only JPG, PNG, GIF, WEBP are allowed. ");
+                System.err.println("[UPLOAD] Invalid file type: " + fileName);
             } else {
                 try {
                     uploadedImagePath = saveUploadedFile(filePart, fileName, request);
+                    System.out.println("[UPLOAD] Upload successful: " + uploadedImagePath);
                 } catch (Exception e) {
                     errors.append("Failed to upload image: " + e.getMessage() + " ");
+                    System.err.println("[UPLOAD] Upload failed: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
+        } else {
+            System.out.println("[UPLOAD] No file uploaded (filePart is null or size is 0)");
         }
 
         // validate imageUrl if provided and no file uploaded
@@ -201,13 +214,15 @@ public class ProductManagementServlet extends HttpServlet {
             product.setSellPrice(new BigDecimal(priceStr.trim()));
         }
 
-        // Priority: uploaded file > imageUrl > keep old image
+        // Priority: uploaded file > new imageUrl > keep old image
         if (uploadedImagePath != null) {
+            // New file uploaded - use it
             product.setImageUrl(uploadedImagePath);
         } else if (imageUrl != null && !imageUrl.isEmpty()) {
+            // New imageUrl provided - use it
             product.setImageUrl(imageUrl);
         }
-        // else: keep existing imageUrl (for edit case)
+        // else: keep existing imageUrl (for edit case, no changes)
 
         product.setDescription(description);
         product.setActive(active);
@@ -339,24 +354,74 @@ public class ProductManagementServlet extends HttpServlet {
     private String saveUploadedFile(Part filePart, String originalFileName, HttpServletRequest request)
             throws IOException {
 
+        System.out.println("[UPLOAD] Starting saveUploadedFile for: " + originalFileName);
+
         // Generate safe filename: timestamp + sanitized original name
         String timestamp = String.valueOf(System.currentTimeMillis());
         String safeFileName = sanitizeFileName(originalFileName);
         String finalFileName = timestamp + "_" + safeFileName;
 
-        // Upload directory: webapp/assets/uploads/products/
-        String uploadDir = request.getServletContext().getRealPath("/assets/uploads/products");
-        java.io.File uploadDirFile = new java.io.File(uploadDir);
-        if (!uploadDirFile.exists()) {
-            uploadDirFile.mkdirs();
+        System.out.println("[UPLOAD] Final filename: " + finalFileName);
+
+        // 1. Determine runtime directory (webapps/freshmart/assets/uploads/products/)
+        String runtimePath = request.getServletContext().getRealPath("/assets/uploads/products");
+        java.io.File runtimeUploadDir = new java.io.File(runtimePath);
+        
+        System.out.println("[UPLOAD] Runtime directory: " + runtimeUploadDir.getAbsolutePath());
+        
+        if (!runtimeUploadDir.exists()) {
+            boolean created = runtimeUploadDir.mkdirs();
+            System.out.println("[UPLOAD] Runtime directory created: " + created);
+            if (!created) {
+                throw new IOException("Failed to create runtime directory: " + runtimeUploadDir.getAbsolutePath());
+            }
         }
 
-        // Save file
-        String filePath = uploadDir + java.io.File.separator + finalFileName;
-        filePart.write(filePath);
+        // 2. Write file to runtime directory
+        java.io.File runtimeFile = new java.io.File(runtimeUploadDir, finalFileName);
+        System.out.println("[UPLOAD] Writing to runtime: " + runtimeFile.getAbsolutePath());
+        
+        try {
+            filePart.write(runtimeFile.getAbsolutePath());
+            
+            if (runtimeFile.exists() && runtimeFile.length() > 0) {
+                System.out.println("[UPLOAD] Runtime write successful, file size: " + runtimeFile.length());
+            } else {
+                throw new IOException("Runtime file was not written or is empty: " + runtimeFile.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            System.err.println("[UPLOAD] Runtime write failed: " + e.getMessage());
+            e.printStackTrace();
+            throw new IOException("Failed to write file to runtime directory: " + e.getMessage(), e);
+        }
+
+        // 3. Copy to source directory for git tracking (hardcoded project path)
+        String projectSourcePath = "C:/Users/Admin/prj-ass/freshmart-jsp-servlet/src/main/webapp/assets/uploads/products";
+        java.io.File sourceUploadDir = new java.io.File(projectSourcePath);
+        System.out.println("[UPLOAD] Source directory: " + sourceUploadDir.getAbsolutePath());
+        
+        if (!sourceUploadDir.exists()) {
+            boolean created = sourceUploadDir.mkdirs();
+            System.out.println("[UPLOAD] Source directory created: " + created);
+        }
+
+        java.io.File sourceFile = new java.io.File(sourceUploadDir, finalFileName);
+        System.out.println("[UPLOAD] Copying to source: " + sourceFile.getAbsolutePath());
+        
+        try {
+            java.nio.file.Files.copy(runtimeFile.toPath(), sourceFile.toPath(), 
+                                     java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            System.out.println("[UPLOAD] Source copy successful, file size: " + sourceFile.length());
+        } catch (Exception e) {
+            System.err.println("[UPLOAD] Source copy failed (non-critical): " + e.getMessage());
+            e.printStackTrace();
+            // Don't throw - source copy failure is not critical if runtime is saved
+        }
 
         // Return web-accessible path
-        return request.getContextPath() + "/assets/uploads/products/" + finalFileName;
+        String webPath = request.getContextPath() + "/assets/uploads/products/" + finalFileName;
+        System.out.println("[UPLOAD] Returning web path: " + webPath);
+        return webPath;
     }
 
     /**
