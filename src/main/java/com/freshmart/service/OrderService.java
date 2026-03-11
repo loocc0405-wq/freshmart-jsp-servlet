@@ -268,4 +268,22 @@ public class OrderService {
                 return false;
         }
     }
+
+    public Order findById(Long orderId) {
+
+        return executor.execute(em -> {
+
+            Order order = orderRepo.findById(em, orderId)
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+            // load items
+            order.getItems().size();
+
+            // load product trong từng item
+            order.getItems().forEach(i -> i.getProduct().getName());
+
+            return order;
+        });
+
+    }
 }
