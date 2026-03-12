@@ -267,3 +267,47 @@ BEGIN
     CREATE INDEX idx_tier_history_created_at ON dbo.tier_history(created_at);
 END
 GO
+
+SELECT 
+    'UPDATE products SET image_url = N''' + image_url + ''' WHERE id = ' + CAST(id AS NVARCHAR(20)) + ';' AS sql_update
+FROM products
+WHERE image_url IS NOT NULL
+  AND LTRIM(RTRIM(image_url)) <> '';
+
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240228719_raumuong.webp' WHERE id = 1;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240627736_thitheo.webp' WHERE id = 2;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239892904_cathu_result.jsp.jpg' WHERE id = 3;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242089145_raucai_result.jpg' WHERE id = 4;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242101927_caithia_result.jpg' WHERE id = 5;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242111582_bongcaixanh_result.jpg' WHERE id = 6;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242119923_carot_result.jpg' WHERE id = 7;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242133952_khoaitay_result.jpg' WHERE id = 8;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242147910_hanhla_result.jpg' WHERE id = 9;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240527575_namkimcham.jpg' WHERE id = 10;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242173795_dualeo_result.jpg' WHERE id = 11;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242195810_baroiheo_result.jpg' WHERE id = 12;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242207951_suonnon_result.jpg' WHERE id = 13;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773238480086_thitbo.jpg' WHERE id = 14;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242225135_thitga_result.jpg' WHERE id = 15;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242793427_canhga.jpg' WHERE id = 16;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242249247_thitvit_result.jpg' WHERE id = 17;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239811518_tomsu_result.jpg' WHERE id = 18;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239832016_tomthe_result.jpg' WHERE id = 19;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239845616_cahoi_result.jpg' WHERE id = 20;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240004018_images_result.jpg' WHERE id = 21;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239921918_mucong_result.jpg' WHERE id = 22;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242710494_mucnang.jpg' WHERE id = 23;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242347638_cuabien_result.jpg' WHERE id = 24;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242358279_ghexanh_result_result.jpg' WHERE id = 25;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242368273_ngheu_result_result.jpg' WHERE id = 26;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242378739_sodiep_result_result.jpg' WHERE id = 27;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242389305_xucxich_result.jpg' WHERE id = 28;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242630727_dauhu.webp' WHERE id = 33;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242432439_kimchi_result.jpg' WHERE id = 34;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242448226_chuoi_result.jpg' WHERE id = 35;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242458218_tao_result.jpg' WHERE id = 36;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242467814_cam_result.jpg' WHERE id = 37;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242477449_nhoxanh_result.jpg' WHERE id = 38;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242782543_duahau.jpg' WHERE id = 39;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242885544_t_i_xu_ng.jpg' WHERE id = 40;
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242532762_thanhlong_result.jpg' WHERE id = 41;
