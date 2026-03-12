@@ -17,10 +17,62 @@
     <c:set var="order" value="${detailView.order}"/>
 
     <div class="row g-3 mb-3">
-        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Mã đơn</div><div><strong><c:out value="${order.orderCode}"/></strong></div></div></div></div>
-        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Trạng thái</div><div><strong><c:out value="${order.status}"/></strong></div></div></div></div>
-        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Loại đơn</div><div><strong><c:out value="${order.type}"/></strong></div></div></div></div>
-        <div class="col-md-3"><div class="card"><div class="card-body"><div class="text-muted">Tổng tiền</div><div><strong><c:out value="${order.totalAmount}"/></strong></div></div></div></div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted">Mã đơn</div>
+                    <div><strong><c:out value="${order.orderCode}"/></strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted">Trạng thái</div>
+                    <div>
+                        <c:choose>
+                            <c:when test="${order.status == 'PENDING'}">
+                                <span class="badge bg-secondary">PENDING</span>
+                            </c:when>
+                            <c:when test="${order.status == 'PROCESSING'}">
+                                <span class="badge bg-primary">PROCESSING</span>
+                            </c:when>
+                            <c:when test="${order.status == 'SHIPPING'}">
+                                <span class="badge bg-info text-dark">SHIPPING</span>
+                            </c:when>
+                            <c:when test="${order.status == 'COMPLETED'}">
+                                <span class="badge bg-success">COMPLETED</span>
+                            </c:when>
+                            <c:when test="${order.status == 'CANCELED'}">
+                                <span class="badge bg-danger">CANCELED</span>
+                            </c:when>
+                            <c:otherwise>
+                                <strong><c:out value="${order.status}"/></strong>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted">Loại đơn</div>
+                    <div><strong><c:out value="${order.type}"/></strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-muted">Tổng tiền</div>
+                    <div><strong><c:out value="${order.totalAmount}"/></strong></div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="alert ${detailView.allFulfillable ? 'alert-success' : 'alert-warning'}">
@@ -43,16 +95,98 @@
         </div>
     </c:if>
 
-    <c:if test="${order.status == 'PENDING'}">
-        <form method="post" action="${pageContext.request.contextPath}/staff/orders/complete" class="mb-3">
-            <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-            <input type="hidden" name="id" value="${order.id}" />
-            <button class="btn btn-success" type="submit"
-                    ${!detailView.allFulfillable ? 'disabled="disabled"' : ''}>
-                Hoàn tất đơn theo FEFO
-            </button>
-        </form>
-    </c:if>
+    <!-- ===== ADDED: STATUS WORKFLOW ACTIONS ===== -->
+    <div class="card mb-3 border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Cập nhật workflow đơn hàng</h5>
+
+            <div class="d-flex flex-wrap gap-2">
+
+                <c:if test="${order.status == 'PENDING'}">
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/update-status" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <input type="hidden" name="status" value="PROCESSING" />
+                        <button class="btn btn-primary" type="submit">
+                            Chuyển sang PROCESSING
+                        </button>
+                    </form>
+
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/update-status" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <input type="hidden" name="status" value="CANCELED" />
+                        <button class="btn btn-outline-danger" type="submit">
+                            Hủy đơn
+                        </button>
+                    </form>
+
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/complete" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <button class="btn btn-success" type="submit"
+                                ${!detailView.allFulfillable ? 'disabled="disabled"' : ''}>
+                            Hoàn tất đơn theo FEFO
+                        </button>
+                    </form>
+                </c:if>
+
+                <c:if test="${order.status == 'PROCESSING'}">
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/update-status" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <input type="hidden" name="status" value="SHIPPING" />
+                        <button class="btn btn-info text-dark" type="submit">
+                            Chuyển sang SHIPPING
+                        </button>
+                    </form>
+
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/update-status" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <input type="hidden" name="status" value="CANCELED" />
+                        <button class="btn btn-outline-danger" type="submit">
+                            Hủy đơn
+                        </button>
+                    </form>
+                </c:if>
+
+                <c:if test="${order.status == 'SHIPPING'}">
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/complete" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <button class="btn btn-success" type="submit"
+                                ${!detailView.allFulfillable ? 'disabled="disabled"' : ''}>
+                            Hoàn tất đơn theo FEFO
+                        </button>
+                    </form>
+
+                    <form method="post" action="${pageContext.request.contextPath}/staff/orders/update-status" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                        <input type="hidden" name="id" value="${order.id}" />
+                        <input type="hidden" name="status" value="CANCELED" />
+                        <button class="btn btn-outline-danger" type="submit">
+                            Hủy đơn
+                        </button>
+                    </form>
+                </c:if>
+
+                <c:if test="${order.status == 'COMPLETED'}">
+                    <span class="badge bg-success fs-6">Đơn đã hoàn tất</span>
+                </c:if>
+
+                <c:if test="${order.status == 'CANCELED'}">
+                    <span class="badge bg-danger fs-6">Đơn đã bị hủy</span>
+                </c:if>
+
+            </div>
+
+            <div class="small text-muted mt-3">
+                Workflow: PENDING → PROCESSING → SHIPPING → COMPLETED. Có thể hủy tại các bước mở.
+            </div>
+        </div>
+    </div>
+    <!-- ===== END ADDED ===== -->
 
     <div class="card mb-3">
         <div class="card-header">Đánh giá từng dòng hàng</div>

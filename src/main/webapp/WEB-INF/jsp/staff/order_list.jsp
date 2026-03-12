@@ -60,7 +60,28 @@
                         <td><c:out value="${row.order.id}"/></td>
                         <td><c:out value="${row.order.orderCode}"/></td>
                         <td><c:out value="${row.order.type}"/></td>
-                        <td><c:out value="${row.order.status}"/></td>
+                        <td>
+                            <c:choose>
+                                <c:when test="${row.order.status == 'PENDING'}">
+                                    <span class="badge bg-secondary">PENDING</span>
+                                </c:when>
+                                <c:when test="${row.order.status == 'PROCESSING'}">
+                                    <span class="badge bg-primary">PROCESSING</span>
+                                </c:when>
+                                <c:when test="${row.order.status == 'SHIPPING'}">
+                                    <span class="badge bg-info text-dark">SHIPPING</span>
+                                </c:when>
+                                <c:when test="${row.order.status == 'COMPLETED'}">
+                                    <span class="badge bg-success">COMPLETED</span>
+                                </c:when>
+                                <c:when test="${row.order.status == 'CANCELED'}">
+                                    <span class="badge bg-danger">CANCELED</span>
+                                </c:when>
+                                <c:otherwise>
+                                    <c:out value="${row.order.status}"/>
+                                </c:otherwise>
+                            </c:choose>
+                        </td>
                         <td><c:out value="${row.itemCount}"/></td>
                         <td><c:out value="${row.order.totalAmount}"/></td>
                         <td>
@@ -104,3 +125,4 @@
 </div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
+
