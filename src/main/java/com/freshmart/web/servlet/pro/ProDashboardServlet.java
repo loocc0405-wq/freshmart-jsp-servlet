@@ -21,38 +21,59 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @WebServlet(urlPatterns = { "/pro/dashboard" })
 public class ProDashboardServlet extends HttpServlet {
 
-    private final ForecastService forecastService = new ForecastService();
-    private final SeasonalityService seasonalityService = new SeasonalityService();
-    private final ReplenishmentService replenishmentService = new ReplenishmentService();
-    private final Gson gson = new Gson();
+    private static final Set<String> ALLOWED_TABS = Set.of("forecast", "seasonality", "replenishment");
+    private static final Set<String> ALLOWED_METHODS = Set.of("ma", "es");
+    private static final Set<String> ALLOWED_GRANULARITIES = Set.of("day", "month", "quarter", "year");
+
+    private final ForecastService forecastService;
+    private final SeasonalityService seasonalityService;
+    private final ReplenishmentService replenishmentService;
+    private final Gson gson;
+
+    public ProDashboardServlet() {
+        this(new ForecastService(), new SeasonalityService(), new ReplenishmentService(), new Gson());
+    }
+
+    public ProDashboardServlet(ForecastService forecastService,
+                               SeasonalityService seasonalityService,
+                               ReplenishmentService replenishmentService,
+                               Gson gson) {
+        this.forecastService = Objects.requireNonNull(forecastService);
+        this.seasonalityService = Objects.requireNonNull(seasonalityService);
+        this.replenishmentService = Objects.requireNonNull(replenishmentService);
+        this.gson = Objects.requireNonNull(gson);
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 
-        String tab = defaultStr(req.getParameter("tab"), "forecast");
+        String tab = normalizeValue(req.getParameter("tab"), "forecast", ALLOWED_TABS);
 
         // 9.1 Forecast
-        String method = defaultStr(req.getParameter("method"), "ma");
-        String granularity = defaultStr(req.getParameter("granularity"), "day");
-        int history = parseInt(req.getParameter("history"), 90);
-        int horizon = parseInt(req.getParameter("horizon"), 30);
-        int window = parseInt(req.getParameter("window"), 7);
-        double alpha = parseDouble(req.getParameter("alpha"), 0.3);
+        String method = normalizeValue(req.getParameter("method"), "ma", ALLOWED_METHODS);
+        String granularity = normalizeValue(req.getParameter("granularity"), "day", ALLOWED_GRANULARITIES);
+        int history = parseIntInRange(req.getParameter("history"), 90, 1, 3650);
+        int horizon = parseIntInRange(req.getParameter("horizon"), 30, 1, 365);
+        int window = parseIntInRange(req.getParameter("window"), 7, 1, 365);
+        double alpha = parseDoubleInRange(req.getParameter("alpha"), 0.3, 0.01, 1.0);
 
-        // ========== CSV Export ==========
+        // CSV export
         String export = req.getParameter("export");
         if ("csv".equalsIgnoreCase(export) && "forecast".equals(tab)) {
             exportForecastCsv(resp, granularity, method, history, horizon, window, alpha);
             return;
         }
 
-        // ========== Forecast data for UI ==========
+        // Forecast data for UI
         List<ForecastBucket> forecastBuckets = forecastService.forecastByGranularity(
-                granularity, method, history, horizon, window, alpha);
+                granularity, method, history, horizon, window, alpha
+        );
 
         List<String> forecastLabels = new ArrayList<>();
         List<BigDecimal> actual = new ArrayList<>();
@@ -66,10 +87,12 @@ public class ProDashboardServlet extends HttpServlet {
             actual.add(b.getActual());
             forecast.add(b.getForecast());
 
-            if (b.getActual() != null)
+            if (b.getActual() != null) {
                 latestActual = b.getActual();
-            if (b.getForecast() != null)
+            }
+            if (b.getForecast() != null) {
                 latestForecast = b.getForecast();
+            }
         }
 
         req.setAttribute("tab", tab);
@@ -86,13 +109,14 @@ public class ProDashboardServlet extends HttpServlet {
         req.setAttribute("actualJson", gson.toJson(actual));
         req.setAttribute("forecastJson", gson.toJson(forecast));
 
-        // 9.2 Seasonality (unchanged)
-        int seasonalityHistory = parseInt(req.getParameter("seasonalityHistory"), 365);
-        int rollingWindow = parseInt(req.getParameter("rollingWindow"), 7);
-        double zThreshold = parseDouble(req.getParameter("zThreshold"), 1.0);
+        // 9.2 Seasonality
+        int seasonalityHistory = parseIntInRange(req.getParameter("seasonalityHistory"), 365, 1, 3650);
+        int rollingWindow = parseIntInRange(req.getParameter("rollingWindow"), 7, 1, 365);
+        double zThreshold = parseDoubleInRange(req.getParameter("zThreshold"), 1.0, 0.01, 10.0);
 
-        List<SeasonalityPoint> seasonalityPoints = seasonalityService.analyze(seasonalityHistory, rollingWindow,
-                zThreshold);
+        List<SeasonalityPoint> seasonalityPoints = seasonalityService.analyze(
+                seasonalityHistory, rollingWindow, zThreshold
+        );
 
         List<SeasonalityMonthStat> monthStats = seasonalityService.summarizeByMonth(seasonalityPoints);
 
@@ -136,7 +160,6 @@ public class ProDashboardServlet extends HttpServlet {
         req.setAttribute("monthStats", monthStats);
         req.setAttribute("peakCount", peakCount);
         req.setAttribute("dipCount", dipCount);
-
         req.setAttribute("seasonalityLabelsJson", gson.toJson(seasonalityLabels));
         req.setAttribute("seasonalityActualJson", gson.toJson(seasonalityActual));
         req.setAttribute("seasonalityRollingJson", gson.toJson(seasonalityRolling));
@@ -146,14 +169,15 @@ public class ProDashboardServlet extends HttpServlet {
         req.setAttribute("monthMinJson", gson.toJson(monthMin));
         req.setAttribute("monthMaxJson", gson.toJson(monthMax));
 
-        // 9.3 Replenishment (unchanged)
-        int replenishmentHistory = parseInt(req.getParameter("replenishmentHistory"), 30);
-        int leadTimeDays = parseInt(req.getParameter("leadTimeDays"), 3);
-        int bufferDays = parseInt(req.getParameter("bufferDays"), 1);
-        int safetyDays = parseInt(req.getParameter("safetyDays"), 2);
+        // 9.3 Replenishment
+        int replenishmentHistory = parseIntInRange(req.getParameter("replenishmentHistory"), 30, 1, 3650);
+        int leadTimeDays = parseIntInRange(req.getParameter("leadTimeDays"), 3, 0, 365);
+        int bufferDays = parseIntInRange(req.getParameter("bufferDays"), 1, 0, 365);
+        int safetyDays = parseIntInRange(req.getParameter("safetyDays"), 2, 0, 365);
 
-        List<ReplenishSuggestion> replenishmentRows = replenishmentService.suggest(replenishmentHistory, leadTimeDays,
-                bufferDays, safetyDays);
+        List<ReplenishSuggestion> replenishmentRows = replenishmentService.suggest(
+                replenishmentHistory, leadTimeDays, bufferDays, safetyDays
+        );
 
         int restockCount = 0;
         int totalSuggestedQty = 0;
@@ -179,12 +203,16 @@ public class ProDashboardServlet extends HttpServlet {
         req.getRequestDispatcher("/WEB-INF/jsp/pro/dashboard.jsp").forward(req, resp);
     }
 
-    // ========== CSV Export helper ==========
-
-    private void exportForecastCsv(HttpServletResponse resp, String granularity, String method,
-            int history, int horizon, int window, double alpha) throws IOException {
+    private void exportForecastCsv(HttpServletResponse resp,
+                                   String granularity,
+                                   String method,
+                                   int history,
+                                   int horizon,
+                                   int window,
+                                   double alpha) throws IOException {
         List<ForecastBucket> buckets = forecastService.forecastByGranularity(
-                granularity, method, history, horizon, window, alpha);
+                granularity, method, history, horizon, window, alpha
+        );
 
         String filename = "forecast_" + granularity + "_" + method + "_" + LocalDate.now() + ".csv";
 
@@ -192,11 +220,8 @@ public class ProDashboardServlet extends HttpServlet {
         resp.setHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
 
         try (PrintWriter writer = resp.getWriter()) {
-            // BOM for Excel UTF-8
             writer.print('\uFEFF');
-            // Header
-            writer.println(
-                    "period_label,actual_revenue,forecast_revenue,method,granularity,history,horizon,generated_at");
+            writer.println("period_label,actual_revenue,forecast_revenue,method,granularity,history,horizon,generated_at");
 
             String generatedAt = LocalDate.now().toString();
             for (ForecastBucket b : buckets) {
@@ -221,33 +246,50 @@ public class ProDashboardServlet extends HttpServlet {
     }
 
     private String csvEscape(String value) {
-        if (value == null)
+        if (value == null) {
             return "";
+        }
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
     }
 
-    // ========== Param parsing helpers ==========
-
-    private int parseInt(String raw, int def) {
+    private int parseIntInRange(String raw, int def, int min, int max) {
         try {
-            return raw == null ? def : Integer.parseInt(raw);
+            if (raw == null || raw.isBlank()) {
+                return def;
+            }
+            int value = Integer.parseInt(raw.trim());
+            if (value < min || value > max) {
+                return def;
+            }
+            return value;
         } catch (Exception e) {
             return def;
         }
     }
 
-    private double parseDouble(String raw, double def) {
+    private double parseDoubleInRange(String raw, double def, double min, double max) {
         try {
-            return raw == null ? def : Double.parseDouble(raw);
+            if (raw == null || raw.isBlank()) {
+                return def;
+            }
+            double value = Double.parseDouble(raw.trim());
+            if (Double.isNaN(value) || Double.isInfinite(value) || value < min || value > max) {
+                return def;
+            }
+            return value;
         } catch (Exception e) {
             return def;
         }
     }
 
-    private String defaultStr(String raw, String def) {
-        return (raw == null || raw.isBlank()) ? def : raw;
+    private String normalizeValue(String raw, String def, Set<String> allowedValues) {
+        if (raw == null || raw.isBlank()) {
+            return def;
+        }
+        String normalized = raw.trim().toLowerCase();
+        return allowedValues.contains(normalized) ? normalized : def;
     }
 }
