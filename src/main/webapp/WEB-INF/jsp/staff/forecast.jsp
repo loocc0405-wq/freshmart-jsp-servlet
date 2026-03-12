@@ -51,15 +51,16 @@
             <th class="text-end">SafetyStock</th>
             <th class="text-end">ReorderPoint</th>
             <th class="text-center">Suggested Import</th>
+            <th>Best Supplier</th>
+            <th class="text-end">Lead Time</th>
+            <th class="text-end">Avg Price</th>
+            <th>Last Import</th>
+            <th>Action</th>
           </tr>
           </thead>
 
           <tbody>
           <c:forEach var="r" items="${rows}">
-            <c:set var="expectedDemand" value="${r.forecastPerDay * (leadTimeDays + bufferDays)}"/>
-            <c:set var="safetyStock" value="${r.forecastPerDay * safetyDays}"/>
-            <c:set var="reorderPoint" value="${expectedDemand + safetyStock}"/>
-
             <tr>
               <td><c:out value="${r.productName}"/></td>
 
@@ -82,15 +83,15 @@
               <td class="text-end"><c:out value="${r.stock}"/></td>
 
               <td class="text-end">
-                <fmt:formatNumber value="${expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/>
+                <fmt:formatNumber value="${r.expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/>
               </td>
 
               <td class="text-end">
-                <fmt:formatNumber value="${safetyStock}" minFractionDigits="2" maxFractionDigits="2"/>
+                <fmt:formatNumber value="${r.safetyStock}" minFractionDigits="2" maxFractionDigits="2"/>
               </td>
 
               <td class="text-end">
-                <fmt:formatNumber value="${reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/>
+                <fmt:formatNumber value="${r.reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/>
               </td>
 
               <td class="text-center">
@@ -100,6 +101,62 @@
                   </c:when>
                   <c:otherwise>
                     <span class="badge text-bg-success">OK</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierName}">
+                    <c:out value="${r.recommendedSupplierName}"/>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td class="text-end">
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierLeadTimeDays}">
+                    <c:out value="${r.recommendedSupplierLeadTimeDays}"/>d
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td class="text-end">
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierAvgImportPrice}">
+                    <fmt:formatNumber value="${r.recommendedSupplierAvgImportPrice}" minFractionDigits="0" maxFractionDigits="0"/>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierLastImportDate}">
+                    <c:out value="${r.recommendedSupplierLastImportDate}"/>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${r.suggestedQty > 0 and not empty r.recommendedSupplierId}">
+                    <a href="${pageContext.request.contextPath}/staff/import-lot?productId=${r.productId}&supplierId=${r.recommendedSupplierId}" 
+                       class="btn btn-sm btn-primary">Nhập lô với NCC này</a>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
                   </c:otherwise>
                 </c:choose>
               </td>
