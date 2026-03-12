@@ -159,6 +159,12 @@
                     </li>
                 </c:if>
 
+                <li class="nav-item">
+                    <a class="nav-link" href="${pageContext.request.contextPath}/cart-view">
+                        <i class="bi bi-cart3 me-1"></i>Cart
+                    </a>
+                </li>
+
             </ul>
 
             <ul class="navbar-nav">
