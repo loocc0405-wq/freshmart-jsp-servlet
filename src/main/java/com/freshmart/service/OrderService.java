@@ -12,6 +12,10 @@ import com.freshmart.service.dto.ItemRequest;
 import com.freshmart.util.CodeGenerator;
 import com.freshmart.util.JpaExecutor;
 
+// ===== ADDED STRICT WORKFLOW VALIDATION =====
+import com.freshmart.util.OrderStatusTransition;
+// ===== END ADDED =====
+
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -30,11 +34,17 @@ public class OrderService {
     private final InventoryService inventoryService = new InventoryService();
     private final RevenueService revenueService = new RevenueService();
 
+
+    // =====================================================
+    // WALK-IN ORDER (SELLER)
+    // =====================================================
     public Order createSellerWalkInOrder(Long sellerUserId,
                                          PaymentMethod paymentMethod,
                                          List<ItemRequest> items,
                                          boolean completeNow) {
+
         return executor.execute(em -> {
+
             User seller = requireUser(em, sellerUserId);
 
             Order order = new Order();
@@ -53,12 +63,15 @@ public class OrderService {
             LocalDate today = LocalDate.now();
 
             for (ItemRequest req : items) {
+
                 if (req.getQuantity() <= 0) continue;
 
                 Product p = em.find(Product.class, req.getProductId());
+
                 if (p == null) {
                     throw new IllegalArgumentException("Product not found: " + req.getProductId());
                 }
+
                 if (!p.isActive()) {
                     throw new IllegalStateException("Product is inactive: " + p.getName());
                 }
@@ -84,15 +97,23 @@ public class OrderService {
             orderRepo.save(em, order);
 
             if (completeNow) {
-                revenueService.addRevenue(em, order.getCompletedAt().toLocalDate(), total);
+                revenueService.addRevenue(em,
+                        order.getCompletedAt().toLocalDate(),
+                        total);
             }
 
             return order;
         });
     }
 
+
+    // =====================================================
+    // COMPLETE ORDER
+    // =====================================================
     public Order completeOrder(Long orderId) {
+
         return executor.execute(em -> {
+
             Order order = orderRepo.findById(em, orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
@@ -123,6 +144,10 @@ public class OrderService {
         });
     }
 
+
+    // =====================================================
+    // UPDATE ORDER STATUS (WORKFLOW)
+    // =====================================================
     public Order updateStatus(Long orderId, OrderStatus newStatus) {
 
         return executor.execute(em -> {
@@ -137,17 +162,20 @@ public class OrderService {
                 throw new IllegalStateException("Order already finished: " + current);
             }
 
-            if (!isValidTransition(current, newStatus)) {
+            // ===== ADDED STRICT WORKFLOW VALIDATION =====
+            if (!OrderStatusTransition.isAllowed(current, newStatus)) {
                 throw new IllegalStateException(
-                        "Invalid status transition: " + current + " -> " + newStatus);
+                        "Invalid status transition (workflow): " + current + " -> " + newStatus);
             }
+            // ===== END ADDED =====
 
-            // SHIPPING -> COMPLETED cần trừ tồn và cộng revenue
+            // SHIPPING → COMPLETED cần trừ tồn và cộng revenue
             if (newStatus == OrderStatus.COMPLETED) {
 
                 LocalDate today = LocalDate.now();
 
                 for (OrderItem item : order.getItems()) {
+
                     inventoryService.consumeStockFEFO(
                             em,
                             item.getProduct().getId(),
@@ -171,16 +199,21 @@ public class OrderService {
         });
     }
 
-    // ===== ADDED: alias method for staff status update workflow =====
+
+    // ===== ALIAS METHOD FOR SERVLET =====
     public void updateOrderStatus(Long orderId, OrderStatus targetStatus) {
+
         if (targetStatus == null) {
             throw new IllegalArgumentException("Target status is required.");
         }
+
         updateStatus(orderId, targetStatus);
     }
-    // ===== END ADDED =====
 
-    // ===== ADDED FOR CUSTOMER CHECKOUT =====
+
+    // =====================================================
+    // CUSTOMER CHECKOUT (FROM CART)
+    // =====================================================
     public Order createCustomerOrder(Long customerId) {
 
         return executor.execute(em -> {
@@ -197,7 +230,6 @@ public class OrderService {
             Order order = new Order();
             order.setOrderCode(CodeGenerator.orderCode());
 
-            // đúng quan hệ business
             order.setCustomer(customer);
             order.setCreatedBy(null);
 
@@ -221,6 +253,7 @@ public class OrderService {
                 }
 
                 int availableQty = inventoryService.getAvailableQty(em, p.getId(), today);
+
                 if (ci.getQuantity() > availableQty) {
                     throw new IllegalStateException("Not enough stock for product: " + p.getName());
                 }
@@ -242,7 +275,7 @@ public class OrderService {
 
             orderRepo.save(em, order);
 
-            // chỉ clear cart, KHÔNG trừ tồn, KHÔNG cộng revenue ở đây
+            // clear cart
             for (CartItem ci : cartItems) {
                 em.remove(ci);
             }
@@ -250,14 +283,25 @@ public class OrderService {
             return order;
         });
     }
-    // ===== END ADDED =====
 
+
+    // =====================================================
+    // USER VALIDATION
+    // =====================================================
     private User requireUser(EntityManager em, Long id) {
+
         User u = em.find(User.class, id);
-        if (u == null) throw new IllegalArgumentException("User not found: " + id);
+
+        if (u == null) {
+            throw new IllegalArgumentException("User not found: " + id);
+        }
+
         return u;
     }
 
+
+    // ===== LEGACY METHOD (KEPT FOR COMPATIBILITY) =====
+    @SuppressWarnings("unused")
     private boolean isValidTransition(OrderStatus from, OrderStatus to) {
 
         switch (from) {
@@ -280,6 +324,10 @@ public class OrderService {
         }
     }
 
+
+    // =====================================================
+    // FIND ORDER
+    // =====================================================
     public Order findById(Long orderId) {
 
         return executor.execute(em -> {
@@ -287,14 +335,10 @@ public class OrderService {
             Order order = orderRepo.findById(em, orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-            // load items
             order.getItems().size();
-
-            // load product trong từng item
             order.getItems().forEach(i -> i.getProduct().getName());
 
             return order;
         });
-
     }
 }
