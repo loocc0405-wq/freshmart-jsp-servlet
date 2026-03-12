@@ -1,9 +1,11 @@
 package com.freshmart.web.servlet;
 
+import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.service.chat.ChatbotService;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -35,46 +37,36 @@ public class ChatbotServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         response.setContentType("application/json; charset=UTF-8");
 
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = request.getReader()) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
+        String requestBody = readRequestBody(request);
+        if (requestBody.isBlank()) {
+            writeError(response, HttpServletResponse.SC_BAD_REQUEST, "Request body không được để trống.");
+            return;
         }
 
         try {
-            JsonObject jsonRequest = JsonParser.parseString(sb.toString()).getAsJsonObject();
+            JsonObject jsonRequest = JsonParser.parseString(requestBody).getAsJsonObject();
 
-            String userMessage = jsonRequest.has("message") && !jsonRequest.get("message").isJsonNull()
-                    ? jsonRequest.get("message").getAsString().trim()
-                    : "";
-
-            String sessionToken = jsonRequest.has("sessionToken") && !jsonRequest.get("sessionToken").isJsonNull()
-                    ? jsonRequest.get("sessionToken").getAsString()
-                    : null;
+            String userMessage = getString(jsonRequest, "message");
+            String sessionToken = getString(jsonRequest, "sessionToken");
 
             if (sessionToken == null || sessionToken.isBlank()) {
                 sessionToken = UUID.randomUUID().toString();
             }
 
-            if (userMessage.isBlank()) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                JsonObject error = new JsonObject();
-                error.addProperty("status", "error");
-                error.addProperty("message", "Tin nhắn không được để trống.");
-                response.getWriter().write(error.toString());
+            if (userMessage == null || userMessage.isBlank()) {
+                writeError(response, HttpServletResponse.SC_BAD_REQUEST, "Tin nhắn không được để trống.");
                 return;
             }
 
-            Long userId = null;
-            HttpSession session = request.getSession(false);
-            if (session != null && session.getAttribute("user") instanceof User) {
-                User user = (User) session.getAttribute("user");
-                userId = user.getId();
-            }
+            Long userId = extractLoggedInUserId(request);
 
-            String aiResponse = chatbotService.processUserMessage(sessionToken, userId, userMessage);
+            String aiResponse;
+            try {
+                aiResponse = chatbotService.processUserMessage(sessionToken, userId, userMessage);
+            } catch (Exception serviceEx) {
+                log("ChatbotService failed", serviceEx);
+                aiResponse = "Xin lỗi, hiện tại chatbot đang gặp sự cố tạm thời. Bạn vui lòng thử lại sau.";
+            }
 
             JsonObject jsonResponse = new JsonObject();
             jsonResponse.addProperty("status", "success");
@@ -83,15 +75,59 @@ public class ChatbotServlet extends HttpServlet {
 
             response.getWriter().write(jsonResponse.toString());
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
-            JsonObject error = new JsonObject();
-            error.addProperty("status", "error");
-            error.addProperty("message", "Internal Server Error during AI Processing");
-
-            response.getWriter().write(error.toString());
+        } catch (JsonSyntaxException | IllegalStateException ex) {
+            writeError(response, HttpServletResponse.SC_BAD_REQUEST, "Dữ liệu JSON không hợp lệ.");
+        } catch (Exception ex) {
+            log("Unexpected error in ChatbotServlet", ex);
+            writeError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Đã xảy ra lỗi khi xử lý chatbot.");
         }
+    }
+
+    private Long extractLoggedInUserId(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+
+        Object authUser = session.getAttribute(AppConstants.SESSION_USER);
+        if (authUser instanceof User) {
+            return ((User) authUser).getId();
+        }
+
+        Object legacyUser = session.getAttribute("user");
+        if (legacyUser instanceof User) {
+            return ((User) legacyUser).getId();
+        }
+
+        return null;
+    }
+
+    private String readRequestBody(HttpServletRequest request) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = request.getReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        return sb.toString().trim();
+    }
+
+    private String getString(JsonObject jsonObject, String key) {
+        if (jsonObject == null || !jsonObject.has(key) || jsonObject.get(key).isJsonNull()) {
+            return null;
+        }
+        return jsonObject.get(key).getAsString().trim();
+    }
+
+    private void writeError(HttpServletResponse response, int statusCode, String message) throws IOException {
+        response.setStatus(statusCode);
+
+        JsonObject error = new JsonObject();
+        error.addProperty("status", "error");
+        error.addProperty("message", message);
+
+        response.getWriter().write(error.toString());
     }
 }

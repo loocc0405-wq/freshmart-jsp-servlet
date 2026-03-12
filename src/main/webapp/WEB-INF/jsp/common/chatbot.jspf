@@ -33,5 +33,6 @@
 
 <script>
     window.APP_CONTEXT_PATH = "${pageContext.request.contextPath}";
+    window.CSRF_TOKEN = "${sessionScope.CSRF_TOKEN}";
 </script>
 <script src="${pageContext.request.contextPath}/assets/js/chatbot.js" charset="UTF-8"></script>
