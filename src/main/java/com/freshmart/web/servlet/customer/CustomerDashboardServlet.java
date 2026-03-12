@@ -30,9 +30,10 @@ public class CustomerDashboardServlet extends HttpServlet {
         try {
             CustomerDashboardSummary summary = customerDashboardService.getSummary(sessionUser.getId());
             List<Order> orders = customerOrderService.getOrdersByCustomer(sessionUser.getId());
+            List<Order> recentOrders = orders.size() > 5 ? orders.subList(0, 5) : orders;
 
             req.setAttribute("summary", summary);
-            req.setAttribute("recentOrders", orders);
+            req.setAttribute("recentOrders", recentOrders);
             req.getRequestDispatcher("/WEB-INF/jsp/customer/dashboard.jsp").forward(req, resp);
         } catch (RuntimeException ex) {
             req.setAttribute("errorMessage", ex.getMessage());
