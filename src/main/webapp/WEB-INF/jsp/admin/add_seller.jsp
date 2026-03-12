@@ -23,6 +23,11 @@
 </div>
 
 <div class="mb-2">
+    <label class="form-label">Email</label>
+    <input class="form-control" name="email" type="email" required/>
+</div>
+
+<div class="mb-2">
 <label class="form-label">Password (>= 6 ký tự)</label>
 <input class="form-control" name="password" type="password" required/>
 </div>

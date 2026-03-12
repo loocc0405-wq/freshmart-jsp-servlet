@@ -11,13 +11,15 @@ public class AuthService {
     private final JpaExecutor executor = new JpaExecutor();
     private final UserRepository userRepo = new UserRepository();
 
-    public User login(String username, String password) {
+    public User login(String login, String password) {
         return executor.execute(em -> {
-            User u = userRepo.findByUsername(em, username)
-                    .orElseThrow(() -> new AuthenticationException("Invalid username/password"));
+            User u = userRepo.findByUsernameOrEmail(em, login)
+                    .orElseThrow(() -> new AuthenticationException("Sai tài khoản hoặc mật khẩu."));
+
             if (!PasswordUtil.matches(password, u.getPasswordHash())) {
-                throw new AuthenticationException("Invalid username/password");
+                throw new AuthenticationException("Sai tài khoản hoặc mật khẩu.");
             }
+
             return u;
         });
     }

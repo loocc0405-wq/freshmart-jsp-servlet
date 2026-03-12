@@ -29,15 +29,16 @@ public class AdminAddSellerServlet extends HttpServlet {
             throws ServletException, IOException {
 
         String username = req.getParameter("username");
+        String email = req.getParameter("email");
         String password = req.getParameter("password");
         String fullName = req.getParameter("fullName");
         String phone = req.getParameter("phone");
         String address = req.getParameter("address");
 
-        
         if (username == null || username.trim().isEmpty()
+                || email == null || email.trim().isEmpty()
                 || password == null || password.length() < 6) {
-            req.setAttribute("error", "Username không được rỗng và password tối thiểu 6 ký tự.");
+            req.setAttribute("error", "Username, email không được rỗng và password tối thiểu 6 ký tự.");
             req.getRequestDispatcher("/WEB-INF/jsp/admin/add_seller.jsp").forward(req, resp);
             return;
         }
@@ -48,11 +49,16 @@ public class AdminAddSellerServlet extends HttpServlet {
                     throw new RuntimeException("USERNAME_EXISTS");
                 }
 
+                if (userRepo.existsByEmail(em, email.trim().toLowerCase())) {
+                    throw new RuntimeException("EMAIL_EXISTS");
+                }
+
                 User u = new User();
                 u.setUsername(username.trim());
+                u.setEmail(email.trim().toLowerCase());
                 u.setPasswordHash(PasswordUtil.hash(password));
                 u.setRole(Role.SELLER);
-                u.setTier(Tier.FREE); // Seller không cần tier PRO
+                u.setTier(Tier.FREE);
                 u.setFullName(fullName);
                 u.setPhone(phone);
                 u.setAddress(address);
@@ -66,6 +72,8 @@ public class AdminAddSellerServlet extends HttpServlet {
         } catch (RuntimeException ex) {
             if ("USERNAME_EXISTS".equals(ex.getMessage())) {
                 req.setAttribute("error", "Username đã tồn tại.");
+            } else if ("EMAIL_EXISTS".equals(ex.getMessage())) {
+                req.setAttribute("error", "Email đã tồn tại.");
             } else {
                 req.setAttribute("error", "Tạo seller thất bại: " + ex.getMessage());
             }

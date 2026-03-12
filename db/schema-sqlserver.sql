@@ -16,6 +16,7 @@ BEGIN
     CREATE TABLE dbo.users (
         id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
         username NVARCHAR(50) NOT NULL,
+        email NVARCHAR(120) NOT NULL,
         password_hash NVARCHAR(100) NOT NULL,
         role NVARCHAR(20) NOT NULL,
         tier NVARCHAR(10) NOT NULL CONSTRAINT df_users_tier DEFAULT N'FREE',
@@ -27,8 +28,23 @@ BEGIN
         address NVARCHAR(255) NULL,
         active BIT NOT NULL CONSTRAINT df_users_active DEFAULT (1),
         created_at DATETIME2(0) NOT NULL CONSTRAINT df_users_created_at DEFAULT (SYSDATETIME()),
-        CONSTRAINT uq_users_username UNIQUE (username)
+        CONSTRAINT uq_users_username UNIQUE (username),
+        CONSTRAINT uq_users_email UNIQUE (email)
     );
+END
+GO
+
+-- migration: ensure email exists
+IF COL_LENGTH('users', 'email') IS NULL
+BEGIN
+    ALTER TABLE users ADD email NVARCHAR(120) NULL;
+
+    UPDATE users
+    SET email = LOWER(username) + '@freshmart.local'
+    WHERE email IS NULL;
+
+    ALTER TABLE users ALTER COLUMN email NVARCHAR(120) NOT NULL;
+    ALTER TABLE users ADD CONSTRAINT uq_users_email UNIQUE (email);
 END
 GO
 

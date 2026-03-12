@@ -28,10 +28,11 @@ public class CartServiceEdgeCaseTest {
             String username = runKey + "_USER";
 
             em.createNativeQuery(
-                    "INSERT INTO users(username, password_hash, role, tier, active) " +
-                    "VALUES(:u,'123','CUSTOMER','FREE',1)"
+                    "INSERT INTO users(username, email, password_hash, role, tier, active) " +
+                    "VALUES(:u, :e,'123','CUSTOMER','FREE',1)"
             )
             .setParameter("u", username)
+            .setParameter("e", username.toLowerCase() + "@test.local")
             .executeUpdate();
 
             Number id = (Number) em.createNativeQuery(

@@ -156,8 +156,14 @@ font-weight:bold;
 </div>
 
 <div class="subtitle">
-Inventory & POS System
+Đăng nhập bằng username hoặc email
 </div>
+
+<c:if test="${param.registered eq '1'}">
+<div style="background:#e8f5e9;color:#1b5e20;padding:10px;border-radius:6px;margin-bottom:15px;text-align:center;font-size:14px;">
+Đăng ký thành công. Bạn có thể đăng nhập ngay bây giờ.
+</div>
+</c:if>
 
 <c:if test="${not empty error}">
 <div class="error">${error}</div>
@@ -166,10 +172,11 @@ Inventory & POS System
 <form method="post" action="login">
 
 <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+<input type="hidden" name="return" value="${returnUrl}" />
 
 <div class="input-group">
-<i class="fa fa-user"></i>
-<input type="text" name="username" placeholder="Username" required>
+    <i class="fa fa-user"></i>
+    <input type="text" name="login" value="${loginValue}" placeholder="Username hoặc email" required>
 </div>
 
 <div class="input-group">
@@ -184,7 +191,13 @@ Inventory & POS System
 </form>
 
 <div class="footer">
-FreshMart © 2026
+    Chưa có tài khoản?
+    <a href="${pageContext.request.contextPath}/register"
+       style="color:#009688;font-weight:bold;text-decoration:none;">
+        Đăng ký ngay
+    </a>
+    <br/>
+    FreshMart © 2026
 </div>
 
 </div>

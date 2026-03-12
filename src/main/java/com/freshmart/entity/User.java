@@ -12,7 +12,8 @@ import java.time.temporal.ChronoUnit;
 @Entity
 @Table(name = "users",
         uniqueConstraints = {
-                @UniqueConstraint(name = "uq_users_username", columnNames = "username")
+                @UniqueConstraint(name = "uq_users_username", columnNames = "username"),
+                @UniqueConstraint(name = "uq_users_email", columnNames = "email")
         })
 public class User {
 
@@ -22,6 +23,9 @@ public class User {
 
     @Column(nullable = false, length = 50)
     private String username;
+
+    @Column(nullable = false, length = 120)
+    private String email;
 
     @Column(name = "password_hash", nullable = false, length = 100)
     private String passwordHash;
@@ -62,8 +66,17 @@ public class User {
     public User() {
     }
 
+    public User(String username, String email, String passwordHash, Role role) {
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.role = role;
+    }
+
+    // fallback để code cũ vẫn chạy được ở môi trường dev
     public User(String username, String passwordHash, Role role) {
         this.username = username;
+        this.email = username.toLowerCase() + "@freshmart.local";
         this.passwordHash = passwordHash;
         this.role = role;
     }
@@ -107,6 +120,14 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPasswordHash() {
