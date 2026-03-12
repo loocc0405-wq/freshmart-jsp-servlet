@@ -18,52 +18,50 @@ public class CsrfFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
 
-        HttpSession session = request.getSession(true);
-
-        String method = request.getMethod();
         String uri = request.getRequestURI();
+        String method = request.getMethod();
 
-        // Bỏ qua static resources
-        if (uri.contains("/css/") ||
-            uri.contains("/js/") ||
-            uri.contains("/images/") ||
-            uri.contains("/fonts/")) {
-
+        // Static resources: skip entirely – do NOT create a session
+        if (isStaticResource(uri)) {
             chain.doFilter(req, res);
             return;
         }
 
-        // Luôn đảm bảo token tồn tại
+        // Only now create / retrieve session (after bypassing statics)
+        HttpSession session = request.getSession(true);
+
         if (session.getAttribute(CSRF_TOKEN) == null) {
-            String token = UUID.randomUUID().toString();
-            session.setAttribute(CSRF_TOKEN, token);
+            session.setAttribute(CSRF_TOKEN, UUID.randomUUID().toString());
         }
 
-        // Kiểm tra CSRF cho POST
-        if ("POST".equalsIgnoreCase(method)) {
-
+        if (isUnsafeMethod(method)) {
             String sessionToken = (String) session.getAttribute(CSRF_TOKEN);
-
-            // Ưu tiên lấy từ form parameter
             String requestToken = request.getParameter(CSRF_PARAM);
 
-            // Nếu không có thì lấy từ header (dùng cho fetch/AJAX/JSON)
             if (requestToken == null || requestToken.isBlank()) {
                 requestToken = request.getHeader(CSRF_HEADER);
             }
 
-            if (sessionToken == null ||
-                requestToken == null ||
-                !sessionToken.equals(requestToken)) {
-
-                response.sendError(
-                        HttpServletResponse.SC_FORBIDDEN,
-                        "CSRF token invalid"
-                );
+            if (sessionToken == null || requestToken == null || !sessionToken.equals(requestToken)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "CSRF token invalid");
                 return;
             }
         }
 
         chain.doFilter(req, res);
+    }
+
+    private boolean isUnsafeMethod(String method) {
+        return "POST".equalsIgnoreCase(method)
+                || "PUT".equalsIgnoreCase(method)
+                || "PATCH".equalsIgnoreCase(method)
+                || "DELETE".equalsIgnoreCase(method);
+    }
+
+    private boolean isStaticResource(String uri) {
+        return uri.contains("/css/")
+                || uri.contains("/js/")
+                || uri.contains("/images/")
+                || uri.contains("/fonts/");
     }
 }

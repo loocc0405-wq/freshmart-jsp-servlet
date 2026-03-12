@@ -61,7 +61,15 @@ public class CustomerProfileServlet extends HttpServlet {
             req.setAttribute("successMessage", "Cập nhật hồ sơ thành công.");
             req.getRequestDispatcher("/WEB-INF/jsp/customer/profile.jsp").forward(req, resp);
         } catch (RuntimeException ex) {
-            req.setAttribute("profileUser", sessionUser);
+            java.util.Map<String, String> formData = new java.util.LinkedHashMap<>();
+            formData.put("fullName", fullName);
+            formData.put("gender",   gender);
+            formData.put("dob",      dob);
+            formData.put("phone",    phone);
+            formData.put("address",  address);
+
+            req.setAttribute("formData",     formData);
+            req.setAttribute("profileUser",  sessionUser);
             req.setAttribute("errorMessage", ex.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/customer/profile.jsp").forward(req, resp);
         }

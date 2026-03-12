@@ -1,5 +1,10 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+
+<%-- Use formData (on validation error) or fall back to the actual user entity --%>
+<c:set var="form" value="${empty formData ? profileUser : formData}" />
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -29,53 +34,55 @@
     <h1>My Profile</h1>
 
     <c:if test="${not empty successMessage}">
-        <div class="msg-success">${successMessage}</div>
+        <div class="msg-success">${fn:escapeXml(successMessage)}</div>
     </c:if>
 
     <c:if test="${not empty errorMessage}">
-        <div class="msg-error">${errorMessage}</div>
+        <div class="msg-error">${fn:escapeXml(errorMessage)}</div>
     </c:if>
 
     <form method="post" action="${pageContext.request.contextPath}/customer/profile">
+        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+
         <div class="grid">
             <div class="field">
                 <label>Username</label>
-                <input type="text" value="${profileUser.username}" readonly />
+                <input type="text" value="${fn:escapeXml(profileUser.username)}" readonly />
             </div>
 
             <div class="field">
                 <label>Email</label>
-                <input type="email" value="${profileUser.email}" readonly />
+                <input type="email" value="${fn:escapeXml(profileUser.email)}" readonly />
             </div>
 
             <div class="field">
                 <label>Full name</label>
-                <input type="text" name="fullName" value="${profileUser.fullName}" />
+                <input type="text" name="fullName" value="${fn:escapeXml(form.fullName)}" />
             </div>
 
             <div class="field">
                 <label>Gender</label>
                 <select name="gender">
                     <option value="">-- Select gender --</option>
-                    <option value="MALE" ${profileUser.gender != null && profileUser.gender.name() == 'MALE' ? 'selected' : ''}>Male</option>
-                    <option value="FEMALE" ${profileUser.gender != null && profileUser.gender.name() == 'FEMALE' ? 'selected' : ''}>Female</option>
-                    <option value="OTHER" ${profileUser.gender != null && profileUser.gender.name() == 'OTHER' ? 'selected' : ''}>Other</option>
+                    <option value="MALE"   ${form.gender != null && form.gender.toString() == 'MALE'   ? 'selected' : ''}>Male</option>
+                    <option value="FEMALE" ${form.gender != null && form.gender.toString() == 'FEMALE' ? 'selected' : ''}>Female</option>
+                    <option value="OTHER"  ${form.gender != null && form.gender.toString() == 'OTHER'  ? 'selected' : ''}>Other</option>
                 </select>
             </div>
 
             <div class="field">
                 <label>Date of birth</label>
-                <input type="date" name="dob" value="${profileUser.dob}" />
+                <input type="date" name="dob" value="${fn:escapeXml(form.dob)}" />
             </div>
 
             <div class="field">
                 <label>Phone</label>
-                <input type="text" name="phone" value="${profileUser.phone}" />
+                <input type="text" name="phone" value="${fn:escapeXml(form.phone)}" />
             </div>
 
             <div class="field full">
                 <label>Address</label>
-                <textarea name="address">${profileUser.address}</textarea>
+                <textarea name="address">${fn:escapeXml(form.address)}</textarea>
             </div>
         </div>
 
