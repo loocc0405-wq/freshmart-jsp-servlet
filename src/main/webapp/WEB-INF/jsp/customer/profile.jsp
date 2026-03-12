@@ -44,6 +44,11 @@
             </div>
 
             <div class="field">
+                <label>Email</label>
+                <input type="email" value="${profileUser.email}" readonly />
+            </div>
+
+            <div class="field">
                 <label>Full name</label>
                 <input type="text" name="fullName" value="${profileUser.fullName}" />
             </div>

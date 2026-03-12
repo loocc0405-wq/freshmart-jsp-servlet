@@ -78,6 +78,7 @@ BEGIN TRY
     USING (
         SELECT
             username,
+            LOWER(username) + N'@freshmart.local' AS email,
             password_hash,
             role,
             tier,
@@ -94,6 +95,7 @@ BEGIN TRY
     ON tgt.username = src.username
     WHEN MATCHED THEN
         UPDATE SET
+            tgt.email         = ISNULL(tgt.email, src.email),
             tgt.password_hash = src.password_hash,
             tgt.role          = src.role,
             tgt.tier          = src.tier,
@@ -106,10 +108,12 @@ BEGIN TRY
             tgt.active        = src.active
     WHEN NOT MATCHED BY TARGET THEN
         INSERT (
-            username, password_hash, role, tier, expired_date, full_name, gender, dob, phone, address, active, created_at
+            username, email, password_hash, role, tier, expired_date,
+            full_name, gender, dob, phone, address, active, created_at
         )
         VALUES (
-            src.username, src.password_hash, src.role, src.tier, src.expired_date, src.full_name, src.gender, src.dob, src.phone, src.address, src.active, src.created_at
+            src.username, src.email, src.password_hash, src.role, src.tier, src.expired_date,
+            src.full_name, src.gender, src.dob, src.phone, src.address, src.active, src.created_at
         );
 
     /* =========================================================

@@ -20,6 +20,18 @@ public class UserRepository {
         return rs.isEmpty() ? Optional.empty() : Optional.of(rs.get(0));
     }
 
+    public Optional<User> findByUsernameOrEmail(EntityManager em, String login) {
+        TypedQuery<User> q = em.createQuery(
+                "SELECT u FROM User u " +
+                "WHERE (LOWER(u.username) = LOWER(:login) OR LOWER(u.email) = LOWER(:login)) " +
+                "AND u.active = true",
+                User.class
+        );
+        q.setParameter("login", login);
+        List<User> rs = q.getResultList();
+        return rs.isEmpty() ? Optional.empty() : Optional.of(rs.get(0));
+    }
+
     public List<User> findByRole(EntityManager em, Role role) {
         TypedQuery<User> q = em.createQuery(
                 "SELECT u FROM User u WHERE u.role = :role ORDER BY u.id DESC",
@@ -39,9 +51,18 @@ public class UserRepository {
 
     public boolean existsByUsername(EntityManager em, String username) {
         Long c = em.createQuery(
-                "SELECT COUNT(u) FROM User u WHERE u.username = :username",
+                "SELECT COUNT(u) FROM User u WHERE LOWER(u.username) = LOWER(:username)",
                 Long.class
         ).setParameter("username", username)
+         .getSingleResult();
+        return c != null && c > 0;
+    }
+
+    public boolean existsByEmail(EntityManager em, String email) {
+        Long c = em.createQuery(
+                "SELECT COUNT(u) FROM User u WHERE LOWER(u.email) = LOWER(:email)",
+                Long.class
+        ).setParameter("email", email)
          .getSingleResult();
         return c != null && c > 0;
     }

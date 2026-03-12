@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @WebServlet(urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
@@ -35,6 +36,7 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
+        req.setAttribute("returnUrl", req.getParameter("return"));
         req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
     }
 
@@ -42,11 +44,23 @@ public class LoginServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        String username = req.getParameter("username");
+        String loginRaw = req.getParameter("login");
         String password = req.getParameter("password");
         String returnUrl = req.getParameter("return");
 
-        if (attemptService.isBlocked(username)) {
+        String login = loginRaw == null ? null : loginRaw.trim();
+        String attemptKey = login == null ? "" : login.toLowerCase();
+
+        req.setAttribute("returnUrl", returnUrl);
+        req.setAttribute("loginValue", login);
+
+        if (login == null || login.isBlank() || password == null || password.isBlank()) {
+            req.setAttribute("error", "Vui lòng nhập tài khoản và mật khẩu.");
+            req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
+            return;
+        }
+
+        if (attemptService.isBlocked(attemptKey)) {
             req.setAttribute("error",
                     "Tài khoản bị khóa tạm thời do nhập sai quá 5 lần. Vui lòng thử lại sau 5 phút.");
             req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
@@ -54,25 +68,28 @@ public class LoginServlet extends HttpServlet {
         }
 
         try {
-            User user = authService.login(username, password);
-            attemptService.loginSuccess(username);
+            User user = authService.login(login, password);
+            attemptService.loginSuccess(attemptKey);
 
-            HttpSession session = req.getSession();
+            HttpSession oldSession = req.getSession(false);
+            Object guestCartObj = null;
+
+            if (oldSession != null) {
+                guestCartObj = oldSession.getAttribute("GUEST_CART_ITEMS");
+                oldSession.invalidate();
+            }
+
+            HttpSession session = req.getSession(true);
             session.setAttribute(AppConstants.SESSION_USER, user);
+            session.setAttribute("CSRF_TOKEN", UUID.randomUUID().toString());
 
-            Object cartObj = session.getAttribute("GUEST_CART_ITEMS");
-            if (cartObj instanceof List<?>) {
+            if (guestCartObj instanceof List<?>) {
                 @SuppressWarnings("unchecked")
-                List<CartItem> sessionCart = (List<CartItem>) cartObj;
+                List<CartItem> sessionCart = (List<CartItem>) guestCartObj;
 
                 if (!sessionCart.isEmpty()) {
                     cartService.mergeCart(user.getId(), sessionCart);
-                    session.removeAttribute("GUEST_CART_ITEMS");
                 }
-            }
-
-            if (session.getAttribute("CSRF_TOKEN") == null) {
-                session.setAttribute("CSRF_TOKEN", java.util.UUID.randomUUID().toString());
             }
 
             String contextPath = req.getContextPath();
@@ -89,7 +106,7 @@ public class LoginServlet extends HttpServlet {
             redirectByRole(user, req, resp);
 
         } catch (AuthenticationException ex) {
-            attemptService.loginFailed(username);
+            attemptService.loginFailed(attemptKey);
             req.setAttribute("error", ex.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/auth/login.jsp").forward(req, resp);
         }

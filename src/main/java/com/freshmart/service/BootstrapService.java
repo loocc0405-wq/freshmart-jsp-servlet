@@ -32,17 +32,17 @@ public class BootstrapService {
 
         long userCount = userRepo.count(em);
         if (userCount == 0) {
-            User admin = new User("admin", PasswordUtil.hash("admin123"), Role.ADMIN);
+            User admin = new User("admin", "admin@freshmart.local", PasswordUtil.hash("admin123"), Role.ADMIN);
             admin.setTier(Tier.PRO);
             admin.setExpiredDate(LocalDate.now().plusYears(5));
 
-            User staff = new User("staff", PasswordUtil.hash("staff123"), Role.STAFF);
+            User staff = new User("staff", "staff@freshmart.local", PasswordUtil.hash("staff123"), Role.STAFF);
             staff.setTier(Tier.FREE);
 
-            User seller = new User("seller", PasswordUtil.hash("seller123"), Role.SELLER);
+            User seller = new User("seller", "seller@freshmart.local", PasswordUtil.hash("seller123"), Role.SELLER);
             seller.setTier(Tier.FREE);
 
-            User customer = new User("customer", PasswordUtil.hash("customer123"), Role.CUSTOMER);
+            User customer = new User("customer", "customer@freshmart.local", PasswordUtil.hash("customer123"), Role.CUSTOMER);
             customer.setTier(Tier.PRO);
             customer.setExpiredDate(LocalDate.now().plusDays(30));
 

@@ -28,9 +28,25 @@ public class CustomerProfileService {
             User user = userRepository.findById(em, userId)
                     .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            user.setFullName(trimToNull(fullName));
-            user.setPhone(trimToNull(phone));
-            user.setAddress(trimToNull(address));
+            String cleanFullName = trimToNull(fullName);
+            String cleanPhone = trimToNull(phone);
+            String cleanAddress = trimToNull(address);
+
+            if (cleanFullName == null || cleanFullName.length() < 2 || cleanFullName.length() > 100) {
+                throw new IllegalArgumentException("Họ tên phải từ 2 đến 100 ký tự.");
+            }
+
+            if (cleanPhone == null || !cleanPhone.matches("^(0|\\+84)[0-9]{9,10}$")) {
+                throw new IllegalArgumentException("Số điện thoại không hợp lệ.");
+            }
+
+            if (cleanAddress != null && cleanAddress.length() > 255) {
+                throw new IllegalArgumentException("Địa chỉ tối đa 255 ký tự.");
+            }
+
+            user.setFullName(cleanFullName);
+            user.setPhone(cleanPhone);
+            user.setAddress(cleanAddress);
 
             if (gender != null && !gender.isBlank()) {
                 user.setGender(Enum.valueOf(com.freshmart.enums.Gender.class, gender.toUpperCase()));
