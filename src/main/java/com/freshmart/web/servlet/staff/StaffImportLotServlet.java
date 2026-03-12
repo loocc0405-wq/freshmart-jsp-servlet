@@ -28,19 +28,11 @@ public class StaffImportLotServlet extends HttpServlet {
     private final SupplierRepository supplierRepo = new SupplierRepository();
     private final ProductLotService lotService = new ProductLotService();
 
-    /**
-     * Load products and suppliers for dropdowns (reference data).
-     */
     private void loadReferenceData(HttpServletRequest req) {
-        var products = executor.execute(em -> productRepo.findAll(em, true));
-        var suppliers = executor.execute(supplierRepo::findAll);
-        req.setAttribute("products", products);
-        req.setAttribute("suppliers", suppliers);
+        req.setAttribute("products", executor.execute(em -> productRepo.findAll(em, true)));
+        req.setAttribute("suppliers", executor.execute(supplierRepo::findAll));
     }
 
-    /**
-     * Preserve submitted form values when validation fails.
-     */
     private void preserveSubmittedValues(HttpServletRequest req) {
         req.setAttribute("formProductId", req.getParameter("productId"));
         req.setAttribute("formSupplierId", req.getParameter("supplierId"));
@@ -50,9 +42,6 @@ public class StaffImportLotServlet extends HttpServlet {
         req.setAttribute("formImportPrice", req.getParameter("importPrice"));
     }
 
-    /**
-     * Load editing lot if editing mode is active.
-     */
     private void loadEditingLotIfAny(HttpServletRequest req, String rawLotId) {
         if (rawLotId == null || rawLotId.isBlank()) {
             return;
@@ -68,54 +57,72 @@ public class StaffImportLotServlet extends HttpServlet {
         }
     }
 
+    private String extractLotId(HttpServletRequest req) {
+        String byId = req.getParameter("id");
+        if (byId != null && !byId.isBlank()) {
+            return byId;
+        }
+        return req.getParameter("lotId");
+    }
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         loadReferenceData(req);
-        loadEditingLotIfAny(req, req.getParameter("id"));
-        // Prefill productId nếu là từ báo cáo low stock
+        loadEditingLotIfAny(req, extractLotId(req));
+
         if (req.getAttribute("editingLot") == null) {
             req.setAttribute("formProductId", req.getParameter("productId"));
             req.setAttribute("formSupplierId", req.getParameter("supplierId"));
         }
+
         req.getRequestDispatcher("/WEB-INF/jsp/staff/import_lot.jsp").forward(req, resp);
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String lotIdRaw = req.getParameter("lotId");
-        
-        try {
-            String productIdRaw = req.getParameter("productId");
-            String supplierIdRaw = req.getParameter("supplierId");
-            String importDateRaw = req.getParameter("importDate");
-            String expiryDateRaw = req.getParameter("expiryDate");
-            String qtyRaw = req.getParameter("quantity");
-            String priceRaw = req.getParameter("importPrice");
 
-            if (productIdRaw == null || productIdRaw.isBlank()) {
-                throw new IllegalArgumentException("Product is required");
-            }
+        try {
+            String productIdRaw = required(req.getParameter("productId"), "Product is required");
+            String importDateRaw = required(req.getParameter("importDate"), "Import date is required");
+            String expiryDateRaw = required(req.getParameter("expiryDate"), "Expiry date is required");
+            String qtyRaw = required(req.getParameter("quantity"), "Quantity is required");
+
+            String supplierIdRaw = trimToNull(req.getParameter("supplierId"));
+            String priceRaw = trimToNull(req.getParameter("importPrice"));
 
             Long productId = Long.parseLong(productIdRaw);
-            Long supplierId = (supplierIdRaw == null || supplierIdRaw.isBlank()) ? null : Long.parseLong(supplierIdRaw);
-            int quantity = Integer.parseInt(qtyRaw != null && !qtyRaw.isBlank() ? qtyRaw : "0");
+            Long supplierId = supplierIdRaw == null ? null : Long.parseLong(supplierIdRaw);
+            int quantity = Integer.parseInt(qtyRaw);
 
             DateTimeFormatter fmt = DateTimeFormatter.ISO_DATE;
-            LocalDate importDate = importDateRaw != null ? LocalDate.parse(importDateRaw, fmt) : LocalDate.now();
-            LocalDate expiryDate = expiryDateRaw != null ? LocalDate.parse(expiryDateRaw, fmt) : null;
+            LocalDate importDate = LocalDate.parse(importDateRaw, fmt);
+            LocalDate expiryDate = LocalDate.parse(expiryDateRaw, fmt);
+            BigDecimal importPrice = priceRaw == null ? BigDecimal.ZERO : new BigDecimal(priceRaw);
 
-            BigDecimal importPrice = (priceRaw != null && !priceRaw.isBlank()) ? new BigDecimal(priceRaw) : BigDecimal.ZERO;
-
-            // Perform import or update inside transaction
             ProductLot savedLot = executor.execute(em -> {
                 if (lotIdRaw != null && !lotIdRaw.isBlank()) {
-                    // Update existing lot
                     Long lotId = Long.parseLong(lotIdRaw.trim());
-                    return lotService.updateLot(lotId, productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
-                } else {
-                    // Create new lot
-                    return lotService.importLot(productId, supplierId, importDate, expiryDate, quantity, importPrice, em);
+                    return lotService.updateLot(
+                            lotId,
+                            productId,
+                            supplierId,
+                            importDate,
+                            expiryDate,
+                            quantity,
+                            importPrice,
+                            em
+                    );
                 }
+                return lotService.importLot(
+                        productId,
+                        supplierId,
+                        importDate,
+                        expiryDate,
+                        quantity,
+                        importPrice,
+                        em
+                );
             });
 
             if (lotIdRaw != null && !lotIdRaw.isBlank()) {
@@ -124,7 +131,6 @@ public class StaffImportLotServlet extends HttpServlet {
             } else {
                 req.setAttribute("successMessage", "Nhập lô thành công! Lô ID: " + savedLot.getId());
             }
-
         } catch (RuntimeException ex) {
             req.setAttribute("errorMessage", ex.getMessage());
             preserveSubmittedValues(req);
@@ -133,5 +139,21 @@ public class StaffImportLotServlet extends HttpServlet {
 
         loadReferenceData(req);
         req.getRequestDispatcher("/WEB-INF/jsp/staff/import_lot.jsp").forward(req, resp);
+    }
+
+    private String required(String value, String message) {
+        String normalized = trimToNull(value);
+        if (normalized == null) {
+            throw new IllegalArgumentException(message);
+        }
+        return normalized;
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

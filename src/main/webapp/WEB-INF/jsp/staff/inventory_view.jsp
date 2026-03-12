@@ -165,8 +165,9 @@
                             </c:choose>
                         </td>
                         <td>
-                            <a href="${pageContext.request.contextPath}/staff/import-lot?lotId=${lot.id}" class="btn btn-sm btn-outline-primary">SỚ lô</a>
+                            <a href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}" class="btn btn-sm btn-outline-primary">Sửa lô</a>
                         </td>
+                    </tr>
                 </c:forEach>
                 </tbody>
             </table>
