@@ -25,6 +25,12 @@ public class CartRepository {
 
         User user = em.find(User.class, userId);
 
+        // ====== ADD VALIDATION (không thay logic cũ) ======
+        if (user == null) {
+            throw new RuntimeException("User not found for cart creation");
+        }
+        // ================================================
+
         Cart cart = new Cart();
         cart.setUser(user);
 
