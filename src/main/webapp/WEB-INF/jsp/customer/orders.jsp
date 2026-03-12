@@ -50,15 +50,44 @@
     </c:if>
 
     <form class="filter-form" method="get" action="${pageContext.request.contextPath}/customer/orders">
+
         <div class="field">
             <label for="status">Status</label>
+
             <select name="status" id="status">
+
                 <option value="">All</option>
-                <option value="PENDING" ${selectedStatus == 'PENDING' ? 'selected' : ''}>PENDING</option>
-                <option value="COMPLETED" ${selectedStatus == 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
-                <option value="CANCELED" ${(selectedStatus == 'CANCELED' || selectedStatus == 'CANCELLED') ? 'selected' : ''}>CANCELED</option>
+
+                <option value="PENDING"
+                        ${selectedStatus == 'PENDING' ? 'selected' : ''}>
+                    PENDING
+                </option>
+
+                <!-- ===== ADDED ===== -->
+                <option value="PROCESSING"
+                        ${selectedStatus == 'PROCESSING' ? 'selected' : ''}>
+                    PROCESSING
+                </option>
+
+                <option value="SHIPPING"
+                        ${selectedStatus == 'SHIPPING' ? 'selected' : ''}>
+                    SHIPPING
+                </option>
+                <!-- ===== END ADDED ===== -->
+
+                <option value="COMPLETED"
+                        ${selectedStatus == 'COMPLETED' ? 'selected' : ''}>
+                    COMPLETED
+                </option>
+
+                <option value="CANCELED"
+                        ${(selectedStatus == 'CANCELED' || selectedStatus == 'CANCELLED') ? 'selected' : ''}>
+                    CANCELED
+                </option>
+
             </select>
         </div>
+
 
         <div class="field">
             <label for="fromDate">From date</label>
@@ -73,13 +102,17 @@
         <div class="field">
             <button type="submit">Filter</button>
         </div>
+
     </form>
+
 
     <div class="summary">
         Total orders: <strong>${totalItems}</strong>
     </div>
 
+
     <table>
+
         <thead>
         <tr>
             <th>Order Code</th>
@@ -91,60 +124,101 @@
             <th>Action</th>
         </tr>
         </thead>
+
         <tbody>
+
         <c:choose>
+
             <c:when test="${not empty orders}">
+
                 <c:forEach var="o" items="${orders}">
+
                     <tr>
                         <td>${o.orderCode}</td>
                         <td>${o.status}</td>
                         <td>${o.type}</td>
                         <td>${o.paymentMethod}</td>
-                        <td><fmt:formatNumber value="${o.totalAmount}" type="number" minFractionDigits="0" maxFractionDigits="2"/></td>
-                        <td>${o.createdAt}</td>
+
                         <td>
-                            <a class="btn" href="${pageContext.request.contextPath}/customer/order-detail?id=${o.id}">View Detail</a>
+                            <fmt:formatNumber value="${o.totalAmount}"
+                                              type="number"
+                                              minFractionDigits="0"
+                                              maxFractionDigits="2"/>
                         </td>
+
+                        <td>${o.createdAt}</td>
+
+                        <td>
+                            <a class="btn"
+                               href="${pageContext.request.contextPath}/customer/order-detail?id=${o.id}">
+                                View Detail
+                            </a>
+                        </td>
+
                     </tr>
+
                 </c:forEach>
+
             </c:when>
+
             <c:otherwise>
+
                 <tr>
-                    <td class="empty" colspan="7">No orders found.</td>
+                    <td class="empty" colspan="7">
+                        No orders found.
+                    </td>
                 </tr>
+
             </c:otherwise>
+
         </c:choose>
+
         </tbody>
+
     </table>
 
+
     <c:if test="${totalPages > 1}">
+
         <div class="pagination">
+
             <c:if test="${currentPage > 0}">
                 <a href="${pageContext.request.contextPath}/customer/orders?status=${selectedStatus}&fromDate=${fromDate}&toDate=${toDate}&page=${currentPage - 1}">
                     Previous
                 </a>
             </c:if>
 
+
             <c:forEach var="i" begin="0" end="${totalPages - 1}">
+
                 <c:choose>
+
                     <c:when test="${i == currentPage}">
                         <span class="current">${i + 1}</span>
                     </c:when>
+
                     <c:otherwise>
                         <a href="${pageContext.request.contextPath}/customer/orders?status=${selectedStatus}&fromDate=${fromDate}&toDate=${toDate}&page=${i}">
                             ${i + 1}
                         </a>
                     </c:otherwise>
+
                 </c:choose>
+
             </c:forEach>
+
 
             <c:if test="${currentPage + 1 < totalPages}">
                 <a href="${pageContext.request.contextPath}/customer/orders?status=${selectedStatus}&fromDate=${fromDate}&toDate=${toDate}&page=${currentPage + 1}">
                     Next
                 </a>
             </c:if>
+
         </div>
+
     </c:if>
+
 </div>
+
 </body>
 </html>

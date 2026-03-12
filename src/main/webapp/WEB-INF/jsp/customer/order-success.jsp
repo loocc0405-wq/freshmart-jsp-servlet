@@ -124,7 +124,7 @@ Total: $${order.totalAmount}
 <div class="buttons">
 
 <a class="btn btn-primary"
-href="${pageContext.request.contextPath}/products">
+href="${pageContext.request.contextPath}/catalog">
 Continue Shopping
 </a>
 
