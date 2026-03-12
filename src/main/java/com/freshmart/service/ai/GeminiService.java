@@ -10,56 +10,113 @@ public class GeminiService {
 
     public String generateResponse(String systemPrompt, String userMessage) {
         try {
-            JsonObject root = new JsonObject();
-            JsonArray contents = new JsonArray();
-            
-            // System instructions
-            JsonObject systemObj = new JsonObject();
-            systemObj.addProperty("role", "user"); // Role must be 'user' or 'model' usually, we'll prefix system instruction.
-            JsonArray systemParts = new JsonArray();
-            JsonObject systemContent = new JsonObject();
-            systemContent.addProperty("text", "[HƯỚNG DẪN HỆ THỐNG]:\n" + systemPrompt);
-            systemParts.add(systemContent);
-            systemObj.add("parts", systemParts);
-            contents.add(systemObj);
-            
-            // User message
-            JsonObject userObj = new JsonObject();
-            userObj.addProperty("role", "user");
-            JsonArray userParts = new JsonArray();
-            JsonObject userContent = new JsonObject();
-            userContent.addProperty("text", userMessage);
-            userParts.add(userContent);
-            userObj.add("parts", userParts);
-            contents.add(userObj);
-            
-            root.add("contents", contents);
+            String apiKey = safe(AiConstants.GEMINI_API_KEY);
+            String apiUrl = safe(AiConstants.GEMINI_API_URL);
+            String prompt = safe(systemPrompt);
+            String message = safe(userMessage);
 
-            String jsonPayload = root.toString();
-            String responseJson = HttpClientUtil.postJson(AiConstants.GEMINI_API_URL, jsonPayload, AiConstants.GEMINI_API_KEY);
-            return parseGeminiResponse(responseJson);
+            if (apiKey.isBlank() || apiUrl.isBlank() || message.isBlank()) {
+                return AiConstants.FALLBACK_RESPONSE;
+            }
+
+            JsonObject payload = buildPayload(prompt, message);
+            String responseJson = HttpClientUtil.postJson(apiUrl, payload.toString(), apiKey);
+
+            String parsed = parseGeminiResponse(responseJson);
+            return parsed.isBlank() ? AiConstants.FALLBACK_RESPONSE : parsed;
 
         } catch (Exception e) {
-            e.printStackTrace();
             return AiConstants.FALLBACK_RESPONSE;
         }
     }
 
+    private JsonObject buildPayload(String systemPrompt, String userMessage) {
+        JsonObject root = new JsonObject();
+
+        if (!systemPrompt.isBlank()) {
+            JsonObject systemInstruction = new JsonObject();
+            JsonArray systemParts = new JsonArray();
+
+            JsonObject systemText = new JsonObject();
+            systemText.addProperty("text", systemPrompt);
+            systemParts.add(systemText);
+
+            systemInstruction.add("parts", systemParts);
+            root.add("system_instruction", systemInstruction);
+        }
+
+        JsonArray contents = new JsonArray();
+        JsonObject userContent = new JsonObject();
+        userContent.addProperty("role", "user");
+
+        JsonArray userParts = new JsonArray();
+        JsonObject userText = new JsonObject();
+        userText.addProperty("text", userMessage);
+        userParts.add(userText);
+
+        userContent.add("parts", userParts);
+        contents.add(userContent);
+
+        root.add("contents", contents);
+
+        JsonObject generationConfig = new JsonObject();
+        generationConfig.addProperty("temperature", 0.4);
+        generationConfig.addProperty("maxOutputTokens", 512);
+        root.add("generationConfig", generationConfig);
+
+        return root;
+    }
+
     private String parseGeminiResponse(String jsonString) {
+        if (jsonString == null || jsonString.isBlank()) {
+            return "";
+        }
+
         try {
             JsonObject jsonObject = JsonParser.parseString(jsonString).getAsJsonObject();
-            JsonArray candidates = jsonObject.getAsJsonArray("candidates");
-            if (candidates != null && candidates.size() > 0) {
-                JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
-                JsonObject content = firstCandidate.getAsJsonObject("content");
-                JsonArray parts = content.getAsJsonArray("parts");
-                if (parts != null && parts.size() > 0) {
-                    return parts.get(0).getAsJsonObject().get("text").getAsString();
+
+            if (jsonObject.has("error") && jsonObject.get("error").isJsonObject()) {
+                JsonObject error = jsonObject.getAsJsonObject("error");
+                if (error.has("message") && !error.get("message").isJsonNull()) {
+                    return "";
                 }
             }
+
+            JsonArray candidates = jsonObject.getAsJsonArray("candidates");
+            if (candidates == null || candidates.isEmpty()) {
+                return "";
+            }
+
+            JsonObject firstCandidate = candidates.get(0).getAsJsonObject();
+            if (!firstCandidate.has("content") || firstCandidate.get("content").isJsonNull()) {
+                return "";
+            }
+
+            JsonObject content = firstCandidate.getAsJsonObject("content");
+            JsonArray parts = content.getAsJsonArray("parts");
+            if (parts == null || parts.isEmpty()) {
+                return "";
+            }
+
+            StringBuilder answer = new StringBuilder();
+            for (int i = 0; i < parts.size(); i++) {
+                JsonObject part = parts.get(i).getAsJsonObject();
+                if (part.has("text") && !part.get("text").isJsonNull()) {
+                    if (answer.length() > 0) {
+                        answer.append("\n");
+                    }
+                    answer.append(part.get("text").getAsString());
+                }
+            }
+
+            return answer.toString().trim();
+
         } catch (Exception e) {
-            e.printStackTrace();
+            return "";
         }
-        return AiConstants.FALLBACK_RESPONSE;
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 }
