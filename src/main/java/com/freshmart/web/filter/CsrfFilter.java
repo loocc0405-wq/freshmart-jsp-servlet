@@ -9,6 +9,7 @@ public class CsrfFilter implements Filter {
 
     private static final String CSRF_TOKEN = "CSRF_TOKEN";
     private static final String CSRF_PARAM = "csrf_token";
+    private static final String CSRF_HEADER = "X-CSRF-Token";
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -22,9 +23,7 @@ public class CsrfFilter implements Filter {
         String method = request.getMethod();
         String uri = request.getRequestURI();
 
-        // =====================================
-        // BỎ QUA STATIC RESOURCES
-        // =====================================
+        // Bỏ qua static resources
         if (uri.contains("/css/") ||
             uri.contains("/js/") ||
             uri.contains("/images/") ||
@@ -34,22 +33,24 @@ public class CsrfFilter implements Filter {
             return;
         }
 
-        // =====================================
-        // LUÔN ĐẢM BẢO TOKEN TỒN TẠI
-        // (fix lỗi token null khi render JSP)
-        // =====================================
+        // Luôn đảm bảo token tồn tại
         if (session.getAttribute(CSRF_TOKEN) == null) {
             String token = UUID.randomUUID().toString();
             session.setAttribute(CSRF_TOKEN, token);
         }
 
-        // =====================================
-        // KIỂM TRA CSRF CHO POST REQUEST
-        // =====================================
+        // Kiểm tra CSRF cho POST
         if ("POST".equalsIgnoreCase(method)) {
 
             String sessionToken = (String) session.getAttribute(CSRF_TOKEN);
+
+            // Ưu tiên lấy từ form parameter
             String requestToken = request.getParameter(CSRF_PARAM);
+
+            // Nếu không có thì lấy từ header (dùng cho fetch/AJAX/JSON)
+            if (requestToken == null || requestToken.isBlank()) {
+                requestToken = request.getHeader(CSRF_HEADER);
+            }
 
             if (sessionToken == null ||
                 requestToken == null ||

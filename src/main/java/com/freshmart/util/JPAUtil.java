@@ -4,17 +4,24 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
 public final class JPAUtil {
+
+    private static final String URL =
+            "jdbc:sqlserver://localhost:1433;databaseName=freshmart;encrypt=true;trustServerCertificate=true";
+    private static final String USER = "sa";
+    private static final String PASSWORD = "123456";
 
     private static final EntityManagerFactory EMF;
 
     static {
         try {
             Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            try (java.sql.Connection conn = java.sql.DriverManager.getConnection(
-                    "jdbc:sqlserver://localhost:1433;databaseName=freshmart;encrypt=true;trustServerCertificate=true",
-                    "sa", "123456")) {
 
+            try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD)) {
                 ensureColumnExists(
                         conn,
                         "products",
@@ -77,7 +84,8 @@ public final class JPAUtil {
         EMF = Persistence.createEntityManagerFactory("freshmartPU");
     }
 
-    private JPAUtil() {}
+    private JPAUtil() {
+    }
 
     public static EntityManagerFactory getEntityManagerFactory() {
         return EMF;
@@ -87,16 +95,20 @@ public final class JPAUtil {
         return EMF.createEntityManager();
     }
 
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
     public static void shutdown() {
         if (EMF.isOpen()) {
             EMF.close();
         }
     }
 
-    private static void ensureColumnExists(java.sql.Connection conn,
+    private static void ensureColumnExists(Connection conn,
                                            String tableName,
                                            String columnName,
-                                           String alterSql) throws java.sql.SQLException {
+                                           String alterSql) throws SQLException {
         try (java.sql.PreparedStatement ps = conn.prepareStatement(
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME = ?")) {
             ps.setString(1, tableName);
@@ -112,9 +124,9 @@ public final class JPAUtil {
         }
     }
 
-    private static void ensureTableExists(java.sql.Connection conn,
+    private static void ensureTableExists(Connection conn,
                                           String tableName,
-                                          String createSql) throws java.sql.SQLException {
+                                          String createSql) throws SQLException {
         try (java.sql.PreparedStatement ps = conn.prepareStatement(
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = ?")) {
             ps.setString(1, tableName);
