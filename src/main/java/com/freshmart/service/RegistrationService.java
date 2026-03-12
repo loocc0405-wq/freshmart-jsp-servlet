@@ -10,18 +10,26 @@ import com.freshmart.util.PasswordUtil;
 
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 public class RegistrationService {
 
-    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-zA-Z0-9._-]{4,30}$");
+    private static final Pattern USERNAME_PATTERN = Pattern.compile("^[a-z0-9._-]{4,30}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
     private static final Pattern PHONE_PATTERN = Pattern.compile("^(0|\\+84)[0-9]{9,10}$");
+
     private static final Pattern UPPERCASE_PATTERN = Pattern.compile(".*[A-Z].*");
     private static final Pattern LOWERCASE_PATTERN = Pattern.compile(".*[a-z].*");
     private static final Pattern DIGIT_PATTERN = Pattern.compile(".*\\d.*");
     private static final Pattern SPECIAL_PATTERN = Pattern.compile(".*[^A-Za-z0-9].*");
+
+    private static final Set<String> RESERVED_USERNAMES = Set.of(
+            "admin", "administrator", "root", "system", "staff",
+            "seller", "support", "api", "freshmart"
+    );
 
     private final JpaExecutor executor = new JpaExecutor();
     private final UserRepository userRepository = new UserRepository();
@@ -39,10 +47,10 @@ public class RegistrationService {
 
         Map<String, String> errors = new LinkedHashMap<>();
 
-        String cleanFullName = trimToNull(fullName);
-        String cleanUsername = trimToNull(username);
+        String cleanFullName = normalizeFullName(fullName);
+        String cleanUsername = normalizeUsername(username);
         String cleanEmail = normalizeEmail(email);
-        String cleanPhone = trimToNull(phone);
+        String cleanPhone = normalizePhone(phone);
         String cleanAddress = trimToNull(address);
 
         if (cleanFullName == null || cleanFullName.length() < 2 || cleanFullName.length() > 100) {
@@ -50,7 +58,9 @@ public class RegistrationService {
         }
 
         if (cleanUsername == null || !USERNAME_PATTERN.matcher(cleanUsername).matches()) {
-            errors.put("username", "Username phải 4-30 ký tự, chỉ gồm chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.");
+            errors.put("username", "Username phải 4-30 ký tự, chỉ gồm chữ thường, số, dấu chấm, gạch dưới hoặc gạch ngang.");
+        } else if (RESERVED_USERNAMES.contains(cleanUsername)) {
+            errors.put("username", "Username này không được phép sử dụng.");
         }
 
         if (cleanEmail == null || !EMAIL_PATTERN.matcher(cleanEmail).matches()) {
@@ -63,6 +73,8 @@ public class RegistrationService {
 
         if (password == null || password.length() < 8) {
             errors.put("password", "Mật khẩu phải có ít nhất 8 ký tự.");
+        } else if (password.length() > 72) {
+            errors.put("password", "Mật khẩu tối đa 72 ký tự.");
         } else if (!UPPERCASE_PATTERN.matcher(password).matches()
                 || !LOWERCASE_PATTERN.matcher(password).matches()
                 || !DIGIT_PATTERN.matcher(password).matches()
@@ -80,7 +92,7 @@ public class RegistrationService {
 
         if (gender != null && !gender.isBlank()) {
             try {
-                Gender.valueOf(gender.toUpperCase());
+                Gender.valueOf(gender.toUpperCase(Locale.ROOT));
             } catch (IllegalArgumentException ex) {
                 errors.put("gender", "Giới tính không hợp lệ.");
             }
@@ -89,7 +101,9 @@ public class RegistrationService {
         if (dob != null && !dob.isBlank()) {
             try {
                 LocalDate parsedDob = LocalDate.parse(dob);
-                if (parsedDob.isAfter(LocalDate.now().minusYears(13))) {
+                if (parsedDob.isAfter(LocalDate.now())) {
+                    errors.put("dob", "Ngày sinh không hợp lệ.");
+                } else if (parsedDob.isAfter(LocalDate.now().minusYears(13))) {
                     errors.put("dob", "Người dùng phải từ 13 tuổi trở lên.");
                 }
             } catch (Exception ex) {
@@ -107,12 +121,13 @@ public class RegistrationService {
     public Map<String, String> validateBusinessRules(String username, String email) {
         return executor.execute(em -> {
             Map<String, String> errors = new LinkedHashMap<>();
-            String cleanUsername = trimToNull(username);
+            String cleanUsername = normalizeUsername(username);
             String cleanEmail = normalizeEmail(email);
 
             if (cleanUsername != null && userRepository.existsByUsername(em, cleanUsername)) {
                 errors.put("username", "Username đã tồn tại.");
             }
+
             if (cleanEmail != null && userRepository.existsByEmail(em, cleanEmail)) {
                 errors.put("email", "Email đã được sử dụng.");
             }
@@ -131,8 +146,11 @@ public class RegistrationService {
                                  String address) {
 
         return executor.execute(em -> {
-            String cleanUsername = trimToNull(username);
+            String cleanUsername = normalizeUsername(username);
             String cleanEmail = normalizeEmail(email);
+            String cleanPhone = normalizePhone(phone);
+            String cleanFullName = normalizeFullName(fullName);
+            String cleanAddress = trimToNull(address);
 
             if (userRepository.existsByUsername(em, cleanUsername)) {
                 throw new IllegalArgumentException("Username đã tồn tại.");
@@ -148,13 +166,13 @@ public class RegistrationService {
             user.setPasswordHash(PasswordUtil.hash(password));
             user.setRole(Role.CUSTOMER);
             user.setTier(Tier.FREE);
-            user.setFullName(trimToNull(fullName));
-            user.setPhone(trimToNull(phone));
-            user.setAddress(trimToNull(address));
+            user.setFullName(cleanFullName);
+            user.setPhone(cleanPhone);
+            user.setAddress(cleanAddress);
             user.setActive(true);
 
             if (gender != null && !gender.isBlank()) {
-                user.setGender(Gender.valueOf(gender.toUpperCase()));
+                user.setGender(Gender.valueOf(gender.toUpperCase(Locale.ROOT)));
             }
 
             if (dob != null && !dob.isBlank()) {
@@ -171,8 +189,25 @@ public class RegistrationService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private String normalizeUsername(String value) {
+        String u = trimToNull(value);
+        return u == null ? null : u.toLowerCase(Locale.ROOT);
+    }
+
     private String normalizeEmail(String value) {
-        String email = trimToNull(value);
-        return email == null ? null : email.toLowerCase();
+        String e = trimToNull(value);
+        return e == null ? null : e.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizePhone(String value) {
+        String p = trimToNull(value);
+        if (p == null) return null;
+        return p.replaceAll("[\\s().-]", "");
+    }
+
+    private String normalizeFullName(String value) {
+        String f = trimToNull(value);
+        if (f == null) return null;
+        return f.replaceAll("\\s+", " ");
     }
 }

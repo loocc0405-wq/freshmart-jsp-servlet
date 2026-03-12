@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <!DOCTYPE html>
 <html>
@@ -176,12 +177,14 @@ font-weight:bold;
 
 <div class="input-group">
     <i class="fa fa-user"></i>
-    <input type="text" name="login" value="${loginValue}" placeholder="Username hoặc email" required>
+<input type="text" name="login" value="${fn:escapeXml(loginValue)}"
+       placeholder="Username hoặc email" autocomplete="username" required>
 </div>
 
 <div class="input-group">
 <i class="fa fa-lock"></i>
-<input type="password" name="password" placeholder="Password" required>
+<input type="password" name="password" placeholder="Password"
+       autocomplete="current-password" required>
 </div>
 
 <button type="submit">
