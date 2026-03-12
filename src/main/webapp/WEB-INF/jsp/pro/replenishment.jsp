@@ -82,10 +82,18 @@
             <th class="text-end">SeasonFactor</th>
             <th class="text-end">Forecast/day</th>
             <th class="text-end">Stock</th>
+            <th class="text-end">ExpectedDemand</th>
+            <th class="text-end">SafetyStock</th>
+            <th class="text-end">ReorderPoint</th>
             <th class="text-end">ExpiringLots (≤3d)</th>
             <th class="text-end">ExpiringQty (≤3d)</th>
             <th class="text-center">Suggested</th>
-            <th>Note</th>
+            <th>Best Supplier</th>
+            <th class="text-end">Lead Time</th>
+            <th class="text-end">Avg Price</th>
+            <th>Last Import</th>
+            <th>Reason</th>
+            <th>Action</th>
           </tr>
           </thead>
 
@@ -110,6 +118,18 @@
 
               <td class="text-end"><c:out value="${r.stock}"/></td>
 
+              <td class="text-end">
+                <fmt:formatNumber value="${r.expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
+
+              <td class="text-end">
+                <fmt:formatNumber value="${r.safetyStock}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
+
+              <td class="text-end">
+                <fmt:formatNumber value="${r.reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/>
+              </td>
+
               <td class="text-end"><c:out value="${r.expiringLots}"/></td>
               <td class="text-end"><c:out value="${r.expiringQty}"/></td>
 
@@ -126,8 +146,67 @@
 
               <td>
                 <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierName}">
+                    <c:out value="${r.recommendedSupplierName}"/>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td class="text-end">
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierLeadTimeDays}">
+                    <c:out value="${r.recommendedSupplierLeadTimeDays}"/>d
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td class="text-end">
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierAvgImportPrice}">
+                    <fmt:formatNumber value="${r.recommendedSupplierAvgImportPrice}" minFractionDigits="0" maxFractionDigits="0"/>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${not empty r.recommendedSupplierLastImportDate}">
+                    <c:out value="${r.recommendedSupplierLastImportDate}"/>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${not empty r.recommendationReason}">
+                    <span class="small"><c:out value="${r.recommendationReason}"/></span>
+                  </c:when>
                   <c:when test="${not empty r.note}">
                     <span class="small"><c:out value="${r.note}"/></span>
+                  </c:when>
+                  <c:otherwise>
+                    <span class="text-muted small">-</span>
+                  </c:otherwise>
+                </c:choose>
+              </td>
+
+              <td>
+                <c:choose>
+                  <c:when test="${r.suggestedQty > 0 and not empty r.recommendedSupplierId}">
+                    <a href="${pageContext.request.contextPath}/staff/import-lot?productId=${r.productId}&supplierId=${r.recommendedSupplierId}" 
+                       class="btn btn-sm btn-primary">Nhập lô với NCC này</a>
                   </c:when>
                   <c:otherwise>
                     <span class="text-muted small">-</span>

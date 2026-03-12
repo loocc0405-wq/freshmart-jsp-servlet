@@ -2,10 +2,13 @@ package com.freshmart.repository;
 
 import com.freshmart.entity.ProductLot;
 import com.freshmart.service.dto.InventoryLotFilter;
+import com.freshmart.service.dto.SupplierCandidate;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProductLotRepository {
@@ -359,5 +362,61 @@ public class ProductLotRepository {
         }
 
         return query.getSingleResult();
+    }
+
+    /**
+     * Aggregate supplier candidates từ lịch sử nhập hàng (product_lots) của một product.
+     * Trả về danh sách supplier với thông tin:
+     * - supplierId, supplierName, supplierLeadTimeDays
+     * - avgImportPrice (trung bình giá nhập)
+     * - lastImportDate (ngày nhập gần nhất)
+     * - lotCount (số lô đã nhập)
+     * - totalQtyIn (tổng số lượng đã nhập)
+     */
+    public List<SupplierCandidate> findSupplierCandidates(EntityManager em, Long productId) {
+        String jpql = "SELECT s.id, s.name, s.leadTimeDays, " +
+                "AVG(l.importPrice), MAX(l.importDate), COUNT(l), SUM(l.qtyIn) " +
+                "FROM ProductLot l " +
+                "JOIN l.supplier s " +
+                "WHERE l.product.id = :pid AND s IS NOT NULL " +
+                "GROUP BY s.id, s.name, s.leadTimeDays";
+
+        List<Object[]> rows = em.createQuery(jpql, Object[].class)
+                .setParameter("pid", productId)
+                .getResultList();
+
+        List<SupplierCandidate> candidates = new ArrayList<>();
+        for (Object[] row : rows) {
+            Long supplierId = (Long) row[0];
+            String supplierName = (String) row[1];
+            Integer leadTimeDays = (Integer) row[2];
+            
+            // AVG() returns Double, not BigDecimal
+            Object avgPriceObj = row[3];
+            BigDecimal avgPrice = null;
+            if (avgPriceObj != null) {
+                if (avgPriceObj instanceof Double) {
+                    avgPrice = BigDecimal.valueOf((Double) avgPriceObj);
+                } else if (avgPriceObj instanceof BigDecimal) {
+                    avgPrice = (BigDecimal) avgPriceObj;
+                }
+            }
+            
+            LocalDate lastImport = (LocalDate) row[4];
+            Long lotCount = (Long) row[5];
+            Long totalQtyIn = (Long) row[6];
+
+            candidates.add(new SupplierCandidate(
+                    supplierId,
+                    supplierName,
+                    leadTimeDays,
+                    avgPrice,
+                    lastImport,
+                    lotCount != null ? lotCount : 0L,
+                    totalQtyIn != null ? totalQtyIn : 0L
+            ));
+        }
+
+        return candidates;
     }
 }

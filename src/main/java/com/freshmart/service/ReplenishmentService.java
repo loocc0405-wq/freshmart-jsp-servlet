@@ -5,6 +5,7 @@ import com.freshmart.enums.OrderStatus;
 import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.service.dto.ReplenishSuggestion;
+import com.freshmart.service.dto.SupplierCandidate;
 import com.freshmart.util.JpaExecutor;
 
 import jakarta.persistence.EntityManager;
@@ -14,6 +15,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 public class ReplenishmentService {
@@ -95,7 +97,7 @@ public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int 
                 }
             }
 
-            out.add(new ReplenishSuggestion(
+            ReplenishSuggestion suggestion = new ReplenishSuggestion(
                     p.getId(),
                     p.getName(),
                     avg7,
@@ -107,7 +109,17 @@ public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int 
                     expiringQty,
                     expiringLots,
                     note
-            ));
+            );
+
+            // Set intermediate calculation values
+            suggestion.setExpectedDemand(expectedDemand);
+            suggestion.setSafetyStock(safetyStock);
+            suggestion.setReorderPoint(reorderPoint);
+
+            // Recommend supplier based on history
+            recommendSupplier(em, p.getId(), suggestion);
+
+            out.add(suggestion);
         }
 
         out.sort((a, b) -> Integer.compare(b.getSuggestedQty(), a.getSuggestedQty()));
@@ -150,5 +162,65 @@ public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int 
         }
 
         return factor.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Recommend supplier cho product dựa trên lịch sử nhập hàng.
+     * Nếu không có lịch sử, set recommendationReason = "Không có lịch sử supplier cho sản phẩm này"
+     */
+    private void recommendSupplier(EntityManager em, Long productId, ReplenishSuggestion suggestion) {
+        List<SupplierCandidate> candidates = lotRepo.findSupplierCandidates(em, productId);
+
+        if (candidates.isEmpty()) {
+            suggestion.setRecommendationReason("Không có lịch sử supplier cho sản phẩm này");
+            return;
+        }
+
+        // Rank suppliers theo rule
+        SupplierCandidate best = rankSuppliers(candidates);
+
+        suggestion.setRecommendedSupplierId(best.getSupplierId());
+        suggestion.setRecommendedSupplierName(best.getSupplierName());
+        suggestion.setRecommendedSupplierLeadTimeDays(best.getSupplierLeadTimeDays());
+        suggestion.setRecommendedSupplierAvgImportPrice(best.getAvgImportPrice());
+        suggestion.setRecommendedSupplierLastImportDate(best.getLastImportDate());
+
+        // Build reason
+        StringBuilder reason = new StringBuilder("Best supplier: ");
+        reason.append(best.getSupplierName());
+        reason.append(" (Lead: ").append(best.getSupplierLeadTimeDays()).append("d");
+        if (best.getAvgImportPrice() != null) {
+            reason.append(", Avg price: ").append(best.getAvgImportPrice());
+        }
+        reason.append(", Lots: ").append(best.getLotCount());
+        reason.append(")");
+
+        suggestion.setRecommendationReason(reason.toString());
+    }
+
+    /**
+     * Rank suppliers theo rule ưu tiên:
+     * 1. leadTimeDays nhỏ hơn
+     * 2. avgImportPrice thấp hơn
+     * 3. lastImportDate mới hơn
+     * 4. lotCount nhiều hơn
+     * 5. totalQtyIn nhiều hơn
+     * 6. supplierId nhỏ hơn
+     */
+    private SupplierCandidate rankSuppliers(List<SupplierCandidate> candidates) {
+        if (candidates.isEmpty()) {
+            return null;
+        }
+
+        candidates.sort(Comparator
+                .comparing(SupplierCandidate::getSupplierLeadTimeDays, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(SupplierCandidate::getAvgImportPrice, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(SupplierCandidate::getLastImportDate, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(SupplierCandidate::getLotCount, Comparator.reverseOrder())
+                .thenComparing(SupplierCandidate::getTotalQtyIn, Comparator.reverseOrder())
+                .thenComparing(SupplierCandidate::getSupplierId)
+        );
+
+        return candidates.get(0);
     }
 }
