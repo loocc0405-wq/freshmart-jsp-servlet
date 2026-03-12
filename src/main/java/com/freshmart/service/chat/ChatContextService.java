@@ -1,16 +1,8 @@
 package com.freshmart.service.chat;
 
-import com.freshmart.service.OrderService;
-import com.freshmart.service.ProductService;
-
 public class ChatContextService {
 
-    private final ProductService productService;
-    private final OrderService orderService;
-
     public ChatContextService() {
-        this.productService = new ProductService();
-        this.orderService = new OrderService();
     }
 
     public String buildProductContext() {
