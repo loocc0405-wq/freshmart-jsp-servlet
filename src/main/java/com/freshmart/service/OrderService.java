@@ -105,7 +105,7 @@ public class OrderService {
             LocalDate today = LocalDate.now();
 
             for (OrderItem item : order.getItems()) {
-                
+
                 inventoryService.consumeStockFEFO(em,
                         item.getProduct().getId(),
                         item.getQuantity(),
@@ -170,6 +170,15 @@ public class OrderService {
             return orderRepo.save(em, order);
         });
     }
+
+    // ===== ADDED: alias method for staff status update workflow =====
+    public void updateOrderStatus(Long orderId, OrderStatus targetStatus) {
+        if (targetStatus == null) {
+            throw new IllegalArgumentException("Target status is required.");
+        }
+        updateStatus(orderId, targetStatus);
+    }
+    // ===== END ADDED =====
 
     // ===== ADDED FOR CUSTOMER CHECKOUT =====
     public Order createCustomerOrder(Long customerId) {
@@ -255,14 +264,16 @@ public class OrderService {
 
             case PENDING:
                 return to == OrderStatus.PROCESSING
-                        || to == OrderStatus.CANCELED;
+                        || to == OrderStatus.CANCELED
+                        || to == OrderStatus.COMPLETED;
 
             case PROCESSING:
                 return to == OrderStatus.SHIPPING
                         || to == OrderStatus.CANCELED;
 
             case SHIPPING:
-                return to == OrderStatus.COMPLETED;
+                return to == OrderStatus.COMPLETED
+                        || to == OrderStatus.CANCELED;
 
             default:
                 return false;
