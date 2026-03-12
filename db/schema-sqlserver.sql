@@ -267,3 +267,41 @@ BEGIN
     CREATE INDEX idx_tier_history_created_at ON dbo.tier_history(created_at);
 END
 GO
+
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240228719_raumuong.webp' WHERE name = N'Rau muống';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240627736_thitheo.webp' WHERE name = N'Thịt heo';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239892904_cathu_result.jsp.jpg' WHERE name = N'Cá thu';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242089145_raucai_result.jpg' WHERE name = N'Rau cải';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242101927_caithia_result.jpg' WHERE name = N'Cải thìa';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242111582_bongcaixanh_result.jpg' WHERE name = N'Bông cải xanh';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242119923_carot_result.jpg' WHERE name = N'Cà rốt';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242133952_khoaitay_result.jpg' WHERE name = N'Khoai tây';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242147910_hanhla_result.jpg' WHERE name = N'Hành lá';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240527575_namkimcham.jpg' WHERE name = N'Nấm kim châm';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242173795_dualeo_result.jpg' WHERE name = N'Dưa leo';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242195810_baroiheo_result.jpg' WHERE name = N'Ba rọi heo';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242207951_suonnon_result.jpg' WHERE name = N'Sườn non';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773238480086_thitbo.jpg' WHERE name = N'Thịt bò';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242225135_thitga_result.jpg' WHERE name = N'Thịt gà ta';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242793427_canhga.jpg' WHERE name = N'Cánh gà';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242249247_thitvit_result.jpg' WHERE name = N'Thịt vịt';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239811518_tomsu_result.jpg' WHERE name = N'Tôm sú';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239832016_tomthe_result.jpg' WHERE name = N'Tôm thẻ';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239845616_cahoi_result.jpg' WHERE name = N'Cá hồi phi lê';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240004018_images_result.jpg' WHERE name = N'Cá basa';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239921918_mucong_result.jpg' WHERE name = N'Mực ống';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242710494_mucnang.jpg' WHERE name = N'Mực nang';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242347638_cuabien_result.jpg' WHERE name = N'Cua biển';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242358279_ghexanh_result_result.jpg' WHERE name = N'Ghẹ xanh';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242368273_ngheu_result_result.jpg' WHERE name = N'Nghêu';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242378739_sodiep_result_result.jpg' WHERE name = N'Sò điệp';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242389305_xucxich_result.jpg' WHERE name = N'Xúc xích tiệt trùng';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242630727_dauhu.webp' WHERE name = N'Đậu hũ';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242432439_kimchi_result.jpg' WHERE name = N'Kim chi';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242448226_chuoi_result.jpg' WHERE name = N'Chuối';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242458218_tao_result.jpg' WHERE name = N'Táo';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242467814_cam_result.jpg' WHERE name = N'Cam sành';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242477449_nhoxanh_result.jpg' WHERE name = N'Nho xanh';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242782543_duahau.jpg' WHERE name = N'Dưa hấu';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242885544_t_i_xu_ng.jpg' WHERE name = N'Xoài cát';
+UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773242532762_thanhlong_result.jpg' WHERE name = N'Thanh long';

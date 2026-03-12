@@ -1,0 +1,37 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" language="java" %>
+
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/chatbot.css">
+
+<div class="chatbot-container" data-context-path="${pageContext.request.contextPath}">
+    <div id="chatbot-window" class="chatbot-window">
+        <div class="chatbot-header">
+            <span>FreshMart Support</span>
+            <button type="button" id="chatbot-close" class="chatbot-close" aria-label="Đóng chatbot">&times;</button>
+        </div>
+
+        <div id="chatbot-messages" class="chatbot-messages">
+            <!-- Messages inserted dynamically here -->
+        </div>
+
+        <div id="chatbot-loading" class="chatbot-loading">Đang trả lời...</div>
+
+        <div class="chatbot-input-area">
+            <input
+                type="text"
+                id="chatbot-input"
+                placeholder="Gửi tin nhắn..."
+                autocomplete="off"
+            >
+            <button type="button" id="chatbot-send-btn" aria-label="Gửi tin nhắn">&#10148;</button>
+        </div>
+    </div>
+
+    <button type="button" id="chatbot-toggler" class="chatbot-toggler" aria-label="Mở chatbot">
+        &#128172;
+    </button>
+</div>
+
+<script>
+    window.APP_CONTEXT_PATH = "${pageContext.request.contextPath}";
+</script>
+<script src="${pageContext.request.contextPath}/assets/js/chatbot.js" charset="UTF-8"></script>
