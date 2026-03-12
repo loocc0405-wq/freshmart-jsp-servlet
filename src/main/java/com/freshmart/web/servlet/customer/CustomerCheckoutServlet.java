@@ -1,23 +1,23 @@
 package com.freshmart.web.servlet.customer;
 
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.Persistence;
-import com.freshmart.repository.CartRepository;
 import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
+import com.freshmart.service.CartService;
 import com.freshmart.service.OrderService;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.*;
-
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 
 @WebServlet("/customer/checkout")
 public class CustomerCheckoutServlet extends HttpServlet {
 
     private final OrderService orderService = new OrderService();
+    private final CartService cartService = new CartService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -32,55 +32,12 @@ public class CustomerCheckoutServlet extends HttpServlet {
         }
 
         try {
-
             var order = orderService.createCustomerOrder(user.getId());
-
-            resp.sendRedirect(req.getContextPath()
-                + "/customer/order-success?id=" + order.getId());
-
-        } catch (Exception e) {
-
-            // ===== DEBUG =====
-            e.printStackTrace();
-
-            // gửi message lỗi sang JSP
-            req.setAttribute("error", e.getMessage());
-
-            // ===== LOAD LẠI CART ITEMS =====
-            EntityManagerFactory emf =
-                    Persistence.createEntityManagerFactory("freshmartPU");
-
-            EntityManager em = emf.createEntityManager();
-
-            try {
-
-                CartRepository cartRepo = new CartRepository();
-
-                var items = cartRepo.findItemsByUserId(em, user.getId());
-
-                req.setAttribute("items", items);
-
-            } catch (Exception ex) {
-
-                ex.printStackTrace();
-                req.setAttribute("error", "Failed to reload cart items");
-
-            } finally {
-
-                // đóng entity manager
-                if (em != null && em.isOpen()) {
-                    em.close();
-                }
-
-                // đóng factory để tránh leak
-                if (emf != null && emf.isOpen()) {
-                    emf.close();
-                }
-            }
-            // ===== END LOAD =====
-
-            req.getRequestDispatcher("/WEB-INF/jsp/cart.jsp")
-               .forward(req, resp);
+            resp.sendRedirect(req.getContextPath() + "/customer/order-success?id=" + order.getId());
+        } catch (RuntimeException ex) {
+            req.setAttribute("error", ex.getMessage());
+            req.setAttribute("items", cartService.getCartItems(user.getId()));
+            req.getRequestDispatcher("/WEB-INF/jsp/cart.jsp").forward(req, resp);
         }
     }
 }
