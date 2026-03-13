@@ -2,10 +2,14 @@ package com.freshmart.service;
 
 import com.freshmart.entity.Supplier;
 import com.freshmart.repository.SupplierRepository;
+import com.freshmart.service.dto.SupplierScorecard;
 import com.freshmart.util.JpaExecutor;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SupplierService {
     private final JpaExecutor executor = new JpaExecutor();
@@ -109,6 +113,68 @@ public class SupplierService {
                 out.add(new SupplierProductCount(s, cnt != null ? cnt : 0L));
             }
             return out;
+        });
+    }
+
+    /**
+     * Get supplier scorecards with comprehensive statistics.
+     * Optionally sort by: "score", "expiryRisk", "importValue", or null for default (by ID).
+     */
+    public List<SupplierScorecard> getSupplierScorecards(String sortBy) {
+        return executor.execute(em -> {
+            // Get all suppliers
+            List<Supplier> suppliers = repo.findAll(em);
+            
+            // Get statistics for all suppliers
+            List<Object[]> stats = repo.getSupplierScorecardStats(em);
+            
+            // Map statistics by supplier ID
+            Map<Long, Object[]> statsMap = stats.stream()
+                .collect(Collectors.toMap(
+                    row -> (Long) row[0],
+                    row -> row
+                ));
+            
+            // Build scorecards
+            List<SupplierScorecard> scorecards = suppliers.stream()
+                .map(supplier -> {
+                    Object[] stat = statsMap.get(supplier.getId());
+                    if (stat == null) {
+                        // No lots for this supplier
+                        return new SupplierScorecard(supplier, 0, 0, BigDecimal.ZERO, 0, 
+                                                    null, 0, 0, null);
+                    }
+                    
+                    long totalLots = ((Number) stat[1]).longValue();
+                    long totalQtyIn = stat[2] != null ? ((Number) stat[2]).longValue() : 0;
+                    BigDecimal totalImportValue = stat[3] != null ? (BigDecimal) stat[3] : BigDecimal.ZERO;
+                    long distinctProducts = ((Number) stat[4]).longValue();
+                    long nearExpiryLots = stat[5] != null ? ((Number) stat[5]).longValue() : 0;
+                    long expiredLots = stat[6] != null ? ((Number) stat[6]).longValue() : 0;
+                    LocalDate lastImportDate = stat[7] != null ? (LocalDate) stat[7] : null;
+                    
+                    return new SupplierScorecard(supplier, totalLots, totalQtyIn, totalImportValue,
+                                                distinctProducts, null, nearExpiryLots, expiredLots,
+                                                lastImportDate);
+                })
+                .collect(Collectors.toList());
+            
+            // Sort if requested
+            if (sortBy != null) {
+                switch (sortBy) {
+                    case "score":
+                        scorecards.sort((a, b) -> Double.compare(b.getScore(), a.getScore()));
+                        break;
+                    case "expiryRisk":
+                        scorecards.sort((a, b) -> Double.compare(b.getExpiryRiskRate(), a.getExpiryRiskRate()));
+                        break;
+                    case "importValue":
+                        scorecards.sort((a, b) -> b.getTotalImportValue().compareTo(a.getTotalImportValue()));
+                        break;
+                }
+            }
+            
+            return scorecards;
         });
     }
 }

@@ -180,4 +180,30 @@ public class SupplierRepository {
         query.setMaxResults(limit);
         return query.getResultList();
     }
+
+    /**
+     * Get supplier scorecard statistics.
+     * Returns Object[] with: supplierId, totalLots, totalQtyIn, totalImportValue, 
+     * distinctProducts, nearExpiryLots, expiredLots, lastImportDate
+     */
+    public List<Object[]> getSupplierScorecardStats(EntityManager em) {
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate nearExpiryThreshold = today.plusDays(7);
+        
+        String jpql = "SELECT l.supplier.id, " +
+                "COUNT(l), " +
+                "SUM(l.qtyIn), " +
+                "SUM(l.qtyIn * l.importPrice), " +
+                "COUNT(DISTINCT l.product), " +
+                "SUM(CASE WHEN l.expiryDate > :today AND l.expiryDate <= :nearExpiry THEN 1 ELSE 0 END), " +
+                "SUM(CASE WHEN l.expiryDate <= :today THEN 1 ELSE 0 END), " +
+                "MAX(l.importDate) " +
+                "FROM ProductLot l " +
+                "WHERE l.supplier IS NOT NULL " +
+                "GROUP BY l.supplier.id";
+        return em.createQuery(jpql, Object[].class)
+                .setParameter("today", today)
+                .setParameter("nearExpiry", nearExpiryThreshold)
+                .getResultList();
+    }
 }

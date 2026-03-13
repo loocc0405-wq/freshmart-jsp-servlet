@@ -297,6 +297,11 @@ public class SupplierManagementServlet extends HttpServlet {
         if (certificate != null) certificate = certificate.trim();
         if (certificate != null && certificate.isEmpty()) certificate = null;
 
+        // sort parameter for scorecard
+        String sortBy = request.getParameter("sortBy");
+        if (sortBy != null) sortBy = sortBy.trim();
+        if (sortBy != null && sortBy.isEmpty()) sortBy = null;
+
         // date range filters
         String fromDateStr = request.getParameter("fromDate");
         String toDateStr = request.getParameter("toDate");
@@ -339,12 +344,71 @@ public class SupplierManagementServlet extends HttpServlet {
         java.util.List<SupplierService.SupplierProductCount> topSuppliers =
                 supplierService.topSuppliersByProductCount(5);
 
-        // search result + paging
-        List<Supplier> suppliers = supplierService.search(q, certificate, fromDate, toDate, page, pageSize);
-        long total = supplierService.count(q, certificate, fromDate, toDate);
-        int totalPages = (int) ((total + pageSize - 1) / pageSize);
+        // Get supplier scorecards
+        java.util.List<com.freshmart.service.dto.SupplierScorecard> scorecards = 
+                supplierService.getSupplierScorecards(sortBy);
 
-        request.setAttribute("suppliers", suppliers);
+        // Apply filters manually (since scorecard is computed in-memory)
+        if (q != null || certificate != null || fromDate != null || toDate != null) {
+            final String searchLower = q != null ? q.toLowerCase() : null;
+            final String certFilter = certificate;
+            final LocalDate fromDateFilter = fromDate;
+            final LocalDate toDateFilter = toDate;
+            
+            scorecards = scorecards.stream()
+                .filter(sc -> {
+                    com.freshmart.entity.Supplier s = sc.getSupplier();
+                    
+                    // keyword filter
+                    if (searchLower != null) {
+                        boolean matches = (s.getName() != null && s.getName().toLowerCase().contains(searchLower)) ||
+                                        (s.getEmail() != null && s.getEmail().toLowerCase().contains(searchLower)) ||
+                                        (s.getPhone() != null && s.getPhone().toLowerCase().contains(searchLower));
+                        if (!matches) return false;
+                    }
+                    
+                    // certificate filter
+                    if (certFilter != null) {
+                        if (s.getCertificate() == null || !s.getCertificate().equals(certFilter)) {
+                            return false;
+                        }
+                    }
+                    
+                    // date range filter
+                    if (fromDateFilter != null || toDateFilter != null) {
+                        java.time.LocalDateTime created = s.getCreatedAt();
+                        java.time.LocalDateTime updated = s.getUpdatedAt();
+                        
+                        if (fromDateFilter != null) {
+                            java.time.LocalDateTime fromDateTime = fromDateFilter.atStartOfDay();
+                            boolean inRange = (created != null && !created.isBefore(fromDateTime)) ||
+                                            (updated != null && !updated.isBefore(fromDateTime));
+                            if (!inRange) return false;
+                        }
+                        
+                        if (toDateFilter != null) {
+                            java.time.LocalDateTime toDateTime = toDateFilter.atTime(java.time.LocalTime.MAX);
+                            boolean inRange = (created != null && !created.isAfter(toDateTime)) ||
+                                            (updated != null && !updated.isAfter(toDateTime));
+                            if (!inRange) return false;
+                        }
+                    }
+                    
+                    return true;
+                })
+                .collect(java.util.stream.Collectors.toList());
+        }
+
+        // Pagination
+        long total = scorecards.size();
+        int totalPages = (int) ((total + pageSize - 1) / pageSize);
+        int startIdx = (page - 1) * pageSize;
+        int endIdx = Math.min(startIdx + pageSize, scorecards.size());
+        
+        java.util.List<com.freshmart.service.dto.SupplierScorecard> paginatedScorecards = 
+            scorecards.subList(startIdx, endIdx);
+
+        request.setAttribute("scorecards", paginatedScorecards);
         request.setAttribute("statsTotal", totalSuppliers);
         request.setAttribute("statsWithCert", withCert);
         request.setAttribute("statsWithoutCert", withoutCert);
@@ -354,6 +418,7 @@ public class SupplierManagementServlet extends HttpServlet {
         request.setAttribute("certificateFilter", certificate);
         request.setAttribute("fromDate", fromDateStr);
         request.setAttribute("toDate", toDateStr);
+        request.setAttribute("sortBy", sortBy);
         request.setAttribute("currentPage", page);
         request.setAttribute("totalPages", totalPages);
         request.setAttribute("totalItems", total);

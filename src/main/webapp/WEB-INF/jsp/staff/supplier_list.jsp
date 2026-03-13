@@ -180,6 +180,14 @@
     <input type="date" class="form-control" name="toDate" placeholder="To date"
            value="${fn:escapeXml(toDate)}" />
   </div>
+  <div class="col-md-2">
+    <select class="form-select" name="sortBy">
+      <option value="">Sort by...</option>
+      <option value="score" ${sortBy == 'score' ? 'selected' : ''}>Score (High to Low)</option>
+      <option value="expiryRisk" ${sortBy == 'expiryRisk' ? 'selected' : ''}>Expiry Risk (High to Low)</option>
+      <option value="importValue" ${sortBy == 'importValue' ? 'selected' : ''}>Import Value (High to Low)</option>
+    </select>
+  </div>
   <div class="col-auto">
     <button class="btn btn-outline-secondary" type="submit">Search</button>
     <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/suppliers">Reset</a>
@@ -192,22 +200,109 @@
       <table class="table table-hover align-middle">
         <thead class="table-light">
           <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th>Address</th>
+            <th>Supplier</th>
+            <th class="text-end">Lots</th>
+            <th class="text-end">Qty</th>
+            <th class="text-end">Import Value</th>
+            <th class="text-end">Products</th>
+            <th>Last Import</th>
+            <th class="text-end">Near Expiry</th>
+            <th class="text-end">Expired</th>
+            <th class="text-end">Risk %</th>
+            <th class="text-end">Score</th>
+            <th>Rating</th>
             <th class="text-end">Action</th>
           </tr>
         </thead>
         <tbody>
-        <c:forEach var="s" items="${suppliers}">
+        <c:forEach var="sc" items="${scorecards}">
+          <c:set var="s" value="${sc.supplier}" />
           <tr>
-            <td class="text-muted">${s.id}</td>
-            <td class="fw-semibold">${s.name}</td>
-            <td>${empty s.phone ? "-" : s.phone}</td>
-            <td>${empty s.email ? "-" : s.email}</td>
-            <td>${empty s.address ? "-" : s.address}</td>
+            <td>
+              <div class="fw-semibold">${fn:escapeXml(s.name)}</div>
+              <small class="text-muted">${fn:escapeXml(s.email)}</small>
+            </td>
+            <td class="text-end">${sc.totalLots}</td>
+            <td class="text-end">${sc.totalQtyIn}</td>
+            <td class="text-end">$${sc.totalImportValue}</td>
+            <td class="text-end">${sc.distinctProducts}</td>
+            <td>
+              <c:choose>
+                <c:when test="${sc.lastImportDate != null}">
+                  ${sc.lastImportDate}
+                </c:when>
+                <c:otherwise>
+                  <span class="text-muted">-</span>
+                </c:otherwise>
+              </c:choose>
+            </td>
+            <td class="text-end">
+              <c:choose>
+                <c:when test="${sc.nearExpiryLots > 0}">
+                  <span class="badge bg-warning">${sc.nearExpiryLots}</span>
+                </c:when>
+                <c:otherwise>
+                  ${sc.nearExpiryLots}
+                </c:otherwise>
+              </c:choose>
+            </td>
+            <td class="text-end">
+              <c:choose>
+                <c:when test="${sc.expiredLots > 0}">
+                  <span class="badge bg-danger">${sc.expiredLots}</span>
+                </c:when>
+                <c:otherwise>
+                  ${sc.expiredLots}
+                </c:otherwise>
+              </c:choose>
+            </td>
+            <td class="text-end">
+              <c:set var="riskPct" value="${sc.expiryRiskRate * 100}" />
+              <c:choose>
+                <c:when test="${riskPct > 50}">
+                  <span class="text-danger fw-bold">${String.format('%.1f', riskPct)}%</span>
+                </c:when>
+                <c:when test="${riskPct > 20}">
+                  <span class="text-warning">${String.format('%.1f', riskPct)}%</span>
+                </c:when>
+                <c:otherwise>
+                  ${String.format('%.1f', riskPct)}%
+                </c:otherwise>
+              </c:choose>
+            </td>
+            <td class="text-end">
+              <c:set var="scoreVal" value="${sc.score}" />
+              <c:choose>
+                <c:when test="${scoreVal >= 80}">
+                  <span class="text-success fw-bold">${String.format('%.0f', scoreVal)}</span>
+                </c:when>
+                <c:when test="${scoreVal >= 60}">
+                  <span class="text-primary">${String.format('%.0f', scoreVal)}</span>
+                </c:when>
+                <c:when test="${scoreVal >= 40}">
+                  <span class="text-warning">${String.format('%.0f', scoreVal)}</span>
+                </c:when>
+                <c:otherwise>
+                  <span class="text-danger">${String.format('%.0f', scoreVal)}</span>
+                </c:otherwise>
+              </c:choose>
+            </td>
+            <td>
+              <c:choose>
+                <c:when test="${sc.rating == 'Excellent'}">
+                  <span class="badge bg-success">Excellent</span>
+                </c:when>
+                <c:when test="${sc.rating == 'Good'}">
+                  <span class="badge bg-primary">Good</span>
+                </c:when>
+                <c:when test="${sc.rating == 'Warning'}">
+                  <span class="badge bg-warning">Warning</span>
+                </c:when>
+                <c:otherwise>
+                  <span class="badge bg-danger">Risky</span>
+                </c:otherwise>
+              </c:choose>
+            </td>
             <td class="text-end">
               <a class="btn btn-sm btn-outline-secondary"
                  href="${pageContext.request.contextPath}/staff/suppliers?action=edit&id=${s.id}">
@@ -229,9 +324,9 @@
           </tr>
         </c:forEach>
 
-        <c:if test="${empty suppliers}">
+        <c:if test="${empty scorecards}">
           <tr>
-            <td colspan="6" class="text-center text-muted py-4">No suppliers found.</td>
+            <td colspan="12" class="text-center text-muted py-4">No suppliers found.</td>
           </tr>
         </c:if>
         </tbody>
@@ -249,6 +344,7 @@
               <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
               <c:if test="${not empty fromDate}"><c:param name="fromDate" value="${fromDate}"/></c:if>
               <c:if test="${not empty toDate}"><c:param name="toDate" value="${toDate}"/></c:if>
+              <c:if test="${not empty sortBy}"><c:param name="sortBy" value="${sortBy}"/></c:if>
             </c:url>
             <a class="page-link" href="${prevUrl}" aria-label="Previous">
               <span aria-hidden="true">&laquo;</span>
@@ -262,6 +358,7 @@
                 <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
                 <c:if test="${not empty fromDate}"><c:param name="fromDate" value="${fromDate}"/></c:if>
                 <c:if test="${not empty toDate}"><c:param name="toDate" value="${toDate}"/></c:if>
+                <c:if test="${not empty sortBy}"><c:param name="sortBy" value="${sortBy}"/></c:if>
               </c:url>
               <a class="page-link" href="${linkUrl}">${i}</a>
             </li>
@@ -273,6 +370,7 @@
               <c:if test="${not empty certificateFilter}"><c:param name="certificate" value="${certificateFilter}"/></c:if>
               <c:if test="${not empty fromDate}"><c:param name="fromDate" value="${fromDate}"/></c:if>
               <c:if test="${not empty toDate}"><c:param name="toDate" value="${toDate}"/></c:if>
+              <c:if test="${not empty sortBy}"><c:param name="sortBy" value="${sortBy}"/></c:if>
             </c:url>
             <a class="page-link" href="${nextUrl}" aria-label="Next">
               <span aria-hidden="true">&raquo;</span>
