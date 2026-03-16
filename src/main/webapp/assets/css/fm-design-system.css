@@ -1,0 +1,110 @@
+:root {
+    /* Brand Primary - Fresh Green */
+    --fm-primary-50:  #F0FDF4;
+    --fm-primary-100: #DCFCE7;
+    --fm-primary-200: #BBF7D0;
+    --fm-primary-500: #22C55E;
+    --fm-primary-600: #16A34A;
+    --fm-primary-700: #15803D;
+
+    /* Neutral Slate - Professional Grays */
+    --fm-slate-50:  #F8FAFC;
+    --fm-slate-100: #F1F5F9;
+    --fm-slate-200: #E2E8F0;
+    --fm-slate-300: #CBD5E1;
+    --fm-slate-400: #94A3B8;
+    --fm-slate-500: #64748B;
+    --fm-slate-600: #475569;
+    --fm-slate-700: #334155;
+    --fm-slate-800: #1E293B;
+    --fm-slate-900: #0F172A;
+
+    /* Semantic Colors */
+    --fm-success: #16A34A;
+    --fm-warning: #D97706;
+    --fm-danger:  #DC2626;
+    --fm-info:    #2563EB;
+    --fm-teal:    #0F766E;
+
+    /* Text Colors */
+    --fm-text-primary:   #0F172A;
+    --fm-text-secondary: #475569;
+    --fm-text-muted:     #64748B;
+
+    /* Backgrounds */
+    --fm-app-bg:        #F8FAFC;
+    --fm-surface:       #FFFFFF;
+    --fm-surface-muted: #F1F5F9;
+
+    /* Borders & Shadows */
+    --fm-border-color: rgba(15, 23, 42, 0.08);
+    --fm-shadow-sm:    0 1px 2px rgba(15, 23, 42, 0.05);
+    --fm-shadow-card: 0 4px 16px rgba(15, 23, 42, 0.04);
+    --fm-shadow-elevated: 0 10px 30px rgba(15, 23, 42, 0.08);
+
+    /* Radius */
+    --fm-radius-sm:      6px;
+    --fm-radius-control: 10px;
+    --fm-radius-card: 16px;
+    --fm-radius-modal: 20px;
+
+    /* Font Hierarchy */
+    --fm-font-main: 'Inter', system-ui, -apple-system, sans-serif;
+    --fm-font-mono: 'JetBrains Mono', monospace;
+
+    /* Spacing Scale (4px base) */
+    --fm-sp-1: 4px;
+    --fm-sp-2: 8px;
+    --fm-sp-3: 12px;
+    --fm-sp-4: 16px;
+    --fm-sp-5: 20px;
+    --fm-sp-6: 24px;
+    --fm-sp-8: 32px;
+    --fm-sp-10: 40px;
+    --fm-sp-12: 48px;
+}
+
+/* Global Reset & Base */
+body {
+    font-family: var(--fm-font-main);
+    background-color: var(--fm-app-bg);
+    color: var(--fm-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--fm-text-primary);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-top: 0;
+}
+
+a {
+    color: var(--fm-primary-600);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+a:hover {
+    color: var(--fm-primary-700);
+}
+
+/* Typography Scale */
+.fm-h1 { font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; }
+.fm-h2 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.01em; }
+.fm-h3 { font-size: 1.5rem; font-weight: 600; }
+.fm-body { font-size: 0.9375rem; line-height: 1.6; }
+.fm-caption { font-size: 0.8125rem; color: var(--fm-text-muted); }
+
+/* Utility Classes */
+.fm-text-primary { color: var(--fm-text-primary) !important; }
+.fm-text-secondary { color: var(--fm-text-secondary) !important; }
+.fm-text-muted { color: var(--fm-text-muted) !important; }
+.fm-text-success { color: var(--fm-success) !important; }
+.fm-text-danger { color: var(--fm-danger) !important; }
+
+.fm-bg-surface { background-color: var(--fm-surface) !important; }
+.fm-bg-muted { background-color: var(--fm-surface-muted) !important; }

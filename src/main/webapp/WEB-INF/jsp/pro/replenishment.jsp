@@ -2,224 +2,150 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
-<c:set var="pageTitle" value="PRO - Restock Recommendation"/>
+<c:set var="pageTitle" value="Replenishment Ops | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
-<div class="container my-4">
-  <div class="d-flex justify-content-between align-items-center mb-2">
-    <h3>PRO - Gợi ý nhập hàng (Restock)</h3>
-  </div>
-
-  <div class="row g-3 mb-3">
-    <div class="col-lg-4">
-      <div class="card">
-        <div class="card-body">
-          <form method="get" action="${pageContext.request.contextPath}/pro/replenishment" class="vstack gap-2">
-            <label class="form-label mb-0">History (days)</label>
-            <input class="form-control" type="number" name="history" min="7" max="365" value="${daysHistory}"/>
-
-            <label class="form-label mb-0">Lead time (days)</label>
-            <input class="form-control" type="number" name="lead" min="0" max="60" value="${leadTimeDays}"/>
-
-            <label class="form-label mb-0">Buffer (days)</label>
-            <input class="form-control" type="number" name="buffer" min="0" max="60" value="${bufferDays}"/>
-
-            <label class="form-label mb-0">Safety (days)</label>
-            <input class="form-control" type="number" name="safety" min="0" max="60" value="${safetyDays}"/>
-
-            <button class="btn btn-primary mt-2" type="submit">Calculate</button>
-          </form>
+<div class="container-fluid px-4 py-4">
+    <!-- Header Strategy -->
+    <div class="fm-page-header mb-5 border-bottom pb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-amber-500 text-white rounded-4 p-3 shadow-lg">
+                <i class="bi bi-repeat fs-2"></i>
+            </div>
+            <div>
+                <div class="fm-caption fw-bold text-primary mb-1 text-uppercase ls-wide">Supply Chain Resilience</div>
+                <h1 class="fm-page-title">Algorithmic Replenishment Analyzer</h1>
+                <p class="fm-page-subtitle">Advanced calculations for reorder points, safety stock, and lead-time optimization.</p>
+            </div>
         </div>
-      </div>
     </div>
 
-    <div class="col-lg-8">
-      <div class="alert alert-info mb-0">
-        <div><b>Công thức nghiệp vụ:</b></div>
-        <div>
-          <b>expectedDemand</b> = <b>forecastPerDay</b> × (<b>leadTimeDays</b> + <b>bufferDays</b>)<br/>
-          <b>safetyStock</b> = <b>forecastPerDay</b> × <b>safetyDays</b><br/>
-          <b>reorderPoint</b> = <b>expectedDemand</b> + <b>safetyStock</b><br/>
-          <b>suggestQty</b> = max(0, ceil(<b>reorderPoint</b> − <b>stock</b>))
+    <!-- Algorithm Tuning & Theory -->
+    <div class="row g-4 mb-5">
+        <div class="col-xl-4">
+            <div class="fm-surface p-4 shadow-sm border-0 h-100">
+                <h5 class="fm-h3 mb-4 text-dark"><i class="bi bi-sliders me-2 text-primary"></i> Logistics Parametrics</h5>
+                <form method="get" action="${pageContext.request.contextPath}/pro/replenishment" class="vstack gap-4">
+                    <div>
+                        <label class="fm-caption fw-bold text-muted d-block mb-2">Observation Window (Days)</label>
+                        <input class="fm-form-control" type="number" name="history" min="7" max="365" value="${daysHistory}"/>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="fm-caption fw-bold text-muted d-block mb-2">Lead Time</label>
+                            <input class="fm-form-control" type="number" name="lead" min="0" max="60" value="${leadTimeDays}"/>
+                        </div>
+                        <div class="col-6">
+                            <label class="fm-caption fw-bold text-muted d-block mb-2">Buffer Days</label>
+                            <input class="fm-form-control" type="number" name="buffer" min="0" max="60" value="${bufferDays}"/>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="fm-caption fw-bold text-muted d-block mb-2">Safety Stock Coefficient</label>
+                        <input class="fm-form-control" type="number" name="safety" min="0" max="60" value="${safetyDays}"/>
+                    </div>
+                    <button class="fm-btn fm-btn-primary w-100 py-3 fw-bold" type="submit">Recalculate Constraints</button>
+                </form>
+            </div>
         </div>
 
-        <hr class="my-2"/>
-
-        <div class="small">
-          daysHistory=<c:out value="${daysHistory}"/>,
-          leadTimeDays=<c:out value="${leadTimeDays}"/>,
-          bufferDays=<c:out value="${bufferDays}"/>,
-          safetyDays=<c:out value="${safetyDays}"/>
+        <div class="col-xl-8">
+            <div class="fm-surface p-4 shadow-sm border-0 bg-slate-900 text-white h-100">
+                <h5 class="fm-h3 mb-4 text-white">Mathematical Fulfillment Model</h5>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-4 bg-slate-800 border-0 mb-3">
+                            <div class="fm-caption fw-bold text-primary mb-2 text-uppercase">Expected Demand</div>
+                            <div class="font-monospace small opacity-75">forecastPerDay × (leadTimeDays + bufferDays)</div>
+                        </div>
+                        <div class="p-3 rounded-4 bg-slate-800 border-0">
+                            <div class="fm-caption fw-bold text-primary mb-2 text-uppercase">Safety Stock</div>
+                            <div class="font-monospace small opacity-75">forecastPerDay × safetyDays</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-4 bg-slate-800 border-0 mb-3">
+                            <div class="fm-caption fw-bold text-indigo-400 mb-2 text-uppercase">Reorder Point</div>
+                            <div class="font-monospace small opacity-75">expectedDemand + safetyStock</div>
+                        </div>
+                        <div class="p-3 rounded-4 bg-primary text-white border-0">
+                            <div class="fm-caption fw-bold opacity-75 mb-2 text-uppercase text-white">Suggested Qty</div>
+                            <div class="font-monospace small">max(0, ceil(reorderPoint − stock))</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 p-3 border border-white border-opacity-10 rounded-4">
+                    <div class="d-flex align-items-center gap-2 mb-2"><i class="bi bi-info-circle text-primary"></i> <span class="fw-bold">Dynamic Lead Time:</span> System prioritizes supplier-specific historical data when available.</div>
+                    <div class="d-flex align-items-center gap-2"><i class="bi bi-exclamation-triangle text-amber-500"></i> <span class="fw-bold">Risk Management:</span> Suggestions are throttled for products with significant near-expiry lots (≤ 3d).</div>
+                </div>
+            </div>
         </div>
-
-        <hr class="my-2"/>
-
-        <div class="small">
-          <b>Lưu ý:</b> Hệ thống ưu tiên dùng lead time theo supplier nếu có.
-          Nếu không có dữ liệu supplier, hệ thống mới dùng leadTimeDays nhập từ form.
-        </div>
-
-        <div class="small mt-2">
-          <b>Rule thêm:</b> Nếu tồn kho có <b>nhiều lô sắp hết hạn</b> (≤ 3 ngày) thì hệ thống sẽ
-          <b>giảm Suggested</b> để ưu tiên <b>xả hàng</b> trước khi nhập thêm.
-        </div>
-      </div>
     </div>
-  </div>
 
-  <c:choose>
-    <c:when test="${empty rows}">
-      <div class="alert alert-warning">Chưa có dữ liệu để gợi ý nhập hàng.</div>
-    </c:when>
-    <c:otherwise>
-      <div class="table-responsive">
-        <table class="table table-bordered bg-white align-middle">
-          <thead class="table-light">
-          <tr>
-            <th>Product</th>
-            <th class="text-end">Avg7</th>
-            <th class="text-end">Avg<c:out value="${daysHistory}"/></th>
-            <th class="text-end">SeasonFactor</th>
-            <th class="text-end">Forecast/day</th>
-            <th class="text-end">Stock</th>
-            <th class="text-end">ExpectedDemand</th>
-            <th class="text-end">SafetyStock</th>
-            <th class="text-end">ReorderPoint</th>
-            <th class="text-end">ExpiringLots (≤3d)</th>
-            <th class="text-end">ExpiringQty (≤3d)</th>
-            <th class="text-center">Suggested</th>
-            <th>Best Supplier</th>
-            <th class="text-end">Lead Time</th>
-            <th class="text-end">Avg Price</th>
-            <th>Last Import</th>
-            <th>Reason</th>
-            <th>Action</th>
-          </tr>
-          </thead>
-
-          <tbody>
-          <c:forEach var="r" items="${rows}">
-            <tr>
-              <td><c:out value="${r.productName}"/></td>
-
-              <td class="text-end">
-                <fmt:formatNumber value="${r.avg7}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-              <td class="text-end">
-                <fmt:formatNumber value="${r.avg30}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-
-              <td class="text-end">
-                <fmt:formatNumber value="${r.seasonFactor}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-              <td class="text-end">
-                <fmt:formatNumber value="${r.forecastPerDay}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-
-              <td class="text-end"><c:out value="${r.stock}"/></td>
-
-              <td class="text-end">
-                <fmt:formatNumber value="${r.expectedDemand}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-
-              <td class="text-end">
-                <fmt:formatNumber value="${r.safetyStock}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-
-              <td class="text-end">
-                <fmt:formatNumber value="${r.reorderPoint}" minFractionDigits="2" maxFractionDigits="2"/>
-              </td>
-
-              <td class="text-end"><c:out value="${r.expiringLots}"/></td>
-              <td class="text-end"><c:out value="${r.expiringQty}"/></td>
-
-              <td class="text-center">
-                <c:choose>
-                  <c:when test="${r.suggestedQty > 0}">
-                    <span class="badge text-bg-warning"><c:out value="${r.suggestedQty}"/></span>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="badge text-bg-success">OK</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-
-              <td>
-                <c:choose>
-                  <c:when test="${not empty r.recommendedSupplierName}">
-                    <c:out value="${r.recommendedSupplierName}"/>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted small">-</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-
-              <td class="text-end">
-                <c:choose>
-                  <c:when test="${not empty r.recommendedSupplierLeadTimeDays}">
-                    <c:out value="${r.recommendedSupplierLeadTimeDays}"/>d
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted small">-</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-
-              <td class="text-end">
-                <c:choose>
-                  <c:when test="${not empty r.recommendedSupplierAvgImportPrice}">
-                    <fmt:formatNumber value="${r.recommendedSupplierAvgImportPrice}" minFractionDigits="0" maxFractionDigits="0"/>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted small">-</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-
-              <td>
-                <c:choose>
-                  <c:when test="${not empty r.recommendedSupplierLastImportDate}">
-                    <c:out value="${r.recommendedSupplierLastImportDate}"/>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted small">-</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-
-              <td>
-                <c:choose>
-                  <c:when test="${not empty r.recommendationReason}">
-                    <span class="small"><c:out value="${r.recommendationReason}"/></span>
-                  </c:when>
-                  <c:when test="${not empty r.note}">
-                    <span class="small"><c:out value="${r.note}"/></span>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted small">-</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-
-              <td>
-                <c:choose>
-                  <c:when test="${r.suggestedQty > 0 and not empty r.recommendedSupplierId}">
-                    <a href="${pageContext.request.contextPath}/staff/import-lot?productId=${r.productId}&supplierId=${r.recommendedSupplierId}" 
-                       class="btn btn-sm btn-primary">Nhập lô với NCC này</a>
-                  </c:when>
-                  <c:otherwise>
-                    <span class="text-muted small">-</span>
-                  </c:otherwise>
-                </c:choose>
-              </td>
-            </tr>
-          </c:forEach>
-          </tbody>
-        </table>
-      </div>
-    </c:otherwise>
-  </c:choose>
+    <!-- Detailed Ledger -->
+    <div class="fm-surface p-0 shadow-sm border-0 overflow-hidden">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+            <h5 class="fm-h3 mb-0 text-dark">Replenishment Audit Ledger</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table fm-data-table align-middle mb-0">
+                <thead class="bg-white">
+                    <tr>
+                        <th class="ps-4">SKU Identity</th>
+                        <th class="text-end">Fcst/Day</th>
+                        <th class="text-end">Stock</th>
+                        <th class="text-end">ROP</th>
+                        <th class="text-center">Suggest</th>
+                        <th>Preferred Partner</th>
+                        <th class="text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <c:forEach var="r" items="${rows}">
+                        <tr class="${r.suggestedQty > 0 ? 'bg-amber-50' : ''}">
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">${r.productName}</div>
+                                <div class="small text-muted">Season Factor: <fmt:formatNumber value="${r.seasonFactor}" minFractionDigits="2"/></div>
+                            </td>
+                            <td class="text-end font-monospace"><fmt:formatNumber value="${r.forecastPerDay}" minFractionDigits="2"/></td>
+                            <td class="text-end font-monospace">${r.stock}</td>
+                            <td class="text-end font-monospace text-indigo-600 fw-bold"><fmt:formatNumber value="${r.reorderPoint}" minFractionDigits="1"/></td>
+                            <td class="text-center">
+                                <c:choose>
+                                    <c:when test="${r.suggestedQty > 0}">
+                                        <span class="badge bg-warning text-dark border-0 px-3 fw-bold">+${r.suggestedQty} Units</span>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <span class="badge bg-success-subtle text-success border-0 px-3">STABLE</span>
+                                    </c:otherwise>
+                                </c:choose>
+                            </td>
+                            <td>
+                                <c:if test="${not empty r.recommendedSupplierName}">
+                                    <div class="fw-medium">${r.recommendedSupplierName}</div>
+                                    <div class="small opacity-50">LT: ${r.recommendedSupplierLeadTimeDays}d | ₫<fmt:formatNumber value="${r.recommendedSupplierAvgImportPrice}" groupingUsed="true"/></div>
+                                </c:if>
+                            </td>
+                            <td class="text-end pe-4">
+                                <c:if test="${r.suggestedQty > 0 and not empty r.recommendedSupplierId}">
+                                    <a class="fm-btn fm-btn-primary btn-sm px-3" href="${pageContext.request.contextPath}/staff/import-lot?productId=${r.productId}&supplierId=${r.recommendedSupplierId}">
+                                        Initialize Import
+                                    </a>
+                                </c:if>
+                            </td>
+                        </tr>
+                    </c:forEach>
+                    <c:if test="${empty rows}">
+                        <tr>
+                            <td colspan="7" class="p-5 text-center text-muted">
+                                <i class="bi bi-clipboard2-minus fs-1 opacity-10 mb-2 d-block"></i> No replenishment signals generated for the current window.
+                            </td>
+                        </tr>
+                    </c:if>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

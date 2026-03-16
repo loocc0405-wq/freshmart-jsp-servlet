@@ -6,394 +6,307 @@
 <c:set var="errors" value="${requestScope.errors}" />
 
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng ký tài khoản - FreshMart</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Create Account | FreshMart Enterprise</title>
+    
+    <!-- Core Assets -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap" rel="stylesheet"/>
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fm-design-system.css?v=2"/>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fm-components.css?v=2"/>
 
     <style>
-        body {
-            font-family: Inter, Arial, sans-serif;
-            background: linear-gradient(135deg, #eefbf2, #f7fff9 45%, #edf7ff);
-            min-height: 100vh;
-        }
-
-        .register-shell {
+        body { 
+            background: var(--fm-surface); 
             min-height: 100vh;
             display: flex;
-            align-items: center;
-            padding: 32px 0;
+            flex-direction: column;
         }
-
-        .register-card {
-            border: 0;
-            border-radius: 24px;
-            overflow: hidden;
-            box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
-        }
-
-        .register-hero {
-            background: linear-gradient(160deg, #14532d, #16a34a 55%, #4ade80);
-            color: #fff;
-            padding: 40px 32px;
-            height: 100%;
-        }
-
-        .register-form {
-            background: #fff;
-            padding: 32px;
-        }
-
-        .brand-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255,255,255,0.14);
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 999px;
-            padding: 8px 14px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .hero-list li { margin-bottom: 12px; }
-
-        .form-control, .form-select { min-height: 48px; border-radius: 14px; }
-        textarea.form-control { min-height: 108px; }
-
-        .btn-register {
-            min-height: 50px;
-            border-radius: 14px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #16a34a, #22c55e);
-            border: none;
-        }
-
-        .password-hint { font-size: 12px; color: #64748b; }
-
-        .field-error { color: #dc2626; font-size: 13px; margin-top: 6px; }
-
-        .section-title {
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: .08em;
-            color: #16a34a;
+        .branding-logo {
+            font-family: 'Outfit', sans-serif;
             font-weight: 800;
-            margin-bottom: 12px;
+            color: var(--fm-primary-600);
+            font-size: 1.75rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            letter-spacing: -0.02em;
         }
-
-        /* honeypot */
-        .hp-field {
-            position: absolute;
-            left: -9999px;
-            width: 1px;
+        .form-section-header {
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--fm-primary-600);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            opacity: 0.9;
+        }
+        .form-section-header::after {
+            content: "";
+            flex: 1;
             height: 1px;
+            background: var(--fm-slate-100);
+        }
+        .field-error {
+            font-size: 0.75rem;
+            color: var(--fm-danger);
+            margin-top: 0.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .password-strength {
+            height: 4px;
+            background: var(--fm-slate-100);
+            border-radius: 2px;
+            margin-top: 0.75rem;
             overflow: hidden;
+            width: 100%;
         }
-
-        /* password show/hide */
-        .password-wrap { position: relative; }
-        .password-wrap .form-control { padding-right: 72px; }
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            border: 0;
-            background: transparent;
-            color: #166534;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-        }
-
-        /* password strength meter */
-        .password-meter {
-            height: 6px;
-            background: #e5e7eb;
-            border-radius: 999px;
-            overflow: hidden;
-            margin-top: 6px;
-        }
-        .password-meter-bar {
+        .password-strength-bar {
             height: 100%;
             width: 0;
-            transition: width .2s ease, background .2s ease;
-            background: #ef4444;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        .submit-loading { opacity: .8; pointer-events: none; }
+        .register-card-container {
+            width: 100%;
+            max-width: 640px;
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fm-auth-footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--fm-slate-100);
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--fm-text-muted);
+        }
     </style>
 </head>
 <body>
-<div class="container register-shell">
-    <div class="row justify-content-center w-100">
-        <div class="col-12 col-xl-11">
-            <div class="card register-card">
-                <div class="row g-0">
-                    <div class="col-lg-5 d-none d-lg-block">
-                        <div class="register-hero">
-                            <div class="brand-badge">FreshMart • Smart Grocery Account</div>
-                            <h1 class="fw-bold mb-3">Tạo tài khoản khách hàng thật chuyên nghiệp</h1>
-                            <p class="mb-4 opacity-75">
-                                Đăng ký tài khoản để theo dõi đơn hàng, lưu thông tin cá nhân, nhận ưu đãi và nâng cấp PRO bất cứ lúc nào.
-                            </p>
-                            <ul class="hero-list ps-3">
-                                <li>Mua hàng nhanh hơn với hồ sơ đã lưu</li>
-                                <li>Theo dõi lịch sử đơn hàng và trạng thái giao hàng</li>
-                                <li>Nâng cấp PRO sau khi đăng ký để dùng tính năng cao cấp</li>
-                            </ul>
+
+<div class="fm-split-panel flex-grow-1">
+    <!-- Media Section (Hero) -->
+    <div class="fm-split-side-hero d-none d-lg-block">
+        <img src="${pageContext.request.contextPath}/assets/images/heroes/register-hero-8k.png" 
+             alt="FreshMart Onboarding Hero" class="fm-hero-media">
+        <div class="fm-media-overlay" style="background: linear-gradient(to bottom, rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.4));">
+            <div class="mb-5" style="max-width: 500px;">
+                <a href="${pageContext.request.contextPath}/" class="branding-logo text-white mb-5 shadow-sm">
+                    <i class="bi bi-leaf-fill text-primary"></i> FreshMart
+                </a>
+                <h2 class="display-4 fw-extrabold mb-4 text-white">Start Your Smart Logistics Journey</h2>
+                <p class="lead text-white opacity-90 mb-5" style="font-weight: 500;">
+                    Join the leading food supply network. Experience an optimized and transparent warehousing management system.
+                </p>
+                
+                <div class="d-grid gap-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary rounded-circle p-2 shadow-sm">
+                            <i class="bi bi-check-lg text-white"></i>
                         </div>
+                        <span class="fw-semibold text-white">Advanced Analytics Reporting</span>
                     </div>
-
-                    <div class="col-lg-7">
-                        <div class="register-form">
-                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-                                <div>
-                                    <div class="section-title">Create account</div>
-                                    <h2 class="fw-bold mb-1">Đăng ký tài khoản</h2>
-                                    <p class="text-secondary mb-0">
-                                        Tài khoản mới sẽ được tạo dưới dạng <b>CUSTOMER FREE</b>.
-                                    </p>
-                                </div>
-                                <a href="${pageContext.request.contextPath}/login"
-                                   class="btn btn-outline-secondary rounded-pill px-3">
-                                    Đã có tài khoản?
-                                </a>
-                            </div>
-
-                            <c:if test="${not empty errors.general}">
-                                <div class="alert alert-danger">${fn:escapeXml(errors.general)}</div>
-                            </c:if>
-
-                            <form method="post" action="${pageContext.request.contextPath}/register"
-                                  id="registerForm" novalidate>
-                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-
-                                <%-- honeypot field – invisible to humans, filled by bots --%>
-                                <div class="hp-field" aria-hidden="true">
-                                    <label for="website">Website</label>
-                                    <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
-                                </div>
-
-                                <div class="section-title mt-4">Thông tin cơ bản</div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Họ và tên *</label>
-                                        <input type="text" class="form-control" name="fullName"
-                                               value="${fn:escapeXml(form.fullName)}"
-                                               placeholder="Nguyễn Văn A" maxlength="100"
-                                               autocomplete="name" required />
-                                        <c:if test="${not empty errors.fullName}">
-                                            <div class="field-error">${fn:escapeXml(errors.fullName)}</div>
-                                        </c:if>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">Username *</label>
-                                        <input type="text" class="form-control" name="username"
-                                               value="${fn:escapeXml(form.username)}"
-                                               placeholder="nhu.dev" maxlength="30"
-                                               autocomplete="username" required />
-                                        <c:if test="${not empty errors.username}">
-                                            <div class="field-error">${fn:escapeXml(errors.username)}</div>
-                                        </c:if>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">Email *</label>
-                                        <input type="email" class="form-control" name="email"
-                                               value="${fn:escapeXml(form.email)}"
-                                               placeholder="ban@example.com" maxlength="120"
-                                               autocomplete="email" required />
-                                        <c:if test="${not empty errors.email}">
-                                            <div class="field-error">${fn:escapeXml(errors.email)}</div>
-                                        </c:if>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">Số điện thoại *</label>
-                                        <input type="text" class="form-control" name="phone"
-                                               value="${fn:escapeXml(form.phone)}"
-                                               placeholder="0987654321" maxlength="20"
-                                               inputmode="tel" autocomplete="tel" required />
-                                        <c:if test="${not empty errors.phone}">
-                                            <div class="field-error">${fn:escapeXml(errors.phone)}</div>
-                                        </c:if>
-                                    </div>
-                                </div>
-
-                                <div class="section-title mt-4">Bảo mật</div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Mật khẩu *</label>
-                                        <div class="password-wrap">
-                                            <input type="password" class="form-control" id="password" name="password"
-                                                   placeholder="••••••••" minlength="8" maxlength="72"
-                                                   autocomplete="new-password" required />
-                                            <button type="button" class="toggle-password" data-target="password">Hiện</button>
-                                        </div>
-                                        <div class="password-meter">
-                                            <div class="password-meter-bar" id="passwordMeterBar"></div>
-                                        </div>
-                                        <div class="password-hint" id="passwordMeterText">
-                                            Ít nhất 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc biệt.
-                                        </div>
-                                        <c:if test="${not empty errors.password}">
-                                            <div class="field-error">${fn:escapeXml(errors.password)}</div>
-                                        </c:if>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">Xác nhận mật khẩu *</label>
-                                        <div class="password-wrap">
-                                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
-                                                   placeholder="Nhập lại mật khẩu" minlength="8" maxlength="72"
-                                                   autocomplete="new-password" required />
-                                            <button type="button" class="toggle-password" data-target="confirmPassword">Hiện</button>
-                                        </div>
-                                        <c:if test="${not empty errors.confirmPassword}">
-                                            <div class="field-error">${fn:escapeXml(errors.confirmPassword)}</div>
-                                        </c:if>
-                                    </div>
-                                </div>
-
-                                <div class="section-title mt-4">Thông tin bổ sung</div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Giới tính</label>
-                                        <select class="form-select" name="gender">
-                                            <option value="">Chọn giới tính</option>
-                                            <option value="MALE"   ${form.gender eq 'MALE'   ? 'selected' : ''}>Nam</option>
-                                            <option value="FEMALE" ${form.gender eq 'FEMALE' ? 'selected' : ''}>Nữ</option>
-                                            <option value="OTHER"  ${form.gender eq 'OTHER'  ? 'selected' : ''}>Khác</option>
-                                        </select>
-                                        <c:if test="${not empty errors.gender}">
-                                            <div class="field-error">${fn:escapeXml(errors.gender)}</div>
-                                        </c:if>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">Ngày sinh</label>
-                                        <input type="date" class="form-control" name="dob"
-                                               value="${fn:escapeXml(form.dob)}" />
-                                        <c:if test="${not empty errors.dob}">
-                                            <div class="field-error">${fn:escapeXml(errors.dob)}</div>
-                                        </c:if>
-                                    </div>
-
-                                    <div class="col-12">
-                                        <label class="form-label">Địa chỉ</label>
-                                        <textarea class="form-control" name="address"
-                                                  maxlength="255"
-                                                  placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">${fn:escapeXml(form.address)}</textarea>
-                                        <c:if test="${not empty errors.address}">
-                                            <div class="field-error">${fn:escapeXml(errors.address)}</div>
-                                        </c:if>
-                                    </div>
-                                </div>
-
-                                <div class="form-check mt-4">
-                                    <input class="form-check-input" type="checkbox" value="1"
-                                           id="agreeTerms" name="agreeTerms"
-                                           ${form.agreeTerms eq '1' ? 'checked' : ''}>
-                                    <label class="form-check-label" for="agreeTerms">
-                                        Tôi đồng ý với điều khoản sử dụng và chính sách bảo mật của FreshMart.
-                                    </label>
-                                </div>
-                                <c:if test="${not empty errors.agreeTerms}">
-                                    <div class="field-error">${fn:escapeXml(errors.agreeTerms)}</div>
-                                </c:if>
-
-                                <button type="submit" id="registerSubmitBtn"
-                                        class="btn btn-success btn-register w-100 mt-4">
-                                    Tạo tài khoản
-                                </button>
-                            </form>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary rounded-circle p-2 shadow-sm">
+                            <i class="bi bi-check-lg text-white"></i>
                         </div>
+                        <span class="fw-semibold text-white">Intelligent FEFO Inventory Alerts</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary rounded-circle p-2 shadow-sm">
+                            <i class="bi bi-check-lg text-white"></i>
+                        </div>
+                        <span class="fw-semibold text-white">Supply Chain Automation</span>
                     </div>
                 </div>
+            </div>
+            <div class="mt-auto opacity-50 small text-white fw-medium">
+                &copy; 2026 FreshMart Global Operations Control.
+            </div>
+        </div>
+    </div>
+
+    <!-- Registration Section -->
+    <div class="fm-split-side-content">
+        <div class="register-card-container">
+            <div class="d-flex justify-content-between align-items-start mb-5">
+                <div>
+                    <h1 class="fm-h1 mb-2">Create Account</h1>
+                    <p class="fm-text-secondary">Provide your information to join the FreshMart operations network.</p>
+                </div>
+                <a href="${pageContext.request.contextPath}/login" class="fm-btn btn-light border small text-decoration-none">
+                    Already a member? Sign In
+                </a>
+            </div>
+
+            <c:if test="${not empty errors.general}">
+                <div class="alert alert-danger d-flex align-items-center border-0 shadow-sm mb-4 bg-danger-subtle">
+                    <i class="bi bi-exclamation-octagon-fill me-3 fs-5 text-danger"></i>
+                    <div class="small fw-bold">${fn:escapeXml(errors.general)}</div>
+                </div>
+            </c:if>
+
+            <form method="post" action="${pageContext.request.contextPath}/register" id="registerForm" novalidate class="fm-form">
+                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                
+                <!-- Anti-spam Honeypot -->
+                <div style="display:none;" aria-hidden="true">
+                    <input type="text" name="website" tabindex="-1" autocomplete="off" />
+                </div>
+
+                <!-- Section: Identity -->
+                <div class="form-section-header">Identity Credentials</div>
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <label class="fm-label">Full Legal Name</label>
+                        <input type="text" class="fm-form-control ${not empty errors.fullName ? 'is-invalid' : ''}" 
+                               name="fullName" value="${fn:escapeXml(form.fullName)}" placeholder="e.g. John Doe" required />
+                        <c:if test="${not empty errors.fullName}">
+                            <div class="field-error"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.fullName)}</div>
+                        </c:if>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fm-label">Requested Username</label>
+                        <input type="text" class="fm-form-control ${not empty errors.username ? 'is-invalid' : ''}" 
+                               name="username" value="${fn:escapeXml(form.username)}" placeholder="e.g. johndoe_fm" required />
+                        <c:if test="${not empty errors.username}">
+                            <div class="field-error"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.username)}</div>
+                        </c:if>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fm-label">Work Email Address</label>
+                        <input type="email" class="fm-form-control ${not empty errors.email ? 'is-invalid' : ''}" 
+                               name="email" value="${fn:escapeXml(form.email)}" placeholder="email@company.com" required />
+                        <c:if test="${not empty errors.email}">
+                            <div class="field-error"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.email)}</div>
+                        </c:if>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fm-label">Contact Number</label>
+                        <input type="tel" class="fm-form-control ${not empty errors.phone ? 'is-invalid' : ''}" 
+                               name="phone" value="${fn:escapeXml(form.phone)}" placeholder="+84 xxx xxx xxx" required />
+                        <c:if test="${not empty errors.phone}">
+                            <div class="field-error"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.phone)}</div>
+                        </c:if>
+                    </div>
+                </div>
+
+                <!-- Section: Security -->
+                <div class="form-section-header">Security Architecture</div>
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <label class="fm-label">Access Password</label>
+                        <div class="position-relative">
+                            <input type="password" id="password" name="password" 
+                                   class="fm-form-control pe-5 ${not empty errors.password ? 'is-invalid' : ''}" placeholder="••••••••" required />
+                            <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-1 p-1 text-muted text-decoration-none shadow-none"
+                                    data-fm-toggle="password" data-fm-target="password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-strength"><div id="pwStrengthBar" class="password-strength-bar"></div></div>
+                        <c:if test="${not empty errors.password}">
+                            <div class="field-error"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.password)}</div>
+                        </c:if>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fm-label">Verify Password</label>
+                        <div class="position-relative">
+                            <input type="password" id="confirmPassword" name="confirmPassword" 
+                                   class="fm-form-control pe-5 ${not empty errors.confirmPassword ? 'is-invalid' : ''}" placeholder="••••••••" required />
+                            <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-1 p-1 text-muted text-decoration-none shadow-none"
+                                    data-fm-toggle="password" data-fm-target="confirmPassword">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <c:if test="${not empty errors.confirmPassword}">
+                            <div class="field-error"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.confirmPassword)}</div>
+                        </c:if>
+                    </div>
+                </div>
+
+                <!-- Section: Optional Context -->
+                <div class="form-section-header">Operational Context (Optional)</div>
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <label class="fm-label">Primary Hub / Warehouse Address</label>
+                        <input type="text" class="fm-form-control" name="address" value="${fn:escapeXml(form.address)}" placeholder="e.g. District 1, HCMC" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="fm-label">Date of Birth</label>
+                        <input type="date" class="fm-form-control" name="dob" value="${fn:escapeXml(form.dob)}" />
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <div class="form-check p-0 d-flex gap-3">
+                        <input type="checkbox" name="agreeTerms" value="1" 
+                               ${form.agreeTerms eq '1' ? 'checked' : ''} class="form-check-input mt-1 shadow-none" id="agreeTerms">
+                        <label class="form-check-label small text-muted lh-base" for="agreeTerms" style="cursor:pointer;">
+                            I certify that all information provided is accurate and agree to adhere to the 
+                            <a href="#" class="fw-bold text-primary text-decoration-none">Compliance & Security Protocols</a> of the FreshMart network.
+                        </label>
+                    </div>
+                    <c:if test="${not empty errors.agreeTerms}">
+                        <div class="field-error mt-2"><i class="bi bi-info-circle me-1"></i> ${fn:escapeXml(errors.agreeTerms)}</div>
+                    </c:if>
+                </div>
+
+                <button type="submit" class="fm-btn fm-btn-primary w-100 py-3 shadow-lg border-0">
+                    Initialize Account Profile <i class="bi bi-arrow-right-short ms-2 fs-5"></i>
+                </button>
+            </form>
+
+            <div class="fm-auth-footer">
+                &copy; 2026 FreshMart Enterprise Edition. Digital Supply Chain Management Platform.
             </div>
         </div>
     </div>
 </div>
 
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/fm-core.js?v=2"></script>
+
 <script>
-(function () {
-    var form       = document.getElementById('registerForm');
-    var password   = document.getElementById('password');
-    var confirmPw  = document.getElementById('confirmPassword');
-    var meterBar   = document.getElementById('passwordMeterBar');
-    var meterText  = document.getElementById('passwordMeterText');
-    var submitBtn  = document.getElementById('registerSubmitBtn');
-
-    // show / hide password buttons
-    document.querySelectorAll('.toggle-password').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var target = document.getElementById(this.dataset.target);
-            var isHidden = target.type === 'password';
-            target.type = isHidden ? 'text' : 'password';
-            this.textContent = isHidden ? 'Ẩn' : 'Hiện';
-        });
-    });
-
-    // auto-lowercase username and email on blur
-    ['username', 'email'].forEach(function (name) {
-        var el = document.querySelector('input[name="' + name + '"]');
-        if (el) el.addEventListener('blur', function () { this.value = this.value.trim().toLowerCase(); });
-    });
-
-    // password strength meter
-    function scorePassword(val) {
-        if (!val) return 0;
-        var score = 0;
-        if (val.length >= 8) score++;
-        if (/[A-Z]/.test(val)) score++;
-        if (/[a-z]/.test(val)) score++;
-        if (/\d/.test(val)) score++;
-        if (/[^A-Za-z0-9]/.test(val)) score++;
-        return score;
-    }
-
-    function renderMeter() {
-        if (!password || !meterBar || !meterText) return;
-        var score = scorePassword(password.value);
-        if (score <= 1) {
-            meterBar.style.width = '20%'; meterBar.style.background = '#ef4444';
-            meterText.textContent = 'Mật khẩu yếu';
-        } else if (score <= 3) {
-            meterBar.style.width = '60%'; meterBar.style.background = '#f59e0b';
-            meterText.textContent = 'Mật khẩu trung bình';
-        } else {
-            meterBar.style.width = '100%'; meterBar.style.background = '#22c55e';
-            meterText.textContent = 'Mật khẩu mạnh';
-        }
-    }
-
-    if (password) { password.addEventListener('input', renderMeter); renderMeter(); }
-
-    // submit guard
-    if (form) {
-        form.addEventListener('submit', function (e) {
-            if (password && confirmPw && password.value !== confirmPw.value) {
-                e.preventDefault();
-                confirmPw.focus();
-                alert('Xác nhận mật khẩu chưa khớp.');
-                return;
-            }
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.classList.add('submit-loading');
-                submitBtn.textContent = 'Đang tạo tài khoản...';
-            }
+    // Password Strength Meter Implementation
+    const pwInput = document.getElementById('password');
+    const bar = document.getElementById('pwStrengthBar');
+    if (pwInput && bar) {
+        pwInput.addEventListener('input', function() {
+            const val = this.value;
+            let score = 0;
+            if (val.length >= 8) score++;
+            if (/[A-Z]/.test(val)) score++;
+            if (/\d/.test(val)) score++;
+            if (/[^A-Za-z0-9]/.test(val)) score++;
+            
+            const colors = ['#f1f5f9', '#ef4444', '#f59e0b', '#22c55e', '#16a34a'];
+            const widths = ['0%', '25%', '50%', '75%', '100%'];
+            
+            bar.style.width = widths[score];
+            bar.style.backgroundColor = colors[score];
         });
     }
-})();
 </script>
+
 </body>
 </html>

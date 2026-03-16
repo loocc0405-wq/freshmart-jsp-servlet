@@ -49,6 +49,17 @@ public class UserRepository {
                 .getResultList();
     }
 
+
+
+    public List<User> findSubscriptionCandidates(EntityManager em) {
+        return em.createQuery(
+                        "SELECT u FROM User u WHERE u.role = :role AND (u.tier = :proTier OR u.expiredDate IS NOT NULL) ORDER BY u.id ASC",
+                        User.class)
+                .setParameter("role", Role.CUSTOMER)
+                .setParameter("proTier", com.freshmart.enums.Tier.PRO)
+                .getResultList();
+    }
+
     public boolean existsByUsername(EntityManager em, String username) {
         Long c = em.createQuery(
                 "SELECT COUNT(u) FROM User u WHERE LOWER(u.username) = LOWER(:username)",

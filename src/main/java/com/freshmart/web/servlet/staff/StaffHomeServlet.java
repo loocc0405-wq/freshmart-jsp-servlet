@@ -33,8 +33,8 @@ public class StaffHomeServlet extends HttpServlet {
         }
 
         User user = (User) principal;
-        if (user.getRole() != Role.STAFF) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "STAFF only");
+        if (user.getRole() != Role.STAFF && user.getRole() != Role.ADMIN) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "STAFF or ADMIN only");
             return;
         }
 
