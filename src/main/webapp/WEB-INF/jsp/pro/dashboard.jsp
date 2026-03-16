@@ -1,6 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="PRO Dashboard" />
 <jsp:include page="/WEB-INF/jsp/common/header.jsp" />
@@ -111,9 +111,38 @@
         border-color: #0d6efd;
     }
 
+    .mini-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
+
+    .mini-card {
+        background: #f8f9fa;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 12px;
+    }
+
+    .mini-card .label {
+        font-size: 13px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+
+    .mini-card .value {
+        font-size: 18px;
+        font-weight: 700;
+    }
+
     @media (max-width: 992px) {
         .kpi-grid {
             grid-template-columns: repeat(2, 1fr);
+        }
+
+        .mini-grid {
+            grid-template-columns: 1fr;
         }
     }
 
@@ -199,6 +228,54 @@
 
                         <button class="btn btn-primary" type="submit">Run seasonality</button>
                     </form>
+
+                    <div class="insight">
+                        <div><strong>Insight:</strong> ${seasonalityInsight}</div>
+                    </div>
+
+                    <div class="mini-grid">
+                        <div class="mini-card">
+                            <div class="label">Strongest Peak</div>
+                            <div class="value">${strongestPeakDate}</div>
+                            <div>
+                                Z:
+                                <c:choose>
+                                    <c:when test="${strongestPeakZ != null}">
+                                        <fmt:formatNumber value="${strongestPeakZ}" type="number" minFractionDigits="0" maxFractionDigits="2" />
+                                    </c:when>
+                                    <c:otherwise>N/A</c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+
+                        <div class="mini-card">
+                            <div class="label">Strongest Dip</div>
+                            <div class="value">${strongestDipDate}</div>
+                            <div>
+                                Z:
+                                <c:choose>
+                                    <c:when test="${strongestDipZ != null}">
+                                        <fmt:formatNumber value="${strongestDipZ}" type="number" minFractionDigits="0" maxFractionDigits="2" />
+                                    </c:when>
+                                    <c:otherwise>N/A</c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+
+                        <div class="mini-card">
+                            <div class="label">Dominant Month</div>
+                            <div class="value">${dominantMonthLabel}</div>
+                            <div>
+                                Avg:
+                                <c:choose>
+                                    <c:when test="${dominantMonthAvg != null}">
+                                        <fmt:formatNumber value="${dominantMonthAvg}" type="number" minFractionDigits="0" maxFractionDigits="2" />
+                                    </c:when>
+                                    <c:otherwise>N/A</c:otherwise>
+                                </c:choose>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="insight">
                         Peak = doanh thu cao hơn rolling mean vượt ngưỡng z-score.
@@ -319,8 +396,12 @@
                     </form>
 
                     <div class="insight">
-                        Gợi ý nhập hàng được tính theo forecast/day, stock hiện có, lead time, buffer và
-                        safety stock.
+                        Gợi ý nhập hàng được tính theo forecast/day, stock hiện có, lead time, buffer và safety stock.
+                    </div>
+
+                    <div class="insight">
+                        Lead time hiện đang dùng tham số cấu hình chung từ form. Nếu muốn hiển thị lead time theo supplier thật,
+                        DTO/service cần trả thêm field riêng cho từng sản phẩm.
                     </div>
                 </div>
             </div>
@@ -341,6 +422,7 @@
                                 <th>Suggested</th>
                                 <th>Expiring Qty</th>
                                 <th>Expiring Lots</th>
+                                <th>Reason</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -367,6 +449,7 @@
                                     <td>${r.suggestedQty}</td>
                                     <td>${r.expiringQty}</td>
                                     <td>${r.expiringLots}</td>
+                                    <td>${r.reason}</td>
                                 </tr>
                             </c:forEach>
                             </tbody>
@@ -374,8 +457,7 @@
                     </div>
 
                     <div class="insight mt-3">
-                        Các sản phẩm có nhiều lô sắp hết hạn sẽ được ưu tiên clearance trước, từ đó
-                        suggestion có thể bị giảm.
+                        Các sản phẩm có nhiều lô sắp hết hạn sẽ được ưu tiên clearance trước, từ đó suggestion có thể bị giảm.
                     </div>
                 </div>
             </div>
@@ -415,7 +497,7 @@
                         <h5 class="mb-0">Forecast Chart</h5>
                         <a class="btn btn-sm btn-outline-success"
                            href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&export=csv&granularity=${granularity}&method=${method}&history=${history}&horizon=${horizon}&window=${window}&alpha=${alpha}">
-                            <i class="bi bi-download me-1"></i>Export CSV
+                            Export CSV
                         </a>
                     </div>
                     <div class="chart-box">
@@ -437,9 +519,7 @@
                             <tbody>
                             <c:forEach var="b" items="${forecastBuckets}">
                                 <tr class="${b.forecast != null && b.actual == null ? 'table-info' : ''}">
-                                    <td>
-                                        <c:out value="${b.label}" />
-                                    </td>
+                                    <td><c:out value="${b.label}" /></td>
                                     <td class="text-end">
                                         <c:if test="${b.actual != null}">
                                             <fmt:formatNumber value="${b.actual}" type="number" groupingUsed="true" />
