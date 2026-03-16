@@ -12,10 +12,18 @@ import java.io.IOException;
  * Servlet để xóa một lô hàng (thường dùng khi lô đã hết hạn hoặc bị loại bỏ).
  * Map: /staff/delete-lot?lotId=<id>&redirect=<path>
  */
-@WebServlet(urlPatterns = {"/staff/delete-lot"})
+@WebServlet(urlPatterns = { "/staff/delete-lot" })
 public class StaffDeleteLotServlet extends HttpServlet {
 
-    private final ProductLotService lotService = new ProductLotService();
+    private final ProductLotService lotService;
+
+    public StaffDeleteLotServlet() {
+        this(new ProductLotService());
+    }
+
+    StaffDeleteLotServlet(ProductLotService lotService) {
+        this.lotService = lotService;
+    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
