@@ -181,6 +181,21 @@ class ProDashboardServletIntegrationTest {
         assertSame(points, ctx.attrs.get("seasonalityPoints"));
         assertSame(monthStats, ctx.attrs.get("monthStats"));
 
+        assertEquals("2026-03-10", ctx.attrs.get("strongestPeakDate"));
+        assertEquals(2.0, (Double) ctx.attrs.get("strongestPeakZ"), 0.0001);
+        assertEquals("2026-03-11", ctx.attrs.get("strongestDipDate"));
+        assertEquals(-1.5, (Double) ctx.attrs.get("strongestDipZ"), 0.0001);
+        assertEquals("Month 3", ctx.attrs.get("dominantMonthLabel"));
+        assertEquals(new BigDecimal("81.67"), ctx.attrs.get("dominantMonthAvg"));
+
+        String insight = (String) ctx.attrs.get("seasonalityInsight");
+        assertNotNull(insight);
+        assertTrue(insight.contains("1 peak"));
+        assertTrue(insight.contains("1 dip"));
+        assertTrue(insight.contains("Month 3"));
+        assertTrue(insight.contains("2026-03-10"));
+        assertTrue(insight.contains("2026-03-11"));
+
         assertNotNull(ctx.attrs.get("seasonalityLabelsJson"));
         assertNotNull(ctx.attrs.get("seasonalityActualJson"));
         assertNotNull(ctx.attrs.get("seasonalityRollingJson"));

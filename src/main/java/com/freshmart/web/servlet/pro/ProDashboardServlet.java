@@ -8,7 +8,6 @@ import com.freshmart.service.dto.ReplenishSuggestion;
 import com.freshmart.service.dto.SeasonalityMonthStat;
 import com.freshmart.service.dto.SeasonalityPoint;
 import com.google.gson.Gson;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -24,7 +23,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-@WebServlet(urlPatterns = { "/pro/dashboard" })
+@WebServlet(urlPatterns = {"/pro/dashboard"})
 public class ProDashboardServlet extends HttpServlet {
 
     private static final Set<String> ALLOWED_TABS = Set.of("forecast", "seasonality", "replenishment");
@@ -63,14 +62,12 @@ public class ProDashboardServlet extends HttpServlet {
         int window = parseIntInRange(req.getParameter("window"), 7, 1, 365);
         double alpha = parseDoubleInRange(req.getParameter("alpha"), 0.3, 0.01, 1.0);
 
-        // CSV export
         String export = req.getParameter("export");
         if ("csv".equalsIgnoreCase(export) && "forecast".equals(tab)) {
             exportForecastCsv(resp, granularity, method, history, horizon, window, alpha);
             return;
         }
 
-        // Forecast data for UI
         List<ForecastBucket> forecastBuckets = forecastService.forecastByGranularity(
                 granularity, method, history, horizon, window, alpha
         );
@@ -82,16 +79,16 @@ public class ProDashboardServlet extends HttpServlet {
         BigDecimal latestActual = BigDecimal.ZERO;
         BigDecimal latestForecast = BigDecimal.ZERO;
 
-        for (ForecastBucket b : forecastBuckets) {
-            forecastLabels.add(b.getLabel());
-            actual.add(b.getActual());
-            forecast.add(b.getForecast());
+        for (ForecastBucket bucket : forecastBuckets) {
+            forecastLabels.add(bucket.getLabel());
+            actual.add(bucket.getActual());
+            forecast.add(bucket.getForecast());
 
-            if (b.getActual() != null) {
-                latestActual = b.getActual();
+            if (bucket.getActual() != null) {
+                latestActual = bucket.getActual();
             }
-            if (b.getForecast() != null) {
-                latestForecast = b.getForecast();
+            if (bucket.getForecast() != null) {
+                latestForecast = bucket.getForecast();
             }
         }
 
@@ -117,7 +114,6 @@ public class ProDashboardServlet extends HttpServlet {
         List<SeasonalityPoint> seasonalityPoints = seasonalityService.analyze(
                 seasonalityHistory, rollingWindow, zThreshold
         );
-
         List<SeasonalityMonthStat> monthStats = seasonalityService.summarizeByMonth(seasonalityPoints);
 
         List<String> seasonalityLabels = new ArrayList<>();
@@ -128,16 +124,27 @@ public class ProDashboardServlet extends HttpServlet {
         int peakCount = 0;
         int dipCount = 0;
 
-        for (SeasonalityPoint p : seasonalityPoints) {
-            seasonalityLabels.add(p.getDate().toString());
-            seasonalityActual.add(p.getActual());
-            seasonalityRolling.add(p.getRollingMean());
-            seasonalityZ.add(p.getZScore());
+        SeasonalityPoint strongestPeak = null;
+        SeasonalityPoint strongestDip = null;
 
-            if ("PEAK".equalsIgnoreCase(String.valueOf(p.getSignal()))) {
+        for (SeasonalityPoint point : seasonalityPoints) {
+            seasonalityLabels.add(point.getDate().toString());
+            seasonalityActual.add(point.getActual());
+            seasonalityRolling.add(point.getRollingMean());
+            seasonalityZ.add(point.getZScore());
+
+            String signal = String.valueOf(point.getSignal());
+
+            if ("PEAK".equalsIgnoreCase(signal)) {
                 peakCount++;
-            } else if ("DIP".equalsIgnoreCase(String.valueOf(p.getSignal()))) {
+                if (strongestPeak == null || point.getZScore() > strongestPeak.getZScore()) {
+                    strongestPeak = point;
+                }
+            } else if ("DIP".equalsIgnoreCase(signal)) {
                 dipCount++;
+                if (strongestDip == null || point.getZScore() < strongestDip.getZScore()) {
+                    strongestDip = point;
+                }
             }
         }
 
@@ -146,11 +153,59 @@ public class ProDashboardServlet extends HttpServlet {
         List<BigDecimal> monthMin = new ArrayList<>();
         List<BigDecimal> monthMax = new ArrayList<>();
 
-        for (SeasonalityMonthStat m : monthStats) {
-            monthNames.add(m.getLabel());
-            monthAvg.add(m.getAvgDemand());
-            monthMin.add(m.getMinDemand());
-            monthMax.add(m.getMaxDemand());
+        SeasonalityMonthStat dominantMonth = null;
+
+        for (SeasonalityMonthStat stat : monthStats) {
+            monthNames.add(stat.getLabel());
+            monthAvg.add(stat.getAvgDemand());
+            monthMin.add(stat.getMinDemand());
+            monthMax.add(stat.getMaxDemand());
+
+            if (dominantMonth == null) {
+                dominantMonth = stat;
+            } else if (stat.getAvgDemand() != null && dominantMonth.getAvgDemand() != null
+                    && stat.getAvgDemand().compareTo(dominantMonth.getAvgDemand()) > 0) {
+                dominantMonth = stat;
+            }
+        }
+
+        String strongestPeakDate = strongestPeak != null ? strongestPeak.getDate().toString() : "N/A";
+        Double strongestPeakZ = strongestPeak != null ? strongestPeak.getZScore() : null;
+
+        String strongestDipDate = strongestDip != null ? strongestDip.getDate().toString() : "N/A";
+        Double strongestDipZ = strongestDip != null ? strongestDip.getZScore() : null;
+
+        String dominantMonthLabel = dominantMonth != null ? dominantMonth.getLabel() : "N/A";
+        BigDecimal dominantMonthAvg = dominantMonth != null ? dominantMonth.getAvgDemand() : null;
+
+        String seasonalityInsight;
+        if (peakCount == 0 && dipCount == 0) {
+            seasonalityInsight = "Không phát hiện biến động mùa vụ vượt ngưỡng trong giai đoạn đã chọn.";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Phát hiện ").append(peakCount).append(" peak và ").append(dipCount).append(" dip");
+            if (dominantMonth != null && dominantMonth.getAvgDemand() != null) {
+                sb.append(". Tháng nổi bật nhất: ")
+                  .append(dominantMonth.getLabel())
+                  .append(" (avg ")
+                  .append(dominantMonth.getAvgDemand().toPlainString())
+                  .append(")");
+            }
+            if (strongestPeak != null) {
+                sb.append(". Peak mạnh nhất: ")
+                  .append(strongestPeak.getDate())
+                  .append(" (z=")
+                  .append(String.format("%.2f", strongestPeak.getZScore()))
+                  .append(")");
+            }
+            if (strongestDip != null) {
+                sb.append(". Dip mạnh nhất: ")
+                  .append(strongestDip.getDate())
+                  .append(" (z=")
+                  .append(String.format("%.2f", strongestDip.getZScore()))
+                  .append(")");
+            }
+            seasonalityInsight = sb.toString();
         }
 
         req.setAttribute("seasonalityHistory", seasonalityHistory);
@@ -160,6 +215,13 @@ public class ProDashboardServlet extends HttpServlet {
         req.setAttribute("monthStats", monthStats);
         req.setAttribute("peakCount", peakCount);
         req.setAttribute("dipCount", dipCount);
+        req.setAttribute("strongestPeakDate", strongestPeakDate);
+        req.setAttribute("strongestPeakZ", strongestPeakZ);
+        req.setAttribute("strongestDipDate", strongestDipDate);
+        req.setAttribute("strongestDipZ", strongestDipZ);
+        req.setAttribute("dominantMonthLabel", dominantMonthLabel);
+        req.setAttribute("dominantMonthAvg", dominantMonthAvg);
+        req.setAttribute("seasonalityInsight", seasonalityInsight);
         req.setAttribute("seasonalityLabelsJson", gson.toJson(seasonalityLabels));
         req.setAttribute("seasonalityActualJson", gson.toJson(seasonalityActual));
         req.setAttribute("seasonalityRollingJson", gson.toJson(seasonalityRolling));
@@ -210,6 +272,7 @@ public class ProDashboardServlet extends HttpServlet {
                                    int horizon,
                                    int window,
                                    double alpha) throws IOException {
+
         List<ForecastBucket> buckets = forecastService.forecastByGranularity(
                 granularity, method, history, horizon, window, alpha
         );
@@ -224,12 +287,12 @@ public class ProDashboardServlet extends HttpServlet {
             writer.println("period_label,actual_revenue,forecast_revenue,method,granularity,history,horizon,generated_at");
 
             String generatedAt = LocalDate.now().toString();
-            for (ForecastBucket b : buckets) {
-                writer.print(csvEscape(b.getLabel()));
+            for (ForecastBucket bucket : buckets) {
+                writer.print(csvEscape(bucket.getLabel()));
                 writer.print(',');
-                writer.print(b.getActual() != null ? b.getActual().toPlainString() : "");
+                writer.print(bucket.getActual() != null ? bucket.getActual().toPlainString() : "");
                 writer.print(',');
-                writer.print(b.getForecast() != null ? b.getForecast().toPlainString() : "");
+                writer.print(bucket.getForecast() != null ? bucket.getForecast().toPlainString() : "");
                 writer.print(',');
                 writer.print(method);
                 writer.print(',');
