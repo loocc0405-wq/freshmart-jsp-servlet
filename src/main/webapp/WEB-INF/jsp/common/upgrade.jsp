@@ -108,6 +108,41 @@
                         <c:out value="${errorMessage}" />
                     </div>
                 </c:if>
+                <c:if test="${not empty recentNotifications}">
+                    <div class="fm-surface padded mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                            <div>
+                                <h5 class="mb-1">Thông báo hệ thống về subscription</h5>
+                                <p class="text-muted mb-0">Được tạo tự động bởi scheduler nền khi gói PRO sắp hết hạn hoặc đã hết hạn.</p>
+                            </div>
+                            <a class="btn btn-outline-secondary btn-sm"
+                               href="${pageContext.request.contextPath}/subscription/notifications">
+                                Xem tất cả
+                            </a>
+                        </div>
+
+                        <div class="list-group list-group-flush">
+                            <c:forEach items="${recentNotifications}" var="n" end="2">
+                                <div class="list-group-item px-0 py-3 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <strong><c:out value="${n.title}" /></strong>
+                                                <c:if test="${not n.read}">
+                                                    <span class="badge text-bg-danger">Mới</span>
+                                                </c:if>
+                                            </div>
+                                            <div class="text-muted small mb-1">
+                                                <c:out value="${n.createdAt}" />
+                                            </div>
+                                            <div><c:out value="${n.message}" /></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </div>
+                </c:if>
 
                 <div class="row g-4 mb-4">
                     <div class="col-lg-5">

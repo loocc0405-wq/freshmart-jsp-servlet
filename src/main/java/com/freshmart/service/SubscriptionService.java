@@ -8,6 +8,7 @@ import com.freshmart.enums.Tier;
 import com.freshmart.repository.SubscriptionPaymentRepository;
 import com.freshmart.repository.TierHistoryRepository;
 import com.freshmart.repository.UserRepository;
+import com.freshmart.service.dto.SubscriptionMaintenanceResult;
 import com.freshmart.service.dto.SubscriptionStatusDTO;
 import com.freshmart.util.JpaExecutor;
 
@@ -15,7 +16,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +27,8 @@ public class SubscriptionService {
     private final UserRepository userRepo = new UserRepository();
     private final SubscriptionPaymentRepository paymentRepo = new SubscriptionPaymentRepository();
     private final TierHistoryRepository tierHistoryRepo = new TierHistoryRepository();
+    private final AppSettingService appSettingService = new AppSettingService();
+    private final UserNotificationService notificationService = new UserNotificationService();
 
     // ==================== Plan pricing ====================
 
@@ -45,8 +47,9 @@ public class SubscriptionService {
     // ==================== Upgrade / Purchase ====================
 
     public User upgradePro(Long userId, int days) {
-        if (days <= 0)
+        if (days <= 0) {
             throw new IllegalArgumentException("Số ngày phải > 0");
+        }
 
         return executor.execute(em -> {
             User u = userRepo.findById(em, userId)
@@ -66,8 +69,8 @@ public class SubscriptionService {
             u.setExpiredDate(base.plusDays(days));
 
             User saved = userRepo.save(em, u);
+            notificationService.markAllSubscriptionRead(em, saved.getId());
 
-            // Record tier history
             String changeType = (oldTier == Tier.PRO) ? "RENEW" : "UPGRADE";
             recordTierHistory(em, saved, oldTier, Tier.PRO, oldExpired, saved.getExpiredDate(),
                     changeType, "Upgrade PRO " + days + " days");
@@ -77,8 +80,9 @@ public class SubscriptionService {
     }
 
     public SubscriptionPayment fakePurchase(Long userId, int days, String paymentMethod) {
-        if (days <= 0)
+        if (days <= 0) {
             throw new IllegalArgumentException("Số ngày phải > 0");
+        }
 
         String method = (paymentMethod == null || paymentMethod.isBlank()) ? "FAKE_CARD" : paymentMethod.trim();
         BigDecimal amount = getPlanPrice(days);
@@ -106,8 +110,8 @@ public class SubscriptionService {
             u.setTier(Tier.PRO);
             u.setExpiredDate(newExpiredDate);
             userRepo.save(em, u);
+            notificationService.markAllSubscriptionRead(em, u.getId());
 
-            // Record tier history
             String changeType = (oldTier == Tier.PRO) ? "RENEW" : "UPGRADE";
             recordTierHistory(em, u, oldTier, Tier.PRO, oldExpired, newExpiredDate,
                     changeType, "Fake payment " + method + " - PRO " + days + " days");
@@ -129,8 +133,9 @@ public class SubscriptionService {
     }
 
     public SubscriptionPayment adminGrant(Long userId, int days, String note) {
-        if (days <= 0)
+        if (days <= 0) {
             throw new IllegalArgumentException("Số ngày phải > 0");
+        }
 
         return executor.execute(em -> {
             User u = userRepo.findById(em, userId)
@@ -151,8 +156,8 @@ public class SubscriptionService {
             u.setTier(Tier.PRO);
             u.setExpiredDate(newExpiredDate);
             userRepo.save(em, u);
+            notificationService.markAllSubscriptionRead(em, u.getId());
 
-            // Record tier history
             recordTierHistory(em, u, oldTier, Tier.PRO, oldExpired, newExpiredDate,
                     "ADMIN_GRANT", note == null || note.isBlank() ? "Admin grant PRO" : note);
 
@@ -185,6 +190,7 @@ public class SubscriptionService {
             u.setTier(Tier.FREE);
             u.setExpiredDate(null);
             User saved = userRepo.save(em, u);
+            notificationService.markAllSubscriptionRead(em, saved.getId());
 
             recordTierHistory(em, saved, oldTier, Tier.FREE, oldExpired, null,
                     "ADMIN_REVOKE", note == null || note.isBlank() ? "Admin revoke PRO" : note);
@@ -202,6 +208,34 @@ public class SubscriptionService {
 
             normalizeTierInternal(u, LocalDate.now(), em);
             return userRepo.save(em, u);
+        });
+    }
+
+    public SubscriptionMaintenanceResult runMaintenanceSweep() {
+        int notifyDays = appSettingService.getSubNotifyDays();
+        int graceDays = appSettingService.getSubGracePeriodDays();
+        LocalDate today = LocalDate.now();
+
+        return executor.execute(em -> {
+            int scanned = 0;
+            int downgraded = 0;
+            int createdNotifications = 0;
+
+            List<User> candidates = userRepo.findSubscriptionCandidates(em);
+            for (User user : candidates) {
+                scanned++;
+
+                if (SubscriptionPolicy.shouldAutoDowngrade(user, today)) {
+                    normalizeTierInternal(user, today, em);
+                    userRepo.save(em, user);
+                    downgraded++;
+                }
+
+                SubscriptionStatusDTO status = SubscriptionPolicy.computeStatus(user, today, notifyDays, graceDays);
+                createdNotifications += notificationService.createSubscriptionNotificationForStatus(em, user, status, today);
+            }
+
+            return new SubscriptionMaintenanceResult(today, scanned, downgraded, createdNotifications);
         });
     }
 
@@ -229,83 +263,36 @@ public class SubscriptionService {
 
     // ==================== Subscription Status ====================
 
-    private final AppSettingService appSettingService = new AppSettingService();
-
-    /**
-     * Compute subscription status for display/UX purposes.
-     * Works with both PRO users (active or expired but not yet normalized)
-     * AND FREE users who were recently downgraded (expiredDate still set).
-     */
     public SubscriptionStatusDTO computeStatus(User user) {
         int notifyDays = appSettingService.getSubNotifyDays();
         int graceDays = appSettingService.getSubGracePeriodDays();
-        LocalDate today = LocalDate.now();
+        return SubscriptionPolicy.computeStatus(user, LocalDate.now(), notifyDays, graceDays);
+    }
 
-        // Case 1: User is FREE and has no expiredDate → plain FREE
-        if (user.getTier() != Tier.PRO && user.getExpiredDate() == null) {
-            return new SubscriptionStatusDTO(SubscriptionStatusDTO.FREE, 0, 0, 0, notifyDays, graceDays);
-        }
-
-        LocalDate expDate = user.getExpiredDate();
-
-        // Case 2: User tier is still PRO
-        if (user.getTier() == Tier.PRO && expDate != null && !expDate.isBefore(today)) {
-            // PRO is active
-            long remaining = ChronoUnit.DAYS.between(today, expDate);
-            if (remaining <= notifyDays) {
-                return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRING_SOON,
-                        remaining, 0, 0, notifyDays, graceDays);
-            }
-            return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_ACTIVE,
-                    remaining, 0, 0, notifyDays, graceDays);
-        }
-
-        // Case 3: Expired — either tier is still PRO with past date, or tier was
-        // normalized to FREE
-        // but expiredDate is still present (recent downgrade)
-        if (expDate != null) {
-            long daysExpired = ChronoUnit.DAYS.between(expDate, today);
-            if (daysExpired <= 0) {
-                // Edge case: expDate == today, treat as expiring (last day)
-                return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRING_SOON,
-                        0, 0, graceDays, notifyDays, graceDays);
-            }
-            long graceRemaining = graceDays - daysExpired;
-            if (graceRemaining > 0) {
-                return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRED_IN_GRACE,
-                        0, daysExpired, graceRemaining, notifyDays, graceDays);
-            }
-            return new SubscriptionStatusDTO(SubscriptionStatusDTO.PRO_EXPIRED,
-                    0, daysExpired, 0, notifyDays, graceDays);
-        }
-
-        // Fallback: FREE
-        return new SubscriptionStatusDTO(SubscriptionStatusDTO.FREE, 0, 0, 0, notifyDays, graceDays);
+    public SubscriptionStatusDTO computeStatus(User user, LocalDate today, int notifyDays, int graceDays) {
+        return SubscriptionPolicy.computeStatus(user, today, notifyDays, graceDays);
     }
 
     // ==================== Internal helpers ====================
 
     private void normalizeTierInternal(User u, LocalDate today, jakarta.persistence.EntityManager em) {
-        if (u.getRole() != Role.CUSTOMER) {
+        if (!SubscriptionPolicy.shouldAutoDowngrade(u, today)) {
             return;
         }
 
-        if (u.getTier() == Tier.PRO && (u.getExpiredDate() == null || u.getExpiredDate().isBefore(today))) {
-            Tier oldTier = u.getTier();
-            LocalDate oldExpired = u.getExpiredDate();
+        Tier oldTier = u.getTier();
+        LocalDate oldExpired = u.getExpiredDate();
 
-            u.setTier(Tier.FREE);
+        u.setTier(Tier.FREE);
 
-            // Record expiry in tier history
-            recordTierHistory(em, u, oldTier, Tier.FREE, oldExpired, null,
-                    "EXPIRE", "PRO hết hạn, tự động chuyển về FREE");
-        }
+        recordTierHistory(em, u, oldTier, Tier.FREE, oldExpired, null,
+                "EXPIRE", "PRO hết hạn, tự động chuyển về FREE");
     }
 
     private void recordTierHistory(jakarta.persistence.EntityManager em,
-            User user, Tier oldTier, Tier newTier,
-            LocalDate oldExpired, LocalDate newExpired,
-            String changeType, String note) {
+                                   User user, Tier oldTier, Tier newTier,
+                                   LocalDate oldExpired, LocalDate newExpired,
+                                   String changeType, String note) {
         TierHistory history = new TierHistory();
         history.setUser(user);
         history.setOldTier(oldTier);

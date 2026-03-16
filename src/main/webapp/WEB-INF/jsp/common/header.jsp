@@ -170,6 +170,49 @@
             <ul class="navbar-nav">
                 <c:choose>
                     <c:when test="${sessionScope.authUser != null}">
+                        <c:if test="${sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
+                            <li class="nav-item dropdown me-2">
+                                <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown"
+                                   aria-label="Thông báo subscription">
+                                    <i class="bi bi-bell"></i>
+                                    <c:if test="${not empty requestScope.subscriptionUnreadCount && requestScope.subscriptionUnreadCount > 0}">
+                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                                            ${requestScope.subscriptionUnreadCount}
+                                        </span>
+                                    </c:if>
+                                </a>
+                                <div class="dropdown-menu dropdown-menu-end p-0" style="min-width: 340px;">
+                                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                                        <strong>Thông báo subscription</strong>
+                                        <a class="small text-decoration-none" href="${pageContext.request.contextPath}/subscription/notifications">
+                                            Xem tất cả
+                                        </a>
+                                    </div>
+
+                                    <c:choose>
+                                        <c:when test="${empty requestScope.subscriptionHeaderNotifications}">
+                                            <div class="p-3 text-muted small">Chưa có thông báo nào.</div>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:forEach items="${requestScope.subscriptionHeaderNotifications}" var="notify">
+                                                <a class="dropdown-item py-3 border-bottom"
+                                                   href="${pageContext.request.contextPath}/subscription/upgrade">
+                                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                                        <div>
+                                                            <div class="fw-semibold"><c:out value="${notify.title}" /></div>
+                                                            <div class="small text-muted"><c:out value="${notify.message}" /></div>
+                                                        </div>
+                                                        <c:if test="${not notify.read}">
+                                                            <span class="badge text-bg-danger">Mới</span>
+                                                        </c:if>
+                                                    </div>
+                                                </a>
+                                            </c:forEach>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </div>
+                            </li>
+                        </c:if>
                         <li class="nav-item">
                             <span class="navbar-text me-3">
                                 Xin chào,
