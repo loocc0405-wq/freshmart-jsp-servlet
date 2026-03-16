@@ -45,6 +45,21 @@
     padding: var(--fm-sp-6);
 }
 
+.fm-app-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-left: 260px; /* Width of sidebar */
+    transition: margin-left 0.3s ease;
+    min-height: 100vh;
+}
+
+@media (max-width: 992px) {
+    .fm-app-main {
+        margin-left: 0;
+    }
+}
+
 /* Page Headers & Layout */
 .fm-page-header {
     display: flex;
@@ -91,7 +106,11 @@
     border-radius: var(--fm-radius-card);
     padding: var(--fm-sp-6);
     box-shadow: var(--fm-shadow-card);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.fm-card[class*="bg-"] {
+    border-color: transparent;
 }
 
 .fm-card:hover {
@@ -105,7 +124,46 @@
     gap: var(--fm-sp-1);
 }
 
+.fm-product-card {
+    overflow: hidden;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease;
+}
+
+.fm-product-card:hover {
+    transform: translateY(-4px);
+}
+
+.fm-product-media {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background-color: var(--fm-slate-50);
+    position: relative;
+}
+
+.fm-product-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.fm-product-card:hover .fm-product-media img {
+    transform: scale(1.05);
+}
+
 /* Form Components */
+.fm-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--fm-text-secondary);
+    margin-bottom: var(--fm-sp-2);
+    opacity: 0.8;
+}
+
 .fm-form-control, .form-control, .form-select {
     display: block;
     width: 100%;
@@ -137,6 +195,34 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
     border: 1px solid transparent;
+}
+
+/* Input Group Enhancements */
+.input-group > .fm-form-control,
+.input-group > .form-control {
+    flex: 1 1 auto;
+    width: 1%;
+    margin-bottom: 0;
+}
+
+.input-group-text {
+    background-color: var(--fm-slate-50);
+    border: 1px solid var(--fm-slate-300);
+    color: var(--fm-text-muted);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+}
+
+.input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+    margin-left: -1px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
 }
 
 .fm-btn-primary, .btn-primary {
