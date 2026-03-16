@@ -76,6 +76,26 @@ public final class JPAUtil {
                                 "CONSTRAINT fk_subscription_payments_user FOREIGN KEY (user_id) REFERENCES users(id)" +
                                 ")"
                 );
+
+                ensureTableExists(
+                        conn,
+                        "user_notifications",
+                        "CREATE TABLE user_notifications (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "user_id BIGINT NOT NULL, " +
+                                "category NVARCHAR(30) NOT NULL, " +
+                                "notification_type NVARCHAR(50) NOT NULL, " +
+                                "title NVARCHAR(150) NOT NULL, " +
+                                "message NVARCHAR(500) NOT NULL, " +
+                                "unique_key NVARCHAR(120) NOT NULL, " +
+                                "event_date DATE NULL, " +
+                                "is_read BIT NOT NULL DEFAULT (0), " +
+                                "read_at DATETIME2(0) NULL, " +
+                                "created_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "CONSTRAINT uq_user_notifications_unique_key UNIQUE (unique_key), " +
+                                "CONSTRAINT fk_user_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)" +
+                                ")"
+                );
             }
         } catch (Exception e) {
             System.err.println("schema pre-check failed: " + e.getMessage());

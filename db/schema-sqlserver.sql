@@ -284,6 +284,31 @@ BEGIN
 END
 GO
 
+
+-- USER_NOTIFICATIONS
+IF OBJECT_ID(N'dbo.user_notifications', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.user_notifications (
+        id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        category NVARCHAR(30) NOT NULL,
+        notification_type NVARCHAR(50) NOT NULL,
+        title NVARCHAR(150) NOT NULL,
+        message NVARCHAR(500) NOT NULL,
+        unique_key NVARCHAR(120) NOT NULL,
+        event_date DATE NULL,
+        is_read BIT NOT NULL CONSTRAINT df_user_notifications_is_read DEFAULT (0),
+        read_at DATETIME2(0) NULL,
+        created_at DATETIME2(0) NOT NULL CONSTRAINT df_user_notifications_created_at DEFAULT (SYSDATETIME()),
+        CONSTRAINT uq_user_notifications_unique_key UNIQUE (unique_key),
+        CONSTRAINT fk_user_notifications_user FOREIGN KEY (user_id) REFERENCES dbo.users(id)
+    );
+
+    CREATE INDEX idx_user_notifications_user ON dbo.user_notifications(user_id);
+    CREATE INDEX idx_user_notifications_category_read ON dbo.user_notifications(category, is_read, created_at);
+END
+GO
+
 UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240228719_raumuong.webp' WHERE name = N'Rau muống';
 UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773240627736_thitheo.webp' WHERE name = N'Thịt heo';
 UPDATE products SET image_url = N'/freshmart/assets/uploads/products/1773239892904_cathu_result.jsp.jpg' WHERE name = N'Cá thu';
