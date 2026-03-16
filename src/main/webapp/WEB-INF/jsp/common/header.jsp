@@ -107,38 +107,97 @@
                 </a>
 
                 <c:choose>
-                    <c:when test="${sessionScope.authUser != null}">
-                        <div class="dropdown">
-                            <button class="btn btn-light d-flex align-items-center gap-2 border-0 bg-transparent px-2" data-bs-toggle="dropdown">
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700; font-size: 0.8rem;">
-                                    ${sessionScope.authUser.username.substring(0,1).toUpperCase()}
+                   <c:when test="${sessionScope.authUser != null}">
+    <c:if test="${sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
+        <div class="dropdown me-2">
+            <a class="btn btn-link link-dark position-relative p-2" href="#" role="button" data-bs-toggle="dropdown"
+               aria-label="Thông báo subscription">
+                <i class="bi bi-bell fs-5"></i>
+                <c:if test="${not empty requestScope.subscriptionUnreadCount && requestScope.subscriptionUnreadCount > 0}">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                        ${requestScope.subscriptionUnreadCount}
+                    </span>
+                </c:if>
+            </a>
+
+            <div class="dropdown-menu dropdown-menu-end p-0 border-0 shadow-lg" style="min-width: 340px; border-radius: 12px;">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <strong>Thông báo subscription</strong>
+                    <a class="small text-decoration-none" href="${pageContext.request.contextPath}/subscription/notifications">
+                        Xem tất cả
+                    </a>
+                </div>
+
+                <c:choose>
+                    <c:when test="${empty requestScope.subscriptionHeaderNotifications}">
+                        <div class="p-3 text-muted small">Chưa có thông báo nào.</div>
+                    </c:when>
+                    <c:otherwise>
+                        <c:forEach items="${requestScope.subscriptionHeaderNotifications}" var="notify">
+                            <a class="dropdown-item py-3 border-bottom"
+                               href="${pageContext.request.contextPath}/subscription/upgrade">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-semibold"><c:out value="${notify.title}" /></div>
+                                        <div class="small text-muted"><c:out value="${notify.message}" /></div>
+                                    </div>
+                                    <c:if test="${not notify.read}">
+                                        <span class="badge text-bg-danger">Mới</span>
+                                    </c:if>
                                 </div>
-                                <div class="text-start d-none d-md-block">
-                                    <div class="fw-bold lh-1" style="font-size: 0.85rem;"><c:out value="${sessionScope.authUser.username}"/></div>
-                                    <div class="text-muted" style="font-size: 0.75rem;"><c:out value="${sessionScope.authUser.role}"/></div>
-                                </div>
-                                <i class="bi bi-chevron-down ms-1 text-muted" style="font-size: 0.75rem;"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 py-2" style="min-width: 200px; border-radius: 12px;">
-                                <li class="px-3 py-2 border-bottom mb-2">
-                                    <div class="fw-bold"><c:out value="${sessionScope.authUser.fullName}"/></div>
-                                    <div class="small text-muted"><c:out value="${sessionScope.authUser.email}"/></div>
-                                </li>
-                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/profile"><i class="bi bi-person me-2"></i>Account Settings</a></li>
-                                <c:if test="${sessionScope.authUser.role.toString() eq 'ADMIN'}">
-                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin"><i class="bi bi-shield-check me-2"></i>Admin Console</a></li>
-                                </c:if>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form action="${pageContext.request.contextPath}/logout" method="post">
-                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
-                                        <button type="submit" class="dropdown-item text-danger">
-                                            <i class="bi bi-box-arrow-right me-2"></i>Logout
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
+                            </a>
+                        </c:forEach>
+                    </c:otherwise>
+                </c:choose>
+            </div>
+        </div>
+    </c:if>
+
+    <div class="dropdown">
+        <button class="btn btn-light d-flex align-items-center gap-2 border-0 bg-transparent px-2" data-bs-toggle="dropdown">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700; font-size: 0.8rem;">
+                ${sessionScope.authUser.username.substring(0,1).toUpperCase()}
+            </div>
+            <div class="text-start d-none d-md-block">
+                <div class="fw-bold lh-1" style="font-size: 0.85rem;"><c:out value="${sessionScope.authUser.username}"/></div>
+                <div class="text-muted" style="font-size: 0.75rem;"><c:out value="${sessionScope.authUser.role}"/></div>
+            </div>
+            <i class="bi bi-chevron-down ms-1 text-muted" style="font-size: 0.75rem;"></i>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 py-2" style="min-width: 200px; border-radius: 12px;">
+            <li class="px-3 py-2 border-bottom mb-2">
+                <div class="fw-bold"><c:out value="${sessionScope.authUser.fullName}"/></div>
+                <div class="small text-muted"><c:out value="${sessionScope.authUser.email}"/></div>
+            </li>
+
+            <li>
+                <a class="dropdown-item" href="${pageContext.request.contextPath}/profile">
+                    <i class="bi bi-person me-2"></i>Account Settings
+                </a>
+            </li>
+
+            <c:if test="${sessionScope.authUser.role.toString() eq 'ADMIN'}">
+                <li>
+                    <a class="dropdown-item" href="${pageContext.request.contextPath}/admin">
+                        <i class="bi bi-shield-check me-2"></i>Admin Console
+                    </a>
+                </li>
+            </c:if>
+
+            <li><hr class="dropdown-divider"></li>
+
+            <li>
+                <form action="${pageContext.request.contextPath}/logout" method="post">
+                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                    <button type="submit" class="dropdown-item text-danger">
+                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</c:when>
                     </c:when>
                     <c:otherwise>
                         <a href="${pageContext.request.contextPath}/login" class="fm-btn btn-light border p-2 px-3 fs-6" style="background: white; border-radius: 8px;">Login</a>

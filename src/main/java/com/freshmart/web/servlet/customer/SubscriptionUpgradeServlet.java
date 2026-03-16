@@ -4,6 +4,7 @@ import com.freshmart.config.AppConstants;
 import com.freshmart.entity.SubscriptionPayment;
 import com.freshmart.entity.User;
 import com.freshmart.service.SubscriptionService;
+import com.freshmart.service.UserNotificationService;
 import com.freshmart.service.dto.SubscriptionStatusDTO;
 
 import jakarta.servlet.ServletException;
@@ -15,6 +16,7 @@ import java.io.IOException;
 public class SubscriptionUpgradeServlet extends HttpServlet {
 
     private final SubscriptionService subscriptionService = new SubscriptionService();
+    private final UserNotificationService notificationService = new UserNotificationService();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -28,6 +30,7 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
             // Compute subscription status for JSP banners
             SubscriptionStatusDTO subStatus = subscriptionService.computeStatus(fresh);
             req.setAttribute("subStatus", subStatus);
+            req.setAttribute("recentNotifications", notificationService.getRecentSubscriptionNotifications(fresh.getId(), 10));
         }
 
         req.setAttribute("planPrices", subscriptionService.getPlanPrices());
@@ -68,6 +71,7 @@ public class SubscriptionUpgradeServlet extends HttpServlet {
             // Also provide status on error path
             SubscriptionStatusDTO subStatus = subscriptionService.computeStatus(u);
             req.setAttribute("subStatus", subStatus);
+            req.setAttribute("recentNotifications", notificationService.getRecentSubscriptionNotifications(u.getId(), 10));
 
             req.getRequestDispatcher("/WEB-INF/jsp/common/upgrade.jsp").forward(req, resp);
         }
