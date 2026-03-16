@@ -1,626 +1,268 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-    <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-        <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
-            <c:set var="pageTitle" value="Admin - Subscriptions" />
-            <jsp:include page="/WEB-INF/jsp/common/header.jsp" />
+<c:set var="pageTitle" value="Subscription Engine | FreshMart Enterprise"/>
+<jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
-            <div class="fm-page-header">
-                <div>
-                    <h1 class="fm-page-title">Admin Subscription Management</h1>
-                    <p class="fm-page-subtitle">
-                        Quản lý user FREE/PRO, cấp/thu hồi thủ công, xem payment history, tier history và cấu hình hệ
-                        thống.
-                    </p>
+<div class="container-fluid px-4 py-4">
+    <!-- Header Section -->
+    <div class="fm-page-header mb-5 border-bottom pb-4">
+        <div>
+            <div class="fm-caption fw-bold text-primary mb-1 text-uppercase ls-wide">System Governance</div>
+            <h1 class="fm-page-title">Enterprise Subscription Engine</h1>
+            <p class="fm-page-subtitle">Mission-critical interface for tier management, billing audits, and global system configurations.</p>
+        </div>
+    </div>
+
+    <!-- Alert Messaging -->
+    <c:if test="${not empty successMessage}">
+        <div class="alert alert-success fm-surface border-0 shadow-sm mb-4 p-3 anim-fade-in">
+            <i class="bi bi-check-circle-fill me-2"></i> <c:out value="${successMessage}"/>
+        </div>
+    </c:if>
+    <c:if test="${not empty errorMessage}">
+        <div class="alert alert-danger fm-surface border-0 shadow-sm mb-4 p-3 anim-fade-in">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> <c:out value="${errorMessage}"/>
+        </div>
+    </c:if>
+
+    <div class="row g-4">
+        <!-- Configuration & Grant Panels -->
+        <div class="col-xl-5">
+            <div class="vstack gap-4">
+                <!-- Tier Authorization -->
+                <div class="fm-surface p-4 shadow-sm border-0">
+                    <h5 class="fm-h3 mb-4 text-dark"><i class="bi bi-shield-lock me-2 text-primary"></i> Tier Authorization</h5>
+                    <form method="post" action="${pageContext.request.contextPath}/admin/subscriptions">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                        <input type="hidden" name="action" value="grantPro"/>
+
+                        <div class="mb-4">
+                            <label class="fm-caption fw-bold d-block mb-2">Target Customer Entity</label>
+                            <select class="fm-form-control py-2" name="userId" required>
+                                <option value="">-- Audit User Identity --</option>
+                                <c:forEach items="${users}" var="u">
+                                    <option value="${u.id}">
+                                        <c:out value="${u.username}"/> | <c:out value="${u.fullName}"/> [${u.tier}]
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="fm-caption fw-bold d-block mb-2">Extended Duration (Days)</label>
+                                <input class="fm-form-control" type="number" name="days" min="1" value="30" required/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fm-caption fw-bold d-block mb-2">Operational Template</label>
+                                <select class="fm-form-control" onchange="this.form.days.value=this.value;">
+                                    <c:forEach items="${planPrices}" var="plan">
+                                        <option value="${plan.key}">${plan.key} Days Core</option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="fm-caption fw-bold d-block mb-2">Strategic Authorization Note</label>
+                            <textarea class="fm-form-control" name="note" rows="2" placeholder="Audit trail entry for this grant..."></textarea>
+                        </div>
+
+                        <button class="fm-btn fm-btn-primary w-100 py-3 fw-bold" type="submit">Initialize PRO Grant</button>
+                    </form>
+
+                    <hr class="my-5 border-secondary opacity-10">
+
+                    <!-- Revocation Engine -->
+                    <h5 class="fm-h3 mb-4 text-dark"><i class="bi bi-trash3 me-2 text-danger"></i> Access Revocation</h5>
+                    <form method="post" action="${pageContext.request.contextPath}/admin/subscriptions">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                        <input type="hidden" name="action" value="revokePro"/>
+                        
+                        <div class="mb-4">
+                            <label class="fm-caption fw-bold d-block mb-2">Subject for De-escalation</label>
+                            <select class="fm-form-control border-danger-subtle py-2" name="userId" required>
+                                <option value="">-- Identify PRO Subject --</option>
+                                <c:forEach items="${users}" var="u">
+                                    <c:if test="${u.tier.toString() eq 'PRO'}">
+                                        <option value="${u.id}">
+                                            <c:out value="${u.username}"/> | Exp: <c:out value="${u.expiredDate}"/>
+                                        </option>
+                                    </c:if>
+                                </c:forEach>
+                            </select>
+                        </div>
+                        <button class="fm-btn btn-danger w-100 py-3 fw-bold" type="submit" onclick="return confirm('Confirm permanent PRO access termination?');">
+                            Terminate Access
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Global Logic Constants -->
+                <div class="fm-surface p-4 shadow-sm border-0 bg-slate-900 text-white">
+                    <h5 class="fm-h3 mb-4 text-white"><i class="bi bi-gear-wide-connected me-2 text-primary"></i> Business Logic Tuner</h5>
+                    <form method="post" action="${pageContext.request.contextPath}/admin/subscriptions">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                        <input type="hidden" name="action" value="saveSettings"/>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="fm-caption fw-bold text-white-50 d-block mb-2">Low Stock Threshold</label>
+                                <input class="fm-form-control border-0 bg-slate-800 text-white" type="number" name="lowStockThreshold" value="${settings['low_stock_threshold']}" required/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fm-caption fw-bold text-white-50 d-block mb-2">Expiry Window (Days)</label>
+                                <input class="fm-form-control border-0 bg-slate-800 text-white" type="number" name="upcomingExpiryDays" value="${settings['upcoming_expiry_days']}" required/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fm-caption fw-bold text-white-50 d-block mb-2">Grace Period (Days)</label>
+                                <input class="fm-form-control border-0 bg-slate-800 text-white" type="number" name="subGracePeriodDays" value="${settings['subscription_grace_period_days']}" required/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fm-caption fw-bold text-white-50 d-block mb-2">Notification Lead</label>
+                                <input class="fm-form-control border-0 bg-slate-800 text-white" type="number" name="subNotifyDays" value="${settings['subscription_notify_days']}" required/>
+                            </div>
+                        </div>
+
+                        <div class="mt-5">
+                            <button class="fm-btn fm-btn-primary w-100 py-3 fw-bold" type="submit">Commit Engine Settings</button>
+                        </div>
+                    </form>
                 </div>
             </div>
+        </div>
 
-            <c:if test="${not empty successMessage}">
-                <div class="alert alert-success">
-                    <i class="bi bi-check-circle me-1"></i>
-                    <c:out value="${successMessage}" />
-                </div>
-            </c:if>
-
-            <c:if test="${not empty errorMessage}">
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle me-1"></i>
-                    <c:out value="${errorMessage}" />
-                </div>
-            </c:if>
-
-            <%--========Grant / Revoke PRO + System Config========--%>
-                <div class="row g-4 mb-4">
-                    <div class="col-lg-5">
-                        <div class="fm-surface padded h-100">
-                            <h5 class="mb-3">Cấp / gia hạn PRO cho user</h5>
-
-                            <form method="post" action="${pageContext.request.contextPath}/admin/subscriptions"
-                                class="row g-3">
-                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-                                <input type="hidden" name="action" value="grantPro" />
-
-                                <div class="col-12">
-                                    <label class="form-label">Chọn customer</label>
-                                    <select class="form-select" name="userId" required>
-                                        <option value="">-- Chọn user --</option>
-                                        <c:forEach items="${users}" var="u">
-                                            <option value="${u.id}">
-                                                <c:out value="${u.username}" />
-                                                <c:if test="${not empty u.fullName}"> -
-                                                    <c:out value="${u.fullName}" />
-                                                </c:if>
-                                                [
-                                                <c:out value="${u.tier}" />]
-                                                <c:if test="${not empty u.expiredDate}"> - exp:
-                                                    <c:out value="${u.expiredDate}" />
-                                                </c:if>
-                                            </option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Số ngày cộng thêm</label>
-                                    <input class="form-control" type="number" name="days" min="1" value="30" required />
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Gói tham chiếu</label>
-                                    <select class="form-select" onchange="this.form.days.value=this.value;">
-                                        <c:forEach items="${planPrices}" var="plan">
-                                            <option value="${plan.key}">
-                                                ${plan.key} ngày -
-                                                <fmt:formatNumber value="${plan.value}" type="number"
-                                                    maxFractionDigits="0" /> đ
-                                            </option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-
-                                <div class="col-12">
-                                    <label class="form-label">Ghi chú</label>
-                                    <textarea class="form-control" name="note" rows="3"
-                                        placeholder="Ví dụ: Admin grant PRO để demo hoặc hỗ trợ khách hàng"></textarea>
-                                </div>
-
-                                <div class="col-12">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="bi bi-lightning-charge me-1"></i>
-                                        Cấp / gia hạn PRO
-                                    </button>
-                                </div>
-                            </form>
-
-                            <hr class="fm-divider" />
-
-                            <%-- Revoke PRO --%>
-                                <h5 class="mb-3">Thu hồi PRO</h5>
-                                <form method="post" action="${pageContext.request.contextPath}/admin/subscriptions"
-                                    class="row g-3">
-                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-                                    <input type="hidden" name="action" value="revokePro" />
-
-                                    <div class="col-12">
-                                        <label class="form-label">Chọn user PRO cần thu hồi</label>
-                                        <select class="form-select" name="userId" required>
-                                            <option value="">-- Chọn user --</option>
-                                            <c:forEach items="${users}" var="u">
-                                                <c:if test="${u.tier.toString() eq 'PRO'}">
-                                                    <option value="${u.id}">
-                                                        <c:out value="${u.username}" />
-                                                        <c:if test="${not empty u.fullName}"> -
-                                                            <c:out value="${u.fullName}" />
-                                                        </c:if>
-                                                        [PRO - exp:
-                                                        <c:out value="${u.expiredDate}" />]
-                                                    </option>
-                                                </c:if>
-                                            </c:forEach>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-12">
-                                        <label class="form-label">Lý do thu hồi</label>
-                                        <input class="form-control" type="text" name="note"
-                                            placeholder="Ví dụ: Vi phạm chính sách" />
-                                    </div>
-
-                                    <div class="col-12">
-                                        <button class="btn btn-danger" type="submit"
-                                            onclick="return confirm('Bạn có chắc muốn thu hồi PRO không?');">
-                                            <i class="bi bi-x-circle me-1"></i>
-                                            Thu hồi PRO
-                                        </button>
-                                    </div>
-                                </form>
-
-                                <hr class="fm-divider" />
-
-                                <h6 class="mb-2">Bảng giá tham chiếu</h6>
-                                <div class="row g-2">
-                                    <c:forEach items="${planPrices}" var="plan">
-                                        <div class="col-md-4">
-                                            <div class="border rounded-3 p-3 text-center bg-light h-100">
-                                                <div class="fw-bold">${plan.key} ngày</div>
-                                                <div class="text-success fw-semibold">
-                                                    <fmt:formatNumber value="${plan.value}" type="number"
-                                                        maxFractionDigits="0" /> đ
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </c:forEach>
-                                </div>
-                        </div>
+        <!-- System Ledgers -->
+        <div class="col-xl-7">
+            <div class="vstack gap-4">
+                <!-- User Entitlements Ledger -->
+                <div class="fm-surface p-0 shadow-sm border-0 overflow-hidden">
+                    <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+                        <h5 class="fm-h3 mb-0 text-dark">Entitlements Ledger</h5>
+                        <input type="text" id="userSearchInput" class="fm-form-control py-1 px-3 w-Auto" style="min-width: 250px;" placeholder="Filter Identities..." onkeyup="filterUserTable()"/>
                     </div>
-
-                    <div class="col-lg-7">
-                        <div class="fm-surface padded h-100">
-                            <h5 class="mb-3">Cấu hình hệ thống</h5>
-
-                            <form method="post" action="${pageContext.request.contextPath}/admin/subscriptions"
-                                class="row g-3">
-                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-                                <input type="hidden" name="action" value="saveSettings" />
-
-                                <div class="col-12">
-                                    <h6 class="text-muted mb-0">Inventory</h6>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Low stock threshold</label>
-                                    <input class="form-control" type="number" min="0" name="lowStockThreshold"
-                                        value="${settings['low_stock_threshold']}" required />
-                                    <div class="form-text">Ngưỡng cảnh báo tồn kho thấp.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Upcoming expiry days</label>
-                                    <input class="form-control" type="number" min="0" name="upcomingExpiryDays"
-                                        value="${settings['upcoming_expiry_days']}" required />
-                                    <div class="form-text">Số ngày để cảnh báo cận hạn.</div>
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">History days</label>
-                                    <input class="form-control" type="number" min="1" name="replenishHistoryDays"
-                                        value="${settings['replenish_history_days']}" required />
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Lead days</label>
-                                    <input class="form-control" type="number" min="0" name="replenishLeadDays"
-                                        value="${settings['replenish_lead_days']}" required />
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Buffer days</label>
-                                    <input class="form-control" type="number" min="0" name="replenishBufferDays"
-                                        value="${settings['replenish_buffer_days']}" required />
-                                </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">Safety days</label>
-                                    <input class="form-control" type="number" min="0" name="replenishSafetyDays"
-                                        value="${settings['replenish_safety_days']}" required />
-                                </div>
-
-                                <div class="col-12">
-                                    <hr class="fm-divider" />
-                                    <h6 class="text-muted mb-0">Subscription</h6>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Cảnh báo trước hết hạn (ngày)</label>
-                                    <input class="form-control" type="number" min="0" name="subNotifyDays"
-                                        value="${settings['subscription_notify_days']}" required />
-                                    <div class="form-text">Hiển thị cảnh báo khi gói PRO sắp hết hạn.</div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label class="form-label">Grace period (ngày)</label>
-                                    <input class="form-control" type="number" min="0" name="subGracePeriodDays"
-                                        value="${settings['subscription_grace_period_days']}" required />
-                                    <div class="form-text">Số ngày gia hạn thêm sau khi hết hạn.</div>
-                                </div>
-
-                                <div class="col-12">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="bi bi-save me-1"></i>
-                                        Lưu cấu hình
-                                    </button>
-                                </div>
-                            </form>
-
-                            <hr class="fm-divider" />
-
-                            <div class="alert alert-info mb-0">
-                                Các cấu hình này được dùng cho:
-                                <b>Inventory report</b> (ngưỡng tồn kho thấp, cảnh báo cận hạn),
-                                <b>PRO replenishment</b> (history / lead / buffer / safety)
-                                và <b>Subscription</b> (cảnh báo hết hạn, grace period).
-                            </div>
-                        </div>
+                    <div class="table-responsive">
+                        <table class="table fm-data-table align-middle mb-0" id="userTable">
+                            <thead class="bg-white">
+                                <tr>
+                                    <th class="ps-4">Identity</th>
+                                    <th>Strategic Tier</th>
+                                    <th class="text-center">Lifecycle Status</th>
+                                    <th class="text-end pe-4">Expiry</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach items="${users}" var="u">
+                                    <c:set var="uStatus" value="${statusMap[u.id]}"/>
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="fw-bold">${u.username}</div>
+                                            <div class="small opacity-50">${u.fullName}</div>
+                                        </td>
+                                        <td>
+                                            <c:choose>
+                                                <c:when test="${u.tier eq 'PRO'}">
+                                                    <span class="badge bg-indigo-100 text-indigo-600 border-0 px-3 py-1">PRO-TIER</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="badge bg-slate-100 text-slate-500 border-0 px-3 py-1">FREE-CORE</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td class="text-center">
+                                            <c:choose>
+                                                <c:when test="${uStatus.status eq 'PRO_ACTIVE'}">
+                                                    <span class="fm-status-badge available px-3">ACTIVE</span>
+                                                </c:when>
+                                                <c:when test="${uStatus.status eq 'PRO_EXPIRING_SOON'}">
+                                                    <span class="fm-status-badge partially-available px-3">CRITICAL-EXP</span>
+                                                </c:when>
+                                                <c:when test="${uStatus.status eq 'PRO_EXPIRED_IN_GRACE'}">
+                                                    <span class="fm-status-badge soon px-3">GRACE-PERIOD</span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="fm-status-badge disposed px-3 opacity-50">DORMANT</span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </td>
+                                        <td class="text-end pe-4 font-monospace small">
+                                            <c:out value="${u.expiredDate != null ? u.expiredDate : '-'}"/>
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <%--========User List with Search========--%>
-                    <div class="fm-surface padded mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="mb-0">Danh sách customer subscription</h5>
-                            <div class="d-flex gap-2 align-items-center">
-                                <input type="text" id="userSearchInput" class="form-control form-control-sm"
-                                    style="width: 220px;" placeholder="Tìm username / tên..."
-                                    onkeyup="filterUserTable()" />
-                                <span class="text-muted small">
-                                    <c:choose>
-                                        <c:when test="${empty users}">0 users</c:when>
-                                        <c:otherwise>${users.size()} users</c:otherwise>
-                                    </c:choose>
-                                </span>
-                            </div>
-                        </div>
-
-                        <c:choose>
-                            <c:when test="${empty users}">
-                                <div class="alert alert-light border mb-0">Chưa có customer nào.</div>
-                            </c:when>
-                            <c:otherwise>
-                                <div class="table-responsive">
-                                    <table class="table fm-table table-striped align-middle" id="userTable">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Username</th>
-                                                <th>Full name</th>
-                                                <th>Tier</th>
-                                                <th>Expired date</th>
-                                                <th>Remaining days</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <c:forEach items="${users}" var="u">
-                                                <tr>
-                                                    <td>
-                                                        <c:out value="${u.id}" />
-                                                    </td>
-                                                    <td>
-                                                        <c:out value="${u.username}" />
-                                                    </td>
-                                                    <td>
-                                                        <c:choose>
-                                                            <c:when test="${not empty u.fullName}">
-                                                                <c:out value="${u.fullName}" />
-                                                            </c:when>
-                                                            <c:otherwise>-</c:otherwise>
-                                                        </c:choose>
-                                                    </td>
-                                                    <td>
-                                                        <c:choose>
-                                                            <c:when test="${u.tier.toString() eq 'PRO'}">
-                                                                <span class="badge text-bg-success">PRO</span>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <span class="badge text-bg-secondary">FREE</span>
-                                                            </c:otherwise>
-                                                        </c:choose>
-                                                    </td>
-                                                    <td>
-                                                        <c:choose>
-                                                            <c:when test="${not empty u.expiredDate}">
-                                                                <c:out value="${u.expiredDate}" />
-                                                            </c:when>
-                                                            <c:otherwise>-</c:otherwise>
-                                                        </c:choose>
-                                                    </td>
-                                                    <td>
-                                                        <c:choose>
-                                                            <c:when test="${u.proActive}">
-                                                                ${u.remainingProDays}
-                                                            </c:when>
-                                                            <c:otherwise>0</c:otherwise>
-                                                        </c:choose>
-                                                    </td>
-                                                    <td>
-                                                        <c:set var="uStatus" value="${statusMap[u.id]}" />
-                                                        <c:choose>
-                                                            <c:when
-                                                                test="${not empty uStatus && uStatus.status eq 'PRO_ACTIVE'}">
-                                                                <span class="badge text-bg-success">Active</span>
-                                                            </c:when>
-                                                            <c:when
-                                                                test="${not empty uStatus && uStatus.status eq 'PRO_EXPIRING_SOON'}">
-                                                                <span class="badge text-bg-warning">Expiring Soon</span>
-                                                                <br /><small class="text-muted">còn
-                                                                    ${uStatus.daysRemaining} ngày</small>
-                                                            </c:when>
-                                                            <c:when
-                                                                test="${not empty uStatus && uStatus.status eq 'PRO_EXPIRED_IN_GRACE'}">
-                                                                <span class="badge text-bg-danger">In Grace</span>
-                                                                <br /><small class="text-muted">grace còn
-                                                                    ${uStatus.graceRemaining} ngày</small>
-                                                            </c:when>
-                                                            <c:when
-                                                                test="${not empty uStatus && uStatus.status eq 'PRO_EXPIRED'}">
-                                                                <span class="badge text-bg-dark">Expired</span>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <span class="text-muted">FREE</span>
-                                                            </c:otherwise>
-                                                        </c:choose>
-                                                    </td>
-                                                </tr>
-                                            </c:forEach>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </c:otherwise>
-                        </c:choose>
+                <!-- Strategic Pivot: Payment Audit -->
+                <div class="fm-surface p-0 shadow-sm border-0 overflow-hidden">
+                    <div class="p-4 border-bottom bg-slate-50">
+                        <h5 class="fm-h3 mb-0 text-dark">Strategic Settlement Audit</h5>
+                        <p class="small text-muted mb-0">Record of all financial transitions and tier conversions.</p>
                     </div>
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table fm-data-table align-middle mb-0">
+                            <thead class="bg-white sticky-top">
+                                <tr>
+                                    <th class="ps-4">Settlement ID</th>
+                                    <th>Subject</th>
+                                    <th>Value (₫)</th>
+                                    <th>Type</th>
+                                    <th class="text-end pe-4">Committed At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <c:forEach items="${payments}" var="p">
+                                    <tr>
+                                        <td class="ps-4">
+                                            <div class="font-monospace fw-bold text-primary">${p.paymentCode}</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-medium">${p.user.username}</div>
+                                            <div class="small opacity-50">${p.planName}</div>
+                                        </td>
+                                        <td class="fw-bold">
+                                            <fmt:formatNumber value="${p.amount}" type="number"/>
+                                        </td>
+                                        <td>
+                                            <span class="badge ${p.paymentStatus eq 'SUCCESS' ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'} border-0">
+                                                ${p.paymentStatus}
+                                            </span>
+                                        </td>
+                                        <td class="text-end pe-4 small text-muted">
+                                            ${p.createdAt}
+                                        </td>
+                                    </tr>
+                                </c:forEach>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                    <%--========Payment History========--%>
-                        <div class="fm-surface padded mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="mb-0">Subscription payment history</h5>
-                                <span class="text-muted small">
-                                    <c:choose>
-                                        <c:when test="${empty payments}">0 payments</c:when>
-                                        <c:otherwise>${payments.size()} payments</c:otherwise>
-                                    </c:choose>
-                                </span>
-                            </div>
+<script>
+    function filterUserTable() {
+        let input = document.getElementById('userSearchInput');
+        let filter = input.value.toUpperCase();
+        let table = document.getElementById('userTable');
+        let tr = table.getElementsByTagName('tr');
+        for (let i = 1; i < tr.length; i++) {
+            let cells = tr[i].getElementsByTagName('td');
+            let match = false;
+            for(let j=0; j<cells.length; j++) {
+                if (cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
+                    match = true; break;
+                }
+            }
+            tr[i].style.display = match ? "" : "none";
+        }
+    }
+</script>
 
-                            <c:choose>
-                                <c:when test="${empty payments}">
-                                    <div class="alert alert-light border mb-0">Chưa có payment history.</div>
-                                </c:when>
-                                <c:otherwise>
-                                    <div class="table-responsive">
-                                        <table class="table fm-table table-striped align-middle">
-                                            <thead>
-                                                <tr>
-                                                    <th>ID</th>
-                                                    <th>Payment code</th>
-                                                    <th>User</th>
-                                                    <th>Plan</th>
-                                                    <th>Days</th>
-                                                    <th>Amount</th>
-                                                    <th>Method</th>
-                                                    <th>Status</th>
-                                                    <th>Start</th>
-                                                    <th>End</th>
-                                                    <th>Created at</th>
-                                                    <th>Note</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <c:forEach items="${payments}" var="p">
-                                                    <tr>
-                                                        <td>
-                                                            <c:out value="${p.id}" />
-                                                        </td>
-                                                        <td><span class="fw-semibold">
-                                                                <c:out value="${p.paymentCode}" />
-                                                            </span></td>
-                                                        <td>
-                                                            <c:out value="${p.user.username}" />
-                                                            <c:if test="${not empty p.user.fullName}">
-                                                                <br />
-                                                                <span class="text-muted small">
-                                                                    <c:out value="${p.user.fullName}" />
-                                                                </span>
-                                                            </c:if>
-                                                        </td>
-                                                        <td>
-                                                            <c:out value="${p.planName}" />
-                                                        </td>
-                                                        <td>
-                                                            <c:out value="${p.planDays}" />
-                                                        </td>
-                                                        <td>
-                                                            <fmt:formatNumber value="${p.amount}" type="number"
-                                                                maxFractionDigits="0" /> đ
-                                                        </td>
-                                                        <td>
-                                                            <c:out value="${p.paymentMethod}" />
-                                                        </td>
-                                                        <td>
-                                                            <c:choose>
-                                                                <c:when test="${p.paymentStatus eq 'SUCCESS'}">
-                                                                    <span class="badge text-bg-success">SUCCESS</span>
-                                                                </c:when>
-                                                                <c:otherwise>
-                                                                    <span class="badge text-bg-secondary">
-                                                                        <c:out value="${p.paymentStatus}" />
-                                                                    </span>
-                                                                </c:otherwise>
-                                                            </c:choose>
-                                                        </td>
-                                                        <td>
-                                                            <c:out value="${p.startDate}" />
-                                                        </td>
-                                                        <td>
-                                                            <c:out value="${p.endDate}" />
-                                                        </td>
-                                                        <td>
-                                                            <c:out value="${p.createdAt}" />
-                                                        </td>
-                                                        <td>
-                                                            <c:choose>
-                                                                <c:when test="${not empty p.note}">
-                                                                    <c:out value="${p.note}" />
-                                                                </c:when>
-                                                                <c:otherwise>-</c:otherwise>
-                                                            </c:choose>
-                                                        </td>
-                                                    </tr>
-                                                </c:forEach>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </c:otherwise>
-                            </c:choose>
-                        </div>
-
-                        <%--========Tier Change History (NEW)========--%>
-                            <div class="fm-surface padded">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0">
-                                        <i class="bi bi-clock-history me-1"></i>
-                                        Lịch sử thay đổi tier (tất cả user)
-                                    </h5>
-                                    <span class="text-muted small">
-                                        <c:choose>
-                                            <c:when test="${empty tierHistory}">0 thay đổi</c:when>
-                                            <c:otherwise>${tierHistory.size()} thay đổi</c:otherwise>
-                                        </c:choose>
-                                    </span>
-                                </div>
-
-                                <c:choose>
-                                    <c:when test="${empty tierHistory}">
-                                        <div class="alert alert-light border mb-0">Chưa có tier history.</div>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <div class="table-responsive">
-                                            <table class="table fm-table table-striped align-middle">
-                                                <thead>
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>User</th>
-                                                        <th>Tier cũ</th>
-                                                        <th></th>
-                                                        <th>Tier mới</th>
-                                                        <th>Hạn cũ</th>
-                                                        <th>Hạn mới</th>
-                                                        <th>Loại</th>
-                                                        <th>Ghi chú</th>
-                                                        <th>Thời gian</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <c:forEach items="${tierHistory}" var="h">
-                                                        <tr>
-                                                            <td>
-                                                                <c:out value="${h.id}" />
-                                                            </td>
-                                                            <td>
-                                                                <c:out value="${h.user.username}" />
-                                                                <c:if test="${not empty h.user.fullName}">
-                                                                    <br />
-                                                                    <span class="text-muted small">
-                                                                        <c:out value="${h.user.fullName}" />
-                                                                    </span>
-                                                                </c:if>
-                                                            </td>
-                                                            <td>
-                                                                <c:choose>
-                                                                    <c:when test="${h.oldTier.toString() eq 'PRO'}">
-                                                                        <span class="badge text-bg-success">PRO</span>
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                        <span
-                                                                            class="badge text-bg-secondary">FREE</span>
-                                                                    </c:otherwise>
-                                                                </c:choose>
-                                                            </td>
-                                                            <td><i class="bi bi-arrow-right"></i></td>
-                                                            <td>
-                                                                <c:choose>
-                                                                    <c:when test="${h.newTier.toString() eq 'PRO'}">
-                                                                        <span class="badge text-bg-success">PRO</span>
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                        <span
-                                                                            class="badge text-bg-secondary">FREE</span>
-                                                                    </c:otherwise>
-                                                                </c:choose>
-                                                            </td>
-                                                            <td>
-                                                                <c:choose>
-                                                                    <c:when test="${not empty h.oldExpiredDate}">
-                                                                        <c:out value="${h.oldExpiredDate}" />
-                                                                    </c:when>
-                                                                    <c:otherwise>-</c:otherwise>
-                                                                </c:choose>
-                                                            </td>
-                                                            <td>
-                                                                <c:choose>
-                                                                    <c:when test="${not empty h.newExpiredDate}">
-                                                                        <c:out value="${h.newExpiredDate}" />
-                                                                    </c:when>
-                                                                    <c:otherwise>-</c:otherwise>
-                                                                </c:choose>
-                                                            </td>
-                                                            <td>
-                                                                <c:choose>
-                                                                    <c:when test="${h.changeType eq 'UPGRADE'}">
-                                                                        <span
-                                                                            class="badge text-bg-primary">UPGRADE</span>
-                                                                    </c:when>
-                                                                    <c:when test="${h.changeType eq 'RENEW'}">
-                                                                        <span class="badge text-bg-info">RENEW</span>
-                                                                    </c:when>
-                                                                    <c:when test="${h.changeType eq 'EXPIRE'}">
-                                                                        <span class="badge text-bg-danger">EXPIRE</span>
-                                                                    </c:when>
-                                                                    <c:when test="${h.changeType eq 'ADMIN_GRANT'}">
-                                                                        <span class="badge text-bg-warning">ADMIN
-                                                                            GRANT</span>
-                                                                    </c:when>
-                                                                    <c:when test="${h.changeType eq 'ADMIN_REVOKE'}">
-                                                                        <span class="badge text-bg-dark">ADMIN
-                                                                            REVOKE</span>
-                                                                    </c:when>
-                                                                    <c:otherwise>
-                                                                        <span class="badge text-bg-secondary">
-                                                                            <c:out value="${h.changeType}" />
-                                                                        </span>
-                                                                    </c:otherwise>
-                                                                </c:choose>
-                                                            </td>
-                                                            <td>
-                                                                <c:choose>
-                                                                    <c:when test="${not empty h.note}">
-                                                                        <c:out value="${h.note}" />
-                                                                    </c:when>
-                                                                    <c:otherwise>-</c:otherwise>
-                                                                </c:choose>
-                                                            </td>
-                                                            <td>
-                                                                <c:out value="${h.createdAt}" />
-                                                            </td>
-                                                        </tr>
-                                                    </c:forEach>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </c:otherwise>
-                                </c:choose>
-                            </div>
-
-                            <%--========Search JS========--%>
-                                <script>
-                                    function filterUserTable() {
-                                        var input = document.getElementById('userSearchInput');
-                                        if (!input) return;
-                                        var filter = input.value.toUpperCase();
-                                        var table = document.getElementById('userTable');
-                                        if (!table) return;
-                                        var rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
-                                        for (var i = 0; i < rows.length; i++) {
-                                            var cells = rows[i].getElementsByTagName('td');
-                                            var match = false;
-                                            for (var j = 0; j < cells.length; j++) {
-                                                if (cells[j].textContent.toUpperCase().indexOf(filter) > -1) {
-                                                    match = true;
-                                                    break;
-                                                }
-                                            }
-                                            rows[i].style.display = match ? '' : 'none';
-                                        }
-                                    }
-                                </script>
-
-                                <jsp:include page="/WEB-INF/jsp/common/footer.jsp" />
+<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

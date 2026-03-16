@@ -1,461 +1,191 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
-<c:set var="pageTitle" value="Inventory View"/>
+<c:set var="pageTitle" value="Real-time Inventory Ledger"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
-<h3>Xem Tồn Kho (Inventory by Lot)</h3>
-
-<c:if test="${not empty successMessage}">
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <c:out value="${successMessage}"/>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-</c:if>
-
-<div class="row mb-3">
-    <div class="col-12">
-        <form method="get" action="${pageContext.request.contextPath}/staff/inventory" class="row g-2">
-
-            <div class="col-md-3">
-                <label class="form-label">Sản phẩm</label>
-                <select class="form-select" name="productId">
-                    <option value="">-- Tất cả sản phẩm --</option>
-                    <c:forEach items="${products}" var="p">
-                        <option value="${p.id}" ${filter != null && filter.productId != null && filter.productId == p.id ? 'selected="selected"' : ''}>
-                            <c:out value="${p.name}"/>${!p.active ? ' - ngừng bán' : ''} (ID: ${p.id})
-                        </option>
-                    </c:forEach>
-                </select>
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Nhà cung cấp</label>
-                <select class="form-select" name="supplierId">
-                    <option value="">-- Tất cả nhà cung cấp --</option>
-                    <c:forEach items="${suppliers}" var="s">
-                        <option value="${s.id}" ${filter != null && filter.supplierId != null && filter.supplierId == s.id ? 'selected="selected"' : ''}>
-                            <c:out value="${s.name}"/>
-                        </option>
-                    </c:forEach>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Trạng thái</label>
-                <select class="form-select" name="status">
-                    <option value="">-- Tất cả --</option>
-                    <option value="AVAILABLE" ${filter != null && filter.status == 'AVAILABLE' ? 'selected="selected"' : ''}>Khả dụng</option>
-                    <option value="EXPIRING" ${filter != null && filter.status == 'EXPIRING' ? 'selected="selected"' : ''}>Sắp hết hạn</option>
-                    <option value="EXPIRED" ${filter != null && filter.status == 'EXPIRED' ? 'selected="selected"' : ''}>Hết hạn</option>
-                    <option value="CONSUMED" ${filter != null && filter.status == 'CONSUMED' ? 'selected="selected"' : ''}>Đã dùng hết</option>
-                </select>
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Tồn từ</label>
-                <input type="number" class="form-control" name="minQtyLeft"
-                       value="${filter != null ? filter.minQtyLeft : ''}" min="0">
-            </div>
-
-            <div class="col-md-2">
-                <label class="form-label">Tồn đến</label>
-                <input type="number" class="form-control" name="maxQtyLeft"
-                       value="${filter != null ? filter.maxQtyLeft : ''}" min="0">
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Ngày nhập từ</label>
-                <input type="date" class="form-control" name="importFrom"
-                       value="${filter != null ? filter.importFrom : ''}">
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">Ngày nhập đến</label>
-                <input type="date" class="form-control" name="importTo"
-                       value="${filter != null ? filter.importTo : ''}">
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">HSD từ</label>
-                <input type="date" class="form-control" name="expiryFrom"
-                       value="${filter != null ? filter.expiryFrom : ''}">
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label">HSD đến</label>
-                <input type="date" class="form-control" name="expiryTo"
-                       value="${filter != null ? filter.expiryTo : ''}">
-            </div>
-
-            <div class="col-md-12 d-flex align-items-end gap-2">
-                <button class="btn btn-primary" type="submit">Lọc dữ liệu</button>
-                <a class="btn btn-outline-secondary" href="${pageContext.request.contextPath}/staff/inventory">Reset</a>
-                <a class="btn btn-outline-primary" href="${pageContext.request.contextPath}/staff/import-lot">+ Nhập lô</a>
-            </div>
-        </form>
-    </div>
-</div>
-
-<c:if test="${not empty errorMessage}">
-    <div class="alert alert-danger">
-        <c:out value="${errorMessage}"/>
-    </div>
-</c:if>
-
-<c:if test="${not empty filteredLots}">
-    <div class="card mb-3">
-        <div class="card-header">
-            Kết quả lọc lô hàng (${filteredCount} lô)
+<div class="container-fluid px-4 py-4">
+    <!-- Page Header & Filter Trigger -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <h1 class="fm-h1 mb-1">Inventory Management</h1>
+            <p class="fm-text-secondary mb-0">Multi-batch FEFO tracking and supply chain visibility.</p>
         </div>
-        <div class="card-body">
-            <table class="table table-sm table-bordered align-middle">
-                <thead>
+        <div class="d-flex gap-2">
+            <button class="fm-btn btn-light border small" data-bs-toggle="collapse" data-bs-target="#filterPanel">
+                <i class="bi bi-funnel me-2"></i>Advanced Filters
+            </button>
+            <a href="${pageContext.request.contextPath}/staff/import-lot" class="fm-btn fm-btn-primary small">
+                <i class="bi bi-plus-lg me-2"></i>Import Batch
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="collapse ${filter != null ? 'show' : ''} mb-4" id="filterPanel">
+        <div class="fm-surface p-4">
+            <form method="get" action="${pageContext.request.contextPath}/staff/inventory" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small">Product Master</label>
+                    <select class="fm-form-control" name="productId">
+                        <option value="">All Products</option>
+                        <c:forEach items="${products}" var="p">
+                            <option value="${p.id}" ${filter.productId == p.id ? 'selected' : ''}>
+                                <c:out value="${p.name}"/> (${p.id})
+                            </option>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold small">Supplier Origin</label>
+                    <select class="fm-form-control" name="supplierId">
+                        <option value="">All Suppliers</option>
+                        <c:forEach items="${suppliers}" var="s">
+                            <option value="${s.id}" ${filter.supplierId == s.id ? 'selected' : ''}>
+                                <c:out value="${s.name}"/>
+                            </option>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small">Audit Status</label>
+                    <select class="fm-form-control" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="AVAILABLE" ${filter.status == 'AVAILABLE' ? 'selected' : ''}>Active / Available</option>
+                        <option value="EXPIRING" ${filter.status == 'EXPIRING' ? 'selected' : ''}>Critical Expiry</option>
+                        <option value="EXPIRED" ${filter.status == 'EXPIRED' ? 'selected' : ''}>Expired (Void)</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold small">Min Qty</label>
+                    <input type="number" class="fm-form-control" name="minQtyLeft" value="${filter.minQtyLeft}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end gap-2">
+                    <button type="submit" class="fm-btn fm-btn-primary w-100">Apply</button>
+                    <a href="${pageContext.request.contextPath}/staff/inventory" class="fm-btn btn-light border">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <c:if test="${not empty successMessage}">
+        <div class="alert alert-success border-0 bg-success-subtle mb-4"><i class="bi bi-check-circle me-2"></i><c:out value="${successMessage}"/></div>
+    </c:if>
+    <c:if test="${not empty errorMessage}">
+        <div class="alert alert-danger border-0 bg-danger-subtle mb-4"><i class="bi bi-exclamation-octagon me-2"></i><c:out value="${errorMessage}"/></div>
+    </c:if>
+
+    <!-- Detailed Ledger Table -->
+    <div class="fm-surface overflow-hidden">
+        <table class="fm-data-table">
+            <thead>
                 <tr>
-                    <th>Lô ID</th>
-                    <th>Sản phẩm</th>
-                    <th>Nhà cung cấp</th>
-                    <th>Ngày nhập</th>
-                    <th>HSD</th>
-                    <th>Nhập</th>
-                    <th>Còn lại</th>
-                    <th>Đã dùng</th>
-                    <th>Giá nhập</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
+                    <th>Batch ID</th>
+                    <th>Product & Logic</th>
+                    <th>Supplier</th>
+                    <th>Engagement Date</th>
+                    <th>Expiry (FEFO)</th>
+                    <th class="text-end">Initial</th>
+                    <th class="text-end">Current</th>
+                    <th>Compliance</th>
+                    <th class="text-end">Actions</th>
                 </tr>
-                </thead>
-                <tbody>
+            </thead>
+            <tbody>
+                <c:if test="${empty filteredLots}">
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="fm-text-muted mb-2"><i class="bi bi-inbox fs-1 opacity-25"></i></div>
+                            <div class="fw-bold">No active batches found</div>
+                            <div class="small text-muted">Try adjusting your filters or import new inventory.</div>
+                        </td>
+                    </tr>
+                </c:if>
                 <c:forEach items="${filteredLots}" var="lot">
-                    <c:set var="status" value="AVAILABLE"/>
-                    <c:if test="${lot.expiryDate lt today}">
-                        <c:set var="status" value="EXPIRED"/>
-                    </c:if>
-                    <c:if test="${lot.qtyLeft == 0}">
-                        <c:set var="status" value="CONSUMED"/>
-                    </c:if>
-                    <c:if test="${lot.qtyLeft > 0 && lot.expiryDate ge today && (lot.expiryDate.toEpochDay() - today.toEpochDay()) <= 7}">
-                        <c:set var="status" value="EXPIRING"/>
-                    </c:if>
-
+                    <c:set var="isExp" value="${lot.expiryDate lt today}"/>
+                    <c:set var="isCrit" value="${lot.qtyLeft > 0 && lot.expiryDate ge today && (lot.expiryDate.toEpochDay() - today.toEpochDay()) <= 7}"/>
+                    <c:set var="isCons" value="${lot.qtyLeft == 0}"/>
+                    
                     <tr>
-                        <td><c:out value="${lot.id}"/></td>
-                        <td><c:out value="${lot.product.name}"/></td>
-                        <td><c:out value="${lot.supplier != null ? lot.supplier.name : '-'}"/></td>
-                        <td><c:out value="${lot.importDate}"/></td>
-                        <td><c:out value="${lot.expiryDate}"/></td>
-                        <td><c:out value="${lot.qtyIn}"/></td>
-                        <td><strong><c:out value="${lot.qtyLeft}"/></strong></td>
-                        <td><c:out value="${lot.qtyIn - lot.qtyLeft}"/></td>
-                        <td><c:out value="${lot.importPrice}"/></td>
+                        <td><span class="font-monospace text-muted small">#LOT-${lot.id}</span></td>
+                        <td>
+                            <div class="fw-bold"><c:out value="${lot.product.name}"/></div>
+                            <div class="fm-caption fw-semibold text-primary">FEFO PROTECTED</div>
+                        </td>
+                        <td class="small"><c:out value="${lot.supplier != null ? lot.supplier.name : '-'}"/></td>
+                        <td class="small text-muted"><c:out value="${lot.importDate}"/></td>
+                        <td>
+                            <div class="fw-semibold ${isExp ? 'text-danger' : (isCrit ? 'text-warning' : '')}">
+                                <c:out value="${lot.expiryDate}"/>
+                            </div>
+                        </td>
+                        <td class="text-end small"><c:out value="${lot.qtyIn}"/></td>
+                        <td class="text-end fw-bold"><c:out value="${lot.qtyLeft}"/></td>
                         <td>
                             <c:choose>
-                                <c:when test="${status == 'EXPIRED'}">
-                                    <span class="badge bg-danger">Hết hạn</span>
+                                <c:when test="${isExp}">
+                                    <span class="fm-status-badge expired"><i class="bi bi-x-circle"></i> Expired</span>
                                 </c:when>
-                                <c:when test="${status == 'CONSUMED'}">
-                                    <span class="badge bg-secondary">Đã dùng hết</span>
+                                <c:when test="${isCons}">
+                                    <span class="fm-status-badge" style="background:#f1f5f9; color:#475569;">Consumed</span>
                                 </c:when>
-                                <c:when test="${status == 'EXPIRING'}">
-                                    <span class="badge bg-warning text-dark">Sắp hết hạn</span>
+                                <c:when test="${isCrit}">
+                                    <span class="fm-status-badge expiring"><i class="bi bi-clock-history"></i> Priority Sell</span>
                                 </c:when>
                                 <c:otherwise>
-                                    <span class="badge bg-success">Khả dụng</span>
+                                    <span class="fm-status-badge available"><i class="bi bi-check2"></i> Optimized</span>
                                 </c:otherwise>
                             </c:choose>
                         </td>
-                        <td>
-                            <a href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}" class="btn btn-sm btn-outline-primary">Sửa lô</a>
+                        <td class="text-end">
+                            <div class="dropdown">
+                                <button class="btn btn-link link-dark p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm small">
+                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}"><i class="bi bi-pencil me-2"></i>Edit Lot Data</a></li>
+                                    <c:if test="${isExp && lot.qtyLeft > 0}">
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="${pageContext.request.contextPath}/staff/delete-lot" method="post" onsubmit="return confirm('Confirm removal of expired stock?');">
+                                                <input type="hidden" name="lotId" value="${lot.id}">
+                                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}">
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Mark for Disposal</button>
+                                            </form>
+                                        </li>
+                                    </c:if>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
                 </c:forEach>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</c:if>
-
-<c:if test="${filteredLots != null && empty filteredLots}">
-    <div class="alert alert-warning">
-        Không tìm thấy lô nào khớp với điều kiện lọc.
-    </div>
-</c:if>
-
-<c:if test="${selectedProduct != null}">
-    <c:if test="${stockSummary.expiredQty > 0}">
-        <div class="alert alert-warning mb-3">
-            <strong>⚠️ Cảnh báo:</strong>
-            Có <strong><c:out value="${stockSummary.expiredQty}"/></strong> đơn vị sản phẩm
-            <strong><c:out value="${selectedProduct.name}"/></strong> đã hết hạn còn tồn kho. Vui lòng xử lý.
-        </div>
-    </c:if>
-
-    <div class="row mb-3">
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h6 class="text-muted">Tổng nhập</h6>
-                    <h3><c:out value="${stockSummary.totalIn}"/></h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h6 class="text-muted">Còn dùng được</h6>
-                    <h3 class="text-success"><c:out value="${stockSummary.availableQty}"/></h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h6 class="text-muted">Đã dùng</h6>
-                    <h3 class="text-info"><c:out value="${stockSummary.consumedQty}"/></h3>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h6 class="text-muted">HSD gần nhất</h6>
-                    <c:choose>
-                        <c:when test="${stockSummary.nearestExpiry != null}">
-                            <h5><c:out value="${stockSummary.nearestExpiry}"/></h5>
-                        </c:when>
-                        <c:otherwise>
-                            <h5 class="text-muted">-</h5>
-                        </c:otherwise>
-                    </c:choose>
-                </div>
-            </div>
-        </div>
+            </tbody>
+        </table>
     </div>
 
-    <div class="card mb-3">
-        <div class="card-header">Lô còn dùng được (khả dụng - FEFO)</div>
-        <div class="card-body">
-            <c:if test="${empty availableLots}">
-                <div class="text-muted">Không có lô khả dụng.</div>
-            </c:if>
-
-            <c:if test="${not empty availableLots}">
-                <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>Lô ID</th>
-                        <th>Nhập ngày</th>
-                        <th>HSD (Hạn sử dụng)</th>
-                        <th>Số ngày còn lại</th>
-                        <th>Nhập vào</th>
-                        <th>Còn lại</th>
-                        <th>Đã dùng</th>
-                        <th>Giá nhập</th>
-                        <th>Hành động</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <c:forEach items="${availableLots}" var="lot">
-                        <c:set var="daysLeft" value="${lot.expiryDate.toEpochDay() - today.toEpochDay()}"/>
-                        <c:set var="rowClass" value=""/>
-                        <c:if test="${daysLeft <= 3}">
-                            <c:set var="rowClass" value="table-warning"/>
-                        </c:if>
-
-                        <tr class="${rowClass}">
-                            <td><c:out value="${lot.id}"/></td>
-                            <td><c:out value="${lot.importDate}"/></td>
-                            <td><c:out value="${lot.expiryDate}"/></td>
-                            <td>
-                                <c:choose>
-                                    <c:when test="${daysLeft == 0}">
-                                        <span class="badge bg-danger">HSD hôm nay - bán ngay</span>
-                                    </c:when>
-                                    <c:when test="${daysLeft < 0}">
-                                        <span class="badge bg-danger">Đã hết hạn</span>
-                                    </c:when>
-                                    <c:when test="${daysLeft <= 3}">
-                                        <span class="badge bg-warning"><c:out value="${daysLeft}"/> ngày</span>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <c:out value="${daysLeft}"/> ngày
-                                    </c:otherwise>
-                                </c:choose>
-                            </td>
-                            <td><c:out value="${lot.qtyIn}"/></td>
-                            <td><strong><c:out value="${lot.qtyLeft}"/></strong></td>
-                            <td><c:out value="${lot.qtyIn - lot.qtyLeft}"/></td>
-                            <td><c:out value="${lot.importPrice}"/></td>
-                            <td>
-                                <a class="btn btn-sm btn-outline-primary"
-                                   href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
-                                    Sửa
-                                </a>
-                            </td>
-                        </tr>
-                    </c:forEach>
-                    </tbody>
-                </table>
-            </c:if>
-        </div>
-    </div>
-
-    <c:if test="${not empty upcomingExpiry}">
-        <div class="card mb-3">
-            <div class="card-header bg-warning">⚠️ Sắp hết hạn (trong 7 ngày tới)</div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>Lô ID</th>
-                        <th>HSD</th>
-                        <th>Số ngày</th>
-                        <th>Số lượng còn lại</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <c:forEach items="${upcomingExpiry}" var="lot">
-                        <tr class="table-warning">
-                            <td><c:out value="${lot.id}"/></td>
-                            <td><c:out value="${lot.expiryDate}"/></td>
-                            <td>
-                                <c:set var="days" value="${lot.expiryDate.toEpochDay() - today.toEpochDay()}"/>
-                                <span class="badge bg-danger"><c:out value="${days}"/> ngày</span>
-                            </td>
-                            <td><c:out value="${lot.qtyLeft}"/></td>
-                        </tr>
-                    </c:forEach>
-                    </tbody>
-                </table>
+    <!-- Summary Stats when specific product is selected -->
+    <c:if test="${selectedProduct != null}">
+        <div class="row g-4 mt-2">
+            <div class="col-md-3">
+                <div class="fm-card text-center">
+                    <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Total Intake</div>
+                    <div class="fm-h3 mb-0"><c:out value="${stockSummary.totalIn}"/></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="fm-card text-center">
+                    <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Available Bio-Stock</div>
+                    <div class="fm-h3 mb-0 text-success"><c:out value="${stockSummary.availableQty}"/></div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="fm-card text-center border-danger-subtle">
+                    <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Waste Risk (Expired)</div>
+                    <div class="fm-h3 mb-0 text-danger"><c:out value="${stockSummary.expiredQty}"/></div>
+                </div>
             </div>
         </div>
     </c:if>
-
-    <c:if test="${not empty expiredLots}">
-        <div class="card mb-3">
-            <div class="card-header bg-danger text-white">Lô đã hết hạn (cần loại bỏ)</div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>Lô ID</th>
-                        <th>HSD</th>
-                        <th>Số lượng còn lại</th>
-                        <th>Ghi chú</th>
-                        <th>Hành động</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <c:forEach items="${expiredLots}" var="lot">
-                        <tr class="table-danger">
-                            <td><c:out value="${lot.id}"/></td>
-                            <td><c:out value="${lot.expiryDate}"/></td>
-                            <td><c:out value="${lot.qtyLeft}"/></td>
-                            <td>
-                                <c:choose>
-                                    <c:when test="${lot.qtyLeft > 0}">
-                                        Cần loại bỏ ngay
-                                    </c:when>
-                                    <c:otherwise>
-                                        Đã dùng hết
-                                    </c:otherwise>
-                                </c:choose>
-                            </td>
-                            <td>
-                                <form action="${pageContext.request.contextPath}/staff/delete-lot" method="post" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
-                                    <input type="hidden" name="lotId" value="${lot.id}"/>
-                                    <input type="hidden" name="redirect" value="/staff/inventory?productId=${selectedProduct.id}"/>
-                                    <button class="btn btn-sm btn-danger" onclick="return confirm('Xác nhận loại bỏ lô này?');">
-                                        Loại bỏ
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    </c:forEach>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </c:if>
-
-    <div class="card">
-        <div class="card-header">Toàn bộ lô (lịch sử)</div>
-        <div class="card-body">
-            <table class="table table-sm">
-                <thead>
-                <tr>
-                    <th>Lô ID</th>
-                    <th>Nhà cung cấp</th>
-                    <th>Nhập ngày</th>
-                    <th>HSD</th>
-                    <th>Nhập</th>
-                    <th>Còn</th>
-                    <th>Giá</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                </tr>
-                </thead>
-                <tbody>
-                <c:forEach items="${allLots}" var="lot">
-                    <c:set var="status" value="active"/>
-                    <c:if test="${lot.expiryDate lt today}">
-                        <c:set var="status" value="expired"/>
-                    </c:if>
-                    <c:if test="${lot.qtyLeft == 0}">
-                        <c:set var="status" value="consumed"/>
-                    </c:if>
-
-                    <c:set var="rowClass" value=""/>
-                    <c:if test="${status == 'expired'}">
-                        <c:set var="rowClass" value="table-danger"/>
-                    </c:if>
-                    <c:if test="${status == 'consumed'}">
-                        <c:set var="rowClass" value="table-secondary"/>
-                    </c:if>
-
-                    <tr class="${rowClass}">
-                        <td><c:out value="${lot.id}"/></td>
-                        <td><c:out value="${lot.supplier != null ? lot.supplier.name : '-'}"/></td>
-                        <td><c:out value="${lot.importDate}"/></td>
-                        <td><c:out value="${lot.expiryDate}"/></td>
-                        <td><c:out value="${lot.qtyIn}"/></td>
-                        <td><c:out value="${lot.qtyLeft}"/></td>
-                        <td><c:out value="${lot.importPrice}"/></td>
-                        <td>
-                            <c:choose>
-                                <c:when test="${status == 'expired'}">
-                                    <span class="badge bg-danger">Hết hạn</span>
-                                </c:when>
-                                <c:when test="${status == 'consumed'}">
-                                    <span class="badge bg-secondary">Đã dùng hết</span>
-                                </c:when>
-                                <c:otherwise>
-                                    <span class="badge bg-success">Khả dụng</span>
-                                </c:otherwise>
-                            </c:choose>
-                        </td>
-                        <td>
-                            <a class="btn btn-sm btn-outline-primary"
-                               href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}">
-                                Sửa
-                            </a>
-                        </td>
-                    </tr>
-                </c:forEach>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</c:if>
-
-<c:if test="${selectedProduct == null}">
-    <div class="alert alert-info">
-        Vui lòng chọn một sản phẩm để xem chi tiết tồn kho.
-    </div>
-</c:if>
+</div>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

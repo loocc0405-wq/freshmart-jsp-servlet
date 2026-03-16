@@ -3,209 +3,145 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
-<title>FreshMart Login</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Login | FreshMart Enterprise</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap" rel="stylesheet"/>
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fm-design-system.css?v=1"/>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fm-components.css?v=1"/>
 
-<style>
-
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
-font-family:Arial, Helvetica, sans-serif;
-}
-
-body{
-height:100vh;
-background:linear-gradient(135deg,#00c853,#00bfa5,#009688);
-display:flex;
-justify-content:center;
-align-items:center;
-}
-
-.container{
-display:flex;
-justify-content:center;
-align-items:center;
-width:100%;
-}
-
-.card{
-
-background:white;
-padding:40px 35px;
-border-radius:16px;
-width:360px;
-
-box-shadow:
-0 15px 40px rgba(0,0,0,0.25);
-
-animation:fadeIn 0.6s ease;
-
-}
-
-@keyframes fadeIn{
-from{
-opacity:0;
-transform:translateY(20px);
-}
-to{
-opacity:1;
-transform:translateY(0);
-}
-}
-
-.logo{
-text-align:center;
-margin-bottom:10px;
-font-size:26px;
-font-weight:bold;
-color:#009688;
-}
-
-.subtitle{
-text-align:center;
-color:#777;
-margin-bottom:25px;
-font-size:14px;
-}
-
-.input-group{
-position:relative;
-margin-bottom:18px;
-}
-
-.input-group i{
-position:absolute;
-top:50%;
-left:12px;
-transform:translateY(-50%);
-color:#777;
-}
-
-input{
-width:100%;
-padding:12px 12px 12px 38px;
-border-radius:8px;
-border:1px solid #ccc;
-font-size:14px;
-transition:0.2s;
-}
-
-input:focus{
-outline:none;
-border-color:#00c853;
-box-shadow:0 0 0 2px rgba(0,200,83,0.15);
-}
-
-button{
-width:100%;
-padding:12px;
-border:none;
-border-radius:8px;
-background:linear-gradient(90deg,#00c853,#00bfa5);
-color:white;
-font-weight:bold;
-font-size:15px;
-cursor:pointer;
-transition:0.2s;
-}
-
-button:hover{
-opacity:0.9;
-transform:translateY(-1px);
-}
-
-.error{
-background:#ffe5e5;
-color:#d50000;
-padding:10px;
-border-radius:6px;
-margin-bottom:15px;
-text-align:center;
-font-size:14px;
-}
-
-.footer{
-text-align:center;
-margin-top:18px;
-font-size:13px;
-color:#888;
-}
-
-.footer span{
-color:#009688;
-font-weight:bold;
-}
-
-</style>
-
+    <style>
+        body { background: var(--fm-surface); }
+        .branding-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            color: var(--fm-primary-600);
+            font-size: 1.5rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .fm-auth-footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--fm-slate-100);
+            text-align: center;
+            font-size: 0.875rem;
+            color: var(--fm-text-muted);
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="container">
+<div class="fm-split-panel">
+    <!-- Left Side: Login Form -->
+    <div class="fm-split-side-content">
+        <div style="width: 100%; max-width: 400px;">
+            <div class="mb-5">
+                <a href="${pageContext.request.contextPath}/" class="branding-logo mb-4">
+                    <i class="bi bi-leaf-fill"></i> FreshMart
+                </a>
+                <h1 class="fm-h1 mb-2">Welcome Back</h1>
+                <p class="fm-text-secondary">Enter your credentials to access the operations dashboard.</p>
+            </div>
 
-<div class="card">
+            <c:if test="${param.registered eq '1'}">
+                <div class="alert alert-success d-flex align-items-center border-0 bg-success-subtle mb-4">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Registration successful. You can log in now.
+                </div>
+            </c:if>
 
-<div class="logo">
-<i class="fa-solid fa-leaf"></i> FreshMart
+            <c:if test="${not empty error}">
+                <div class="alert alert-danger d-flex align-items-center border-0 bg-danger-subtle mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <c:out value="${error}"/>
+                </div>
+            </c:if>
+
+            <form method="post" action="${pageContext.request.contextPath}/login" class="fm-form">
+                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                <input type="hidden" name="return" value="${returnUrl}" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold small text-uppercase opacity-75">Username or Email</label>
+                    <div class="position-relative">
+                        <i class="bi bi-person position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" name="login" class="fm-form-control ps-5" 
+                               value="${fn:escapeXml(loginValue)}"
+                               placeholder="e.g. administrator" required autofocus>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between">
+                        <label class="form-label fw-bold small text-uppercase opacity-75">Password</label>
+                        <a href="#" class="small fw-semibold text-primary">Forgot?</a>
+                    </div>
+                    <div class="position-relative">
+                        <i class="bi bi-lock position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="password" id="password" name="password" class="fm-form-control ps-5" 
+                               placeholder="••••••••" required>
+                        <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y me-2 p-1 text-muted"
+                                data-fm-toggle="password" data-fm-target="password">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="fm-btn fm-btn-primary w-100 shadow-sm border-0">
+                    Sign In to Dashboard <i class="bi bi-arrow-right ms-2"></i>
+                </button>
+            </form>
+
+            <div class="fm-auth-footer">
+                New to the platform? 
+                <a href="${pageContext.request.contextPath}/register" class="fw-bold text-primary">Create account</a>
+                <div class="mt-3 opacity-50">&copy; 2026 FreshMart. Enterprise Version v1.0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Hero Visual -->
+    <div class="fm-split-side-hero d-none d-lg-block">
+        <!-- FM_IMAGE_PROMPT:
+        Ultra-realistic 8K fresh grocery enterprise visual, premium FreshMart brand atmosphere, modern clean retail produce arrangement, subtle warehouse operations in background, soft natural daylight, green and slate color harmony, high detail, realistic textures, cinematic but restrained, enterprise-grade, no text, no watermark, wide hero composition
+        -->
+        <img src="https://images.unsplash.com/photo-1542838132-92c5332c4915?q=80&w=2690&auto=format&fit=crop" 
+             alt="FreshMart Operations" class="fm-hero-media">
+        <div class="fm-media-overlay">
+            <div class="mb-4">
+                <span class="badge bg-primary px-3 py-2 mb-3">Enterprise Ready</span>
+                <h2 class="display-5 fw-bold mb-3">Smart Inventory Management</h2>
+                <p class="lead opacity-75">Harness the power of real-time data to optimize your grocery supply chain and reduce waste.</p>
+            </div>
+            <div class="d-flex gap-4 small opacity-50">
+                <span><i class="bi bi-check2-all me-1"></i> FEFO Optimized</span>
+                <span><i class="bi bi-check2-all me-1"></i> Quality Assurance</span>
+                <span><i class="bi bi-check2-all me-1"></i> Demand Forecasting</span>
+            </div>
+        </div>
+    </div>
 </div>
 
-<div class="subtitle">
-Đăng nhập bằng username hoặc email
-</div>
-
-<c:if test="${param.registered eq '1'}">
-<div style="background:#e8f5e9;color:#1b5e20;padding:10px;border-radius:6px;margin-bottom:15px;text-align:center;font-size:14px;">
-Đăng ký thành công. Bạn có thể đăng nhập ngay bây giờ.
-</div>
-</c:if>
-
-<c:if test="${not empty error}">
-<div class="error">${error}</div>
-</c:if>
-
-<form method="post" action="login">
-
-<input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-<input type="hidden" name="return" value="${returnUrl}" />
-
-<div class="input-group">
-    <i class="fa fa-user"></i>
-<input type="text" name="login" value="${fn:escapeXml(loginValue)}"
-       placeholder="Username hoặc email" autocomplete="username" required>
-</div>
-
-<div class="input-group">
-<i class="fa fa-lock"></i>
-<input type="password" name="password" placeholder="Password"
-       autocomplete="current-password" required>
-</div>
-
-<button type="submit">
-<i class="fa fa-right-to-bracket"></i> Login
-</button>
-
-</form>
-
-<div class="footer">
-    Chưa có tài khoản?
-    <a href="${pageContext.request.contextPath}/register"
-       style="color:#009688;font-weight:bold;text-decoration:none;">
-        Đăng ký ngay
-    </a>
-    <br/>
-    FreshMart © 2026
-</div>
-
-</div>
-
-</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/fm-core.js"></script>
 
 </body>
 </html>
+
+FM_IMAGE_ASSET_SUGGESTIONS:
+- File: assets/images/heroes/auth-hero-8k.webp
+- Dimensions: 1920x1080 (Landscape)
+- Format: WebP (High Efficiency)
+- Usage: Authentication Right-Side Hero Visual (Split Panel)
+- Prompt: Ultra-realistic 8K fresh grocery enterprise visual, premium FreshMart brand atmosphere, modern clean retail produce arrangement, subtle warehouse operations in background, soft natural daylight, green and slate color harmony, high detail, realistic textures, cinematic but restrained, enterprise-grade, no text, no watermark, wide hero composition
