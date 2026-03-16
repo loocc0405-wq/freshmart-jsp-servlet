@@ -48,14 +48,14 @@ document.addEventListener("DOMContentLoaded", function () {
             inputField.focus();
 
             if (messagesBox.children.length === 0) {
-                appendMessage("bot", "Xin ch\u00E0o! FreshMart c\u00F3 th\u1EC3 gi\u00FAp g\u00EC cho b\u1EA1n?");
+                appendMessage("bot", "Hello! FreshMart AI Assistant here. How can I help you today?");
             }
         }
     }
 
     function appendMessage(role, text) {
         const msgDiv = document.createElement("div");
-        msgDiv.className = "chatbot-msg " + role;
+        msgDiv.className = "chatbot-msg shadow-sm " + role;
         msgDiv.textContent = text;
         messagesBox.appendChild(msgDiv);
         messagesBox.scrollTop = messagesBox.scrollHeight;
@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function setLoading(isLoading) {
         if (loadingIndicator) {
             loadingIndicator.style.display = isLoading ? "block" : "none";
+            loadingIndicator.textContent = "AI is typing...";
         }
         sendBtn.disabled = isLoading;
         inputField.disabled = isLoading;
@@ -97,7 +98,7 @@ document.addEventListener("DOMContentLoaded", function () {
             try {
                 data = await response.json();
             } catch (jsonError) {
-                throw new Error("Response kh\u00F4ng ph\u1EA3i JSON h\u1EE3p l\u1EC7.");
+                throw new Error("Invalid server response format.");
             }
 
             if (!response.ok) {
@@ -105,21 +106,21 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (data.status === "success") {
-                appendMessage("bot", data.reply || "FreshMart \u0111\u00E3 nh\u1EADn tin nh\u1EAFn.");
+                appendMessage("bot", data.reply || "FreshMart has received your query.");
                 if (data.sessionToken) {
                     sessionToken = data.sessionToken;
                     localStorage.setItem("chat_session_token", sessionToken);
                 }
             } else {
-                appendMessage("bot", data.message || "Xin l\u1ED7i, \u0111\u00E3 x\u1EA3y ra l\u1ED7i h\u1EC7 th\u1ED1ng.");
+                appendMessage("bot", data.message || "Sorry, an internal error occurred.");
             }
         } catch (error) {
             console.error("Chat Error:", error);
 
             if (String(error.message).includes("403")) {
-                appendMessage("bot", "Phi\u00EAn l\u00E0m vi\u1EC7c kh\u00F4ng h\u1EE3p l\u1EC7. Vui l\u00F2ng t\u1EA3i l\u1EA1i trang.");
+                appendMessage("bot", "Session invalid. Please refresh the page.");
             } else {
-                appendMessage("bot", "Kh\u00F4ng th\u1EC3 k\u1EBFt n\u1ED1i. Vui l\u00F2ng th\u1EED l\u1EA1i sau.");
+                appendMessage("bot", "Unable to connect. Please try again later.");
             }
         } finally {
             setLoading(false);
