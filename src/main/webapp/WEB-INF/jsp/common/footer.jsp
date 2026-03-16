@@ -61,5 +61,7 @@
     <!-- Core Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="${pageContext.request.contextPath}/assets/js/fm-core.js?v=2"></script>
+    <!-- Chatbot Integration -->
+    <%@ include file="/WEB-INF/jsp/common/chatbot.jspf" %>
 </body>
 </html>
