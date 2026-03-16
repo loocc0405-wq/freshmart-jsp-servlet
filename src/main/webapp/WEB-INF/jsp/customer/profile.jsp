@@ -2,94 +2,109 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 
-<%-- Use formData (on validation error) or fall back to the actual user entity --%>
+<c:set var="pageTitle" value="Account Security & Identity | FreshMart Enterprise"/>
+<jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
+
 <c:set var="form" value="${empty formData ? profileUser : formData}" />
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>My Profile - FreshMart</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; background: #f6f8fa; }
-        .container { max-width: 900px; margin: 30px auto; background: #fff; padding: 24px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
-        h1 { margin-top: 0; }
-        .msg-success { color: #0a7a33; margin-bottom: 12px; }
-        .msg-error { color: #c62828; margin-bottom: 12px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .field { display: flex; flex-direction: column; margin-bottom: 14px; }
-        label { font-weight: bold; margin-bottom: 6px; }
-        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
-        textarea { min-height: 100px; resize: vertical; }
-        .actions { margin-top: 16px; }
-        button { background: #2e7d32; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; }
-        button:hover { background: #256628; }
-        .full { grid-column: 1 / -1; }
-    </style>
-</head>
-<body>
-<jsp:include page="/WEB-INF/jsp/common/header.jsp" />
-
-<div class="container">
-    <h1>My Profile</h1>
-
-    <c:if test="${not empty successMessage}">
-        <div class="msg-success">${fn:escapeXml(successMessage)}</div>
-    </c:if>
-
-    <c:if test="${not empty errorMessage}">
-        <div class="msg-error">${fn:escapeXml(errorMessage)}</div>
-    </c:if>
-
-    <form method="post" action="${pageContext.request.contextPath}/customer/profile">
-        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
-
-        <div class="grid">
-            <div class="field">
-                <label>Username</label>
-                <input type="text" value="${fn:escapeXml(profileUser.username)}" readonly />
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-xl-9">
+            <div class="fm-page-header mb-5">
+                <div>
+                    <div class="fm-caption fw-bold text-primary mb-1 text-uppercase">Account Management</div>
+                    <h1 class="fm-page-title">Identity & Profile Security</h1>
+                    <p class="fm-page-subtitle">Manage your personal attributes and authentication metadata.</p>
+                </div>
             </div>
 
-            <div class="field">
-                <label>Email</label>
-                <input type="email" value="${fn:escapeXml(profileUser.email)}" readonly />
-            </div>
+            <c:if test="${not empty successMessage}">
+                <div class="alert alert-success fm-surface border-0 shadow-sm mb-4"><i class="bi bi-check-circle-fill me-2"></i> ${fn:escapeXml(successMessage)}</div>
+            </c:if>
 
-            <div class="field">
-                <label>Full name</label>
-                <input type="text" name="fullName" value="${fn:escapeXml(form.fullName)}" />
-            </div>
+            <c:if test="${not empty errorMessage}">
+                <div class="alert alert-danger fm-surface border-0 shadow-sm mb-4"><i class="bi bi-exclamation-octagon-fill me-2"></i> ${fn:escapeXml(errorMessage)}</div>
+            </c:if>
 
-            <div class="field">
-                <label>Gender</label>
-                <select name="gender">
-                    <option value="">-- Select gender --</option>
-                    <option value="MALE"   ${form.gender != null && form.gender.toString() == 'MALE'   ? 'selected' : ''}>Male</option>
-                    <option value="FEMALE" ${form.gender != null && form.gender.toString() == 'FEMALE' ? 'selected' : ''}>Female</option>
-                    <option value="OTHER"  ${form.gender != null && form.gender.toString() == 'OTHER'  ? 'selected' : ''}>Other</option>
-                </select>
-            </div>
+            <div class="fm-surface p-0 overflow-hidden shadow-sm border-0">
+                <div class="row g-0">
+                    <!-- Left Sidebar Info -->
+                    <div class="col-lg-4 bg-light border-end p-4">
+                        <div class="text-center mb-4">
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 80px; height: 80px;">
+                                <i class="bi bi-person fs-1"></i>
+                            </div>
+                            <h5 class="fw-bold mb-1">${fn:escapeXml(profileUser.username)}</h5>
+                            <div class="small text-muted font-monospace">${fn:escapeXml(profileUser.email)}</div>
+                        </div>
+                        
+                        <div class="mt-5">
+                            <div class="fm-caption fw-bold opacity-50 mb-3 text-uppercase">Security Attributes</div>
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="bi bi-shield-lock text-success"></i>
+                                <span class="small fw-semibold">Encrypted Storage</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-0">
+                                <i class="bi bi-patch-check text-primary"></i>
+                                <span class="small fw-semibold">Identity Verified</span>
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="field">
-                <label>Date of birth</label>
-                <input type="date" name="dob" value="${fn:escapeXml(form.dob)}" />
-            </div>
+                    <!-- Right Form Area -->
+                    <div class="col-lg-8 p-4 p-md-5">
+                        <form method="post" action="${pageContext.request.contextPath}/customer/profile">
+                            <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
 
-            <div class="field">
-                <label>Phone</label>
-                <input type="text" name="phone" value="${fn:escapeXml(form.phone)}" />
-            </div>
+                            <div class="mb-5 pb-4 border-bottom">
+                                <h3 class="fm-h3 mb-4">Identity Information</h3>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <label class="fm-caption fw-bold d-block mb-2">Display Full Name</label>
+                                        <input type="text" name="fullName" class="fm-form-control" value="${fn:escapeXml(form.fullName)}" placeholder="Enterprise Legal Name">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fm-caption fw-bold d-block mb-2">Gender Category</label>
+                                        <select name="gender" class="fm-form-control">
+                                            <option value="">-- Classified --</option>
+                                            <option value="MALE"   ${form.gender != null && form.gender.toString() == 'MALE'   ? 'selected' : ''}>Male</option>
+                                            <option value="FEMALE" ${form.gender != null && form.gender.toString() == 'FEMALE' ? 'selected' : ''}>Female</option>
+                                            <option value="OTHER"  ${form.gender != null && form.gender.toString() == 'OTHER'  ? 'selected' : ''}>Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fm-caption fw-bold d-block mb-2">Date of Birth</label>
+                                        <input type="date" name="dob" class="fm-form-control" value="${fn:escapeXml(form.dob)}">
+                                    </div>
+                                </div>
+                            </div>
 
-            <div class="field full">
-                <label>Address</label>
-                <textarea name="address">${fn:escapeXml(form.address)}</textarea>
+                            <div class="mb-5">
+                                <h3 class="fm-h3 mb-4">Communication Details</h3>
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <label class="fm-caption fw-bold d-block mb-2">Primary Hub Phone</label>
+                                        <input type="text" name="phone" class="fm-form-control" value="${fn:escapeXml(form.phone)}" placeholder="+84 XXX XXX XXX">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="fm-caption fw-bold d-block mb-2">Delivery Ledger Address</label>
+                                        <textarea name="address" class="fm-form-control" style="min-height: 120px;" placeholder="Full logistic destination address">${fn:escapeXml(form.address)}</textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between pt-4">
+                                <div class="text-muted small">
+                                    <i class="bi bi-info-circle me-1"></i> Updates apply globally to logistics.
+                                </div>
+                                <button type="submit" class="fm-btn fm-btn-primary px-5 py-3 shadow-sm">Commit Profile Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <div class="actions">
-            <button type="submit">Save profile</button>
-        </div>
-    </form>
+    </div>
 </div>
-</body>
-</html>
+
+<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>

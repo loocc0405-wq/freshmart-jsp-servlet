@@ -2,577 +2,439 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
 
-<c:set var="pageTitle" value="PRO Dashboard" />
-<jsp:include page="/WEB-INF/jsp/common/header.jsp" />
+<c:set var="pageTitle" value="PRO Intelligence Hub | FreshMart Enterprise"/>
+<jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
 <style>
-    .pro-tabs {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
+    /* PRO Specific Dashboard Overrides */
+    :root {
+        --fm-pro-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     }
-
-    .pro-tab {
-        text-decoration: none;
-        padding: 10px 14px;
-        border-radius: 8px;
-        border: 1px solid #d0d7de;
+    .fm-pro-card {
         background: #fff;
-        color: #333;
-        font-weight: 600;
+        border: 0;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-
-    .pro-tab.active {
-        background: #0d6efd;
-        color: #fff;
-        border-color: #0d6efd;
+    .fm-pro-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
     }
-
-    .kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-
-    .kpi-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
+    .fm-nav-pills .nav-link {
         border-radius: 12px;
-        padding: 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
-    }
-
-    .kpi-card h6 {
-        margin: 0 0 8px;
-        color: #555;
-        font-size: 14px;
-    }
-
-    .kpi-card .value {
-        font-size: 24px;
-        font-weight: 700;
-    }
-
-    .panel-card {
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 18px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
-        margin-bottom: 20px;
-    }
-
-    .chart-box {
-        min-height: 320px;
-    }
-
-    .insight {
-        background: #f8f9fa;
-        border-left: 4px solid #0d6efd;
-        padding: 12px 14px;
-        border-radius: 8px;
-        margin-top: 12px;
-    }
-
-    .table-wrap {
-        overflow-x: auto;
-    }
-
-    .preset-label {
-        font-size: 13px;
+        padding: 12px 24px;
         font-weight: 600;
-        color: #555;
-        margin-bottom: 6px;
+        color: var(--fm-slate-500);
+        transition: all 0.2s;
     }
-
-    .preset-group {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 10px;
-    }
-
-    .preset-btn {
-        text-decoration: none;
-        padding: 6px 10px;
-        border-radius: 8px;
-        border: 1px solid #d0d7de;
-        background: #fff;
-        color: #333;
-        font-size: 13px;
-        font-weight: 600;
-    }
-
-    .preset-btn.active {
-        background: #0d6efd;
+    .fm-nav-pills .nav-link.active {
+        background: var(--fm-primary-600);
         color: #fff;
-        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
     }
-
-    @media (max-width: 992px) {
-        .kpi-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
+    .fm-kpi-pro-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--fm-slate-100);
+        color: var(--fm-primary-600);
+        font-size: 1.5rem;
     }
-
-    @media (max-width: 576px) {
-        .kpi-grid {
-            grid-template-columns: 1fr;
-        }
+    .chart-container-pro {
+        position: relative;
+        height: 350px;
+        width: 100%;
     }
 </style>
 
-<h3 class="mb-3">PRO Dashboard - Module 9</h3>
-
-<div class="pro-tabs">
-    <a class="pro-tab ${tab == 'forecast' ? 'active' : ''}"
-       href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&method=${method}&history=${history}&horizon=${horizon}&granularity=${granularity}&window=${window}&alpha=${alpha}">
-        9.1 Forecast
-    </a>
-    <a class="pro-tab ${tab == 'seasonality' ? 'active' : ''}"
-       href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=${seasonalityHistory}&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
-        9.2 Seasonality
-    </a>
-    <a class="pro-tab ${tab == 'replenishment' ? 'active' : ''}"
-       href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=${replenishmentHistory}&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
-        9.3 Replenishment
-    </a>
-</div>
-
-<c:choose>
-
-    <c:when test="${tab == 'seasonality'}">
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h6>Days History</h6>
-                <div class="value">${seasonalityHistory}</div>
+<div class="container-fluid px-4 py-4">
+    <!-- Header Strategy -->
+    <div class="fm-page-header mb-5 border-bottom pb-4">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-indigo-600 text-white rounded-4 p-3 shadow-lg">
+                <i class="bi bi-cpu fs-2"></i>
             </div>
-            <div class="kpi-card">
-                <h6>Rolling Window</h6>
-                <div class="value">${rollingWindow}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>Peak Signals</h6>
-                <div class="value">${peakCount}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>Dip Signals</h6>
-                <div class="value">${dipCount}</div>
+            <div>
+                <div class="fm-caption fw-bold text-primary mb-1 text-uppercase ls-wide">Executive Intelligence</div>
+                <h1 class="fm-page-title">PRO Intelligence Hub</h1>
+                <p class="fm-page-subtitle">Algorithmic forecasting, seasonality auditing, and automated replenishment logic.</p>
             </div>
         </div>
+    </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-lg-4">
-                <div class="panel-card">
-                    <div class="preset-label">Quick history</div>
-                    <div class="preset-group">
-                        <a class="preset-btn ${seasonalityHistory == 7 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=7&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
-                            7 days
-                        </a>
-                        <a class="preset-btn ${seasonalityHistory == 14 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=14&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
-                            14 days
-                        </a>
-                        <a class="preset-btn ${seasonalityHistory == 30 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality&seasonalityHistory=30&rollingWindow=${rollingWindow}&zThreshold=${zThreshold}">
-                            30 days
-                        </a>
+    <!-- Tier Navigation -->
+    <ul class="nav fm-nav-pills gap-2 mb-5">
+        <li class="nav-item">
+            <a class="nav-link ${tab == 'forecast' or empty tab ? 'active' : ''}" href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast">
+                <i class="bi bi-graph-up-arrow me-2"></i> 9.1 Forecast Engine
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link ${tab == 'seasonality' ? 'active' : ''}" href="${pageContext.request.contextPath}/pro/dashboard?tab=seasonality">
+                <i class="bi bi-calendar3-range me-2"></i> 9.2 Seasonality Audit
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link ${tab == 'replenishment' ? 'active' : ''}" href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment">
+                <i class="bi bi-repeat me-2"></i> 9.3 Replenishment Logic
+            </a>
+        </li>
+    </ul>
+
+    <c:choose>
+        <%-- FORECAST ENGINE --%>
+        <c:when test="${tab == 'forecast' or empty tab}">
+            <div class="row g-4 mb-5">
+                <!-- Forecast KPIs -->
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="fm-kpi-pro-icon bg-primary-subtle text-primary"><i class="bi bi-lightning-charge"></i></div>
+                            <span class="badge bg-slate-100 text-slate-500 rounded-pill h-100 py-2 px-3 fw-bold">${method}</span>
+                        </div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Target Horizon</h6>
+                        <div class="fm-h2 mb-0">${horizon} <span class="fs-6 opacity-50">Periods</span></div>
                     </div>
-
-                    <form method="get" action="${pageContext.request.contextPath}/pro/dashboard" class="vstack gap-2">
-                        <input type="hidden" name="tab" value="seasonality" />
-
-                        <label class="form-label mb-0">History (days)</label>
-                        <input class="form-control" type="number" name="seasonalityHistory"
-                               value="${seasonalityHistory}" min="7" max="730" />
-
-                        <label class="form-label mb-0">Rolling window</label>
-                        <input class="form-control" type="number" name="rollingWindow"
-                               value="${rollingWindow}" min="3" max="30" />
-
-                        <label class="form-label mb-0">Z-threshold</label>
-                        <input class="form-control" type="number" step="0.1" name="zThreshold"
-                               value="${zThreshold}" min="0.5" max="5" />
-
-                        <button class="btn btn-primary" type="submit">Run seasonality</button>
-                    </form>
-
-                    <div class="insight">
-                        Peak = doanh thu cao hơn rolling mean vượt ngưỡng z-score.
-                        Dip = doanh thu thấp hơn rolling mean vượt ngưỡng âm.
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="fm-kpi-pro-icon bg-success-subtle text-success"><i class="bi bi-currency-dollar"></i></div>
+                            <span class="badge bg-success-subtle text-success rounded-pill h-100 py-2 px-3 fw-bold">Actual</span>
+                        </div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Latest Actual</h6>
+                        <div class="fm-h2 mb-0"><fmt:formatNumber value="${latestActual}" type="number"/></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="fm-kpi-pro-icon bg-indigo-subtle text-indigo-600"><i class="bi bi-magic"></i></div>
+                            <span class="badge bg-indigo-subtle text-indigo-600 rounded-pill h-100 py-2 px-3 fw-bold">Forecast</span>
+                        </div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Confidence Target</h6>
+                        <div class="fm-h2 mb-0"><fmt:formatNumber value="${latestForecast}" type="number"/></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div class="fm-kpi-pro-icon bg-amber-subtle text-amber-600"><i class="bi bi-clock-history"></i></div>
+                            <span class="badge bg-slate-100 text-slate-500 rounded-pill h-100 py-2 px-3 fw-bold">Audit</span>
+                        </div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">History Depth</h6>
+                        <div class="fm-h2 mb-0">${history} <span class="fs-6 opacity-50">Periods</span></div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-8">
-                <div class="panel-card">
-                    <h5>Seasonality Trend</h5>
-                    <div class="chart-box">
-                        <canvas id="seasonalityChart"></canvas>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <!-- Main Visualization -->
+                    <div class="fm-surface p-4 shadow-sm border-0 mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fm-h3 mb-0">Forecast Visualization</h5>
+                            <a class="fm-btn btn-light border btn-sm" href="?tab=forecast&export=csv">
+                                <i class="bi bi-download me-1"></i> Export Dataset
+                            </a>
+                        </div>
+                        <div class="chart-container-pro">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Data Ledger -->
+                    <div class="fm-surface p-0 shadow-sm border-0 overflow-hidden">
+                        <div class="p-4 border-bottom bg-light">
+                            <h5 class="fm-h3 mb-0">Forecast Audit Ledger</h5>
+                        </div>
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table fm-data-table align-middle mb-0">
+                                <thead class="bg-white sticky-top">
+                                    <tr>
+                                        <th class="ps-4">Period Identification</th>
+                                        <th class="text-end">Actual Revenue</th>
+                                        <th class="text-end pe-4">Forecast Projection</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <c:forEach var="b" items="${forecastBuckets}">
+                                        <tr class="${b.forecast != null && b.actual == null ? 'bg-indigo-50 fw-bold' : ''}">
+                                            <td class="ps-4">${b.label}</td>
+                                            <td class="text-end font-monospace">
+                                                <fmt:formatNumber value="${b.actual}" type="number"/>
+                                            </td>
+                                            <td class="text-end pe-4 font-monospace text-primary">
+                                                <fmt:formatNumber value="${b.forecast}" type="number"/>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <!-- Control Panel -->
+                    <div class="fm-surface p-4 shadow-sm border-0 sticky-top" style="top: 1rem;">
+                        <h5 class="fm-h3 mb-4 text-dark"><i class="bi bi-sliders me-2 text-primary"></i> Algorithm Parametrics</h5>
+                        <form method="get" class="vstack gap-4">
+                            <input type="hidden" name="tab" value="forecast"/>
+                            
+                            <div>
+                                <label class="fm-caption fw-bold text-muted d-block mb-2">Temporal Granularity</label>
+                                <select class="fm-form-control" name="granularity">
+                                    <option value="day" ${granularity == 'day' ? 'selected' : ''}>Day</option>
+                                    <option value="month" ${granularity == 'month' ? 'selected' : ''}>Month</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="fm-caption fw-bold text-muted d-block mb-2">Mathematical Model</label>
+                                <select class="fm-form-control" name="method">
+                                    <option value="ma" ${method == 'ma' ? 'selected' : ''}>Moving Average (Stabilized)</option>
+                                    <option value="es" ${method == 'es' ? 'selected' : ''}>Exponential Smoothing (Responsive)</option>
+                                </select>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="fm-caption fw-bold text-muted d-block mb-2">History</label>
+                                    <input class="fm-form-control" type="number" name="history" value="${history}" min="3"/>
+                                </div>
+                                <div class="col-6">
+                                    <label class="fm-caption fw-bold text-muted d-block mb-2">Horizon</label>
+                                    <input class="fm-form-control" type="number" name="horizon" value="${horizon}" min="1"/>
+                                </div>
+                            </div>
+
+                            <button class="fm-btn fm-btn-primary w-100 py-3 fw-bold" type="submit">Recalculate Projections</button>
+                        </form>
+
+                        <div class="p-3 bg-light rounded-4 mt-5 border-0">
+                            <div class="fm-caption fw-bold text-primary mb-2 text-uppercase ls-wide">Logic Trace</div>
+                            <p class="small text-muted mb-0">Source: <code>revenue_daily</code> aggregated by COMPLETED fulfillments.</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </c:when>
 
-        <div class="panel-card">
-            <h5>Monthly Summary</h5>
-            <div class="chart-box mb-3">
-                <canvas id="monthChart"></canvas>
-            </div>
-
-            <div class="table-wrap">
-                <table class="table table-striped">
-                    <thead>
-                    <tr>
-                        <th>Month</th>
-                        <th>Average</th>
-                        <th>Min</th>
-                        <th>Max</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <c:forEach var="m" items="${monthStats}">
-                        <tr>
-                            <td>${m.label}</td>
-                            <td>
-                                <fmt:formatNumber value="${m.avgDemand}" type="number"
-                                                  minFractionDigits="0" maxFractionDigits="2" />
-                            </td>
-                            <td>
-                                <fmt:formatNumber value="${m.minDemand}" type="number"
-                                                  minFractionDigits="0" maxFractionDigits="2" />
-                            </td>
-                            <td>
-                                <fmt:formatNumber value="${m.maxDemand}" type="number"
-                                                  minFractionDigits="0" maxFractionDigits="2" />
-                            </td>
-                        </tr>
-                    </c:forEach>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </c:when>
-
-    <c:when test="${tab == 'replenishment'}">
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h6>Products Need Restock</h6>
-                <div class="value">${restockCount}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>Total Suggested Qty</h6>
-                <div class="value">${totalSuggestedQty}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>Total Expiring Qty</h6>
-                <div class="value">${totalExpiringQty}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>Lead / Buffer / Safety</h6>
-                <div class="value">${leadTimeDays}/${bufferDays}/${safetyDays}</div>
-            </div>
-        </div>
-
-        <div class="row g-3 mb-3">
-            <div class="col-lg-4">
-                <div class="panel-card">
-                    <div class="preset-label">Quick history</div>
-                    <div class="preset-group">
-                        <a class="preset-btn ${replenishmentHistory == 7 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=7&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
-                            7 days
-                        </a>
-                        <a class="preset-btn ${replenishmentHistory == 14 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=14&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
-                            14 days
-                        </a>
-                        <a class="preset-btn ${replenishmentHistory == 30 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=replenishment&replenishmentHistory=30&leadTimeDays=${leadTimeDays}&bufferDays=${bufferDays}&safetyDays=${safetyDays}">
-                            30 days
-                        </a>
+        <%-- SEASONALITY AUDIT --%>
+        <c:when test="${tab == 'seasonality'}">
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="fm-kpi-pro-icon bg-info-subtle text-info mb-3"><i class="bi bi-clock-history"></i></div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Audit Depth</h6>
+                        <div class="fm-h2 mb-0">${seasonalityHistory} <span class="fs-6 opacity-50">Days</span></div>
                     </div>
-
-                    <form method="get" action="${pageContext.request.contextPath}/pro/dashboard" class="vstack gap-2">
-                        <input type="hidden" name="tab" value="replenishment" />
-
-                        <label class="form-label mb-0">History (days)</label>
-                        <input class="form-control" type="number" name="replenishmentHistory"
-                               value="${replenishmentHistory}" min="7" max="90" />
-
-                        <label class="form-label mb-0">Lead time days</label>
-                        <input class="form-control" type="number" name="leadTimeDays"
-                               value="${leadTimeDays}" min="1" max="30" />
-
-                        <label class="form-label mb-0">Buffer days</label>
-                        <input class="form-control" type="number" name="bufferDays" value="${bufferDays}"
-                               min="0" max="30" />
-
-                        <label class="form-label mb-0">Safety days</label>
-                        <input class="form-control" type="number" name="safetyDays" value="${safetyDays}"
-                               min="0" max="30" />
-
-                        <button class="btn btn-primary" type="submit">Run replenishment</button>
-                    </form>
-
-                    <div class="insight">
-                        Gợi ý nhập hàng được tính theo forecast/day, stock hiện có, lead time, buffer và
-                        safety stock.
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="fm-kpi-pro-icon bg-success-subtle text-success mb-3"><i class="bi bi-graph-up"></i></div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Peak Signals</h6>
+                        <div class="fm-h2 mb-0">${peakCount} <span class="fs-6 opacity-50">Detected</span></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="fm-kpi-pro-icon bg-danger-subtle text-danger mb-3"><i class="bi bi-graph-down"></i></div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Dip Signals</h6>
+                        <div class="fm-h2 mb-0">${dipCount} <span class="fs-6 opacity-50">Detected</span></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <div class="fm-kpi-pro-icon bg-indigo-subtle text-indigo-600 mb-3"><i class="bi bi-sliders"></i></div>
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Rolling Window</h6>
+                        <div class="fm-h2 mb-0">${rollingWindow} <span class="fs-6 opacity-50">Periods</span></div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-8">
-                <div class="panel-card">
-                    <h5>Top Replenishment Suggestions</h5>
-                    <div class="table-wrap">
-                        <table class="table table-striped">
-                            <thead>
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="fm-surface p-4 shadow-sm border-0 sticky-top" style="top: 1rem;">
+                        <h5 class="fm-h3 mb-4 text-dark"><i class="bi bi-funnel me-2 text-primary"></i> Analytical Constraints</h5>
+                        <form method="get" class="vstack gap-4">
+                            <input type="hidden" name="tab" value="seasonality"/>
+                            <div>
+                                <label class="fm-caption fw-bold text-muted d-block mb-2">Observation History (Days)</label>
+                                <input class="fm-form-control" type="number" name="seasonalityHistory" value="${seasonalityHistory}" min="7" max="730"/>
+                            </div>
+                            <div>
+                                <label class="fm-caption fw-bold text-muted d-block mb-2">Rolling Mean Window</label>
+                                <input class="fm-form-control" type="number" name="rollingWindow" value="${rollingWindow}" min="3" max="30"/>
+                            </div>
+                            <div>
+                                <label class="fm-caption fw-bold text-muted d-block mb-2">Anomaly Z-Threshold</label>
+                                <input class="fm-form-control" type="number" step="0.1" name="zThreshold" value="${zThreshold}" min="0.5" max="5"/>
+                            </div>
+                            <button class="fm-btn fm-btn-primary w-100 py-3 fw-bold" type="submit">Run Seasonality Sync</button>
+                        </form>
+                        <div class="insight bg-light p-3 rounded-4 mt-5">
+                            <p class="small text-muted mb-0"><strong>Peak Detection:</strong> Revenue > rolling mean + offset.<br><strong>Dip Detection:</strong> Revenue < rolling mean - offset.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-8">
+                    <div class="fm-surface p-4 shadow-sm border-0 mb-4">
+                        <h5 class="fm-h3 mb-4">Seasonality Trend Analysis</h5>
+                        <div class="chart-container-pro">
+                            <canvas id="seasonalityChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="fm-surface p-4 shadow-sm border-0">
+                        <h5 class="fm-h3 mb-4">Cyclical Monthly Performance</h5>
+                        <div class="chart-container-pro" style="height: 250px;">
+                            <canvas id="monthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </c:when>
+
+        <%-- REPLENISHMENT LOGIC --%>
+        <c:when test="${tab == 'replenishment'}">
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100 border-start border-4 border-warning">
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Restock Signals</h6>
+                        <div class="fm-h2 mb-0 text-warning">${restockCount} <span class="fs-6 opacity-50">SKUs</span></div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Gross Suggested Qty</h6>
+                        <div class="fm-h2 mb-0">${totalSuggestedQty}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100">
+                        <h6 class="fm-caption fw-bold text-muted mb-1">Total Expiring Qty</h6>
+                        <div class="fm-h2 mb-0 text-danger">${totalExpiringQty}</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="fm-pro-card p-4 h-100 bg-slate-900 text-white">
+                        <h6 class="fm-caption fw-bold text-white-50 mb-1">L/B/S Coefficients</h6>
+                        <div class="fm-h2 mb-0">${leadTimeDays}/${bufferDays}/${safetyDays}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fm-surface p-0 shadow-sm border-0 overflow-hidden mb-4">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center bg-light">
+                    <h5 class="fm-h3 mb-0">Algorithmic Replenishment Ledger</h5>
+                    <a class="fm-btn fm-btn-primary btn-sm" href="${pageContext.request.contextPath}/pro/replenishment">
+                        <i class="bi bi-fullscreen me-1"></i> Full Analysis
+                    </a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table fm-data-table align-middle mb-0">
+                        <thead>
                             <tr>
-                                <th>Product</th>
-                                <th>Avg 7</th>
-                                <th>Avg History</th>
-                                <th>Season Factor</th>
-                                <th>Forecast/Day</th>
-                                <th>Stock</th>
-                                <th>Suggested</th>
-                                <th>Expiring Qty</th>
-                                <th>Expiring Lots</th>
+                                <th class="ps-4">Operational SKU</th>
+                                <th class="text-end">Season Factor</th>
+                                <th class="text-center">Current Stock</th>
+                                <th class="text-center">Suggested</th>
+                                <th class="text-end pe-4">Risk Exposure</th>
                             </tr>
-                            </thead>
-                            <tbody>
+                        </thead>
+                        <tbody>
                             <c:forEach var="r" items="${replenishmentRows}">
                                 <tr>
-                                    <td>${r.productName}</td>
-                                    <td>
-                                        <fmt:formatNumber value="${r.avg7}" type="number"
-                                                          minFractionDigits="0" maxFractionDigits="2" />
+                                    <td class="ps-4">
+                                        <div class="fw-bold text-dark">${r.productName}</div>
+                                        <div class="small opacity-50">Fcst: ${r.forecastPerDay}/day</div>
                                     </td>
-                                    <td>
-                                        <fmt:formatNumber value="${r.avg30}" type="number"
-                                                          minFractionDigits="0" maxFractionDigits="2" />
+                                    <td class="text-end font-monospace">
+                                        <fmt:formatNumber value="${r.seasonFactor}" type="number" minFractionDigits="2"/>
                                     </td>
-                                    <td>
-                                        <fmt:formatNumber value="${r.seasonFactor}" type="number"
-                                                          minFractionDigits="0" maxFractionDigits="2" />
+                                    <td class="text-center">
+                                        <span class="badge bg-slate-100 text-slate-700 border-0 px-3">${r.stock} Units</span>
                                     </td>
-                                    <td>
-                                        <fmt:formatNumber value="${r.forecastPerDay}" type="number"
-                                                          minFractionDigits="0" maxFractionDigits="2" />
+                                    <td class="text-center">
+                                        <c:choose>
+                                            <c:when test="${r.suggestedQty > 0}">
+                                                <span class="badge bg-warning text-dark border-0 px-3 fw-bold">+${r.suggestedQty}</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span class="badge bg-success-subtle text-success border-0 px-3">OPTIMIZED</span>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </td>
-                                    <td>${r.stock}</td>
-                                    <td>${r.suggestedQty}</td>
-                                    <td>${r.expiringQty}</td>
-                                    <td>${r.expiringLots}</td>
-                                </tr>
-                            </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="insight mt-3">
-                        Các sản phẩm có nhiều lô sắp hết hạn sẽ được ưu tiên clearance trước, từ đó
-                        suggestion có thể bị giảm.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </c:when>
-
-    <c:otherwise>
-        <div class="kpi-grid">
-            <div class="kpi-card">
-                <h6>Method</h6>
-                <div class="value">${method}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>History</h6>
-                <div class="value">${history}</div>
-            </div>
-            <div class="kpi-card">
-                <h6>Latest Actual</h6>
-                <div class="value">
-                    <fmt:formatNumber value="${latestActual}" type="number" minFractionDigits="0"
-                                      maxFractionDigits="2" />
-                </div>
-            </div>
-            <div class="kpi-card">
-                <h6>Latest Forecast</h6>
-                <div class="value">
-                    <fmt:formatNumber value="${latestForecast}" type="number" minFractionDigits="0"
-                                      maxFractionDigits="2" />
-                </div>
-            </div>
-        </div>
-
-        <div class="row mb-3">
-            <div class="col-lg-8">
-                <div class="panel-card">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="mb-0">Forecast Chart</h5>
-                        <a class="btn btn-sm btn-outline-success"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&export=csv&granularity=${granularity}&method=${method}&history=${history}&horizon=${horizon}&window=${window}&alpha=${alpha}">
-                            <i class="bi bi-download me-1"></i>Export CSV
-                        </a>
-                    </div>
-                    <div class="chart-box">
-                        <canvas id="forecastChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="panel-card">
-                    <h6>Forecast Data Table</h6>
-                    <div class="table-wrap">
-                        <table class="table table-sm table-hover">
-                            <thead>
-                            <tr>
-                                <th>Period</th>
-                                <th class="text-end">Actual Revenue</th>
-                                <th class="text-end">Forecast Revenue</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <c:forEach var="b" items="${forecastBuckets}">
-                                <tr class="${b.forecast != null && b.actual == null ? 'table-info' : ''}">
-                                    <td>
-                                        <c:out value="${b.label}" />
-                                    </td>
-                                    <td class="text-end">
-                                        <c:if test="${b.actual != null}">
-                                            <fmt:formatNumber value="${b.actual}" type="number" groupingUsed="true" />
-                                        </c:if>
-                                    </td>
-                                    <td class="text-end">
-                                        <c:if test="${b.forecast != null}">
-                                            <fmt:formatNumber value="${b.forecast}" type="number" groupingUsed="true" />
+                                    <td class="text-end pe-4 text-danger small fw-bold">
+                                        <c:if test="${r.expiringQty > 0}">
+                                            ${r.expiringQty} Expiring
                                         </c:if>
                                     </td>
                                 </tr>
                             </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+        </c:when>
+    </c:choose>
+</div>
 
-            <div class="col-lg-4">
-                <div class="panel-card">
-                    <div class="preset-label">Quick history</div>
-                    <div class="preset-group">
-                        <a class="preset-btn ${history == 7 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=7&horizon=${horizon}&window=${window}&alpha=${alpha}">
-                            7 days
-                        </a>
-                        <a class="preset-btn ${history == 14 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=14&horizon=${horizon}&window=${window}&alpha=${alpha}">
-                            14 days
-                        </a>
-                        <a class="preset-btn ${history == 30 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=30&horizon=${horizon}&window=${window}&alpha=${alpha}">
-                            30 days
-                        </a>
-                    </div>
-
-                    <div class="preset-label">Quick horizon</div>
-                    <div class="preset-group">
-                        <a class="preset-btn ${horizon == 7 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=${history}&horizon=7&window=${window}&alpha=${alpha}">
-                            7 days
-                        </a>
-                        <a class="preset-btn ${horizon == 14 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=${history}&horizon=14&window=${window}&alpha=${alpha}">
-                            14 days
-                        </a>
-                        <a class="preset-btn ${horizon == 30 ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/pro/dashboard?tab=forecast&granularity=${granularity}&method=${method}&history=${history}&horizon=30&window=${window}&alpha=${alpha}">
-                            30 days
-                        </a>
-                    </div>
-
-                    <form method="get" action="${pageContext.request.contextPath}/pro/dashboard" class="vstack gap-2">
-                        <input type="hidden" name="tab" value="forecast" />
-
-                        <label class="form-label mb-0">Granularity</label>
-                        <select class="form-select" name="granularity">
-                            <option value="day" <c:if test="${granularity == 'day'}">selected</c:if>>Day</option>
-                            <option value="month" <c:if test="${granularity == 'month'}">selected</c:if>>Month</option>
-                            <option value="quarter" <c:if test="${granularity == 'quarter'}">selected</c:if>>Quarter</option>
-                            <option value="year" <c:if test="${granularity == 'year'}">selected</c:if>>Year</option>
-                        </select>
-
-                        <label class="form-label mb-0">Method</label>
-                        <select class="form-select" name="method">
-                            <option value="ma" <c:if test="${method == 'ma'}">selected</c:if>>Moving Average</option>
-                            <option value="es" <c:if test="${method == 'es'}">selected</c:if>>Exponential Smoothing</option>
-                        </select>
-
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label mb-0">History (periods)</label>
-                                <input class="form-control" type="number" name="history" value="${history}"
-                                       min="3" max="730" />
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label mb-0">Horizon (periods)</label>
-                                <input class="form-control" type="number" name="horizon" value="${horizon}"
-                                       min="1" max="60" />
-                            </div>
-                        </div>
-
-                        <c:choose>
-                            <c:when test="${method == 'es'}">
-                                <label class="form-label mb-0">Alpha (0..1)</label>
-                                <input class="form-control" type="number" step="0.05" name="alpha"
-                                       value="${alpha}" min="0.05" max="0.95" />
-                            </c:when>
-                            <c:otherwise>
-                                <label class="form-label mb-0">Window</label>
-                                <input class="form-control" type="number" name="window" value="${window}"
-                                       min="3" max="30" />
-                            </c:otherwise>
-                        </c:choose>
-
-                        <button class="btn btn-primary" type="submit">Run forecast</button>
-                    </form>
-
-                    <div class="insight">
-                        Data source: <code>revenue_daily(revenue_date, total_revenue)</code>.
-                        Orders COMPLETED sẽ tự động cộng doanh thu theo ngày.
-                        Chọn granularity để xem dữ liệu tổng hợp theo tháng/quý/năm.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </c:otherwise>
-
-</c:choose>
-
+<!-- Chart.js Logic (Consolidated) -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
     const activeTab = '${tab}';
 
     if (activeTab === 'forecast') {
         const labels = <c:out value="${labelsJson}" escapeXml="false" />;
-        const actual = <c:out value="${actualJson}" escapeXml="false" />;
-        const forecast = <c:out value="${forecastJson}" escapeXml="false" />;
-
-        new Chart(document.getElementById('forecastChart'), {
+        const actualData = <c:out value="${actualJson}" escapeXml="false" />;
+        const forecastData = <c:out value="${forecastJson}" escapeXml="false" />;
+        
+        new Chart(ctx, {
             type: 'line',
             data: {
-                labels,
+                labels: labels,
                 datasets: [
-                    { label: 'Actual', data: actual, spanGaps: true },
-                    { label: 'Forecast', data: forecast, spanGaps: true }
+                    {
+                        label: 'Operational Actuals',
+                        data: actualData,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Algorithmic Forecast',
+                        data: forecastData,
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'transparent',
+                        borderWidth: 3,
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
                 ]
             },
             options: {
                 responsive: true,
-                interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { usePointStyle: true, padding: 20, font: { weight: '600' } } },
+                    tooltip: { padding: 12, backgroundColor: '#0f172a' }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                    x: { grid: { display: false } }
+                }
             }
         });
     }
@@ -581,44 +443,41 @@
         const labels = <c:out value="${seasonalityLabelsJson}" escapeXml="false" />;
         const actual = <c:out value="${seasonalityActualJson}" escapeXml="false" />;
         const rolling = <c:out value="${seasonalityRollingJson}" escapeXml="false" />;
-        const z = <c:out value="${seasonalityZJson}" escapeXml="false" />;
-
+        
         new Chart(document.getElementById('seasonalityChart'), {
             type: 'line',
             data: {
                 labels,
                 datasets: [
-                    { label: 'Actual', data: actual, spanGaps: true },
-                    { label: 'Rolling Mean', data: rolling, spanGaps: true },
-                    { label: 'Z-Score', data: z, spanGaps: true }
+                    { label: 'Actual Revenue', data: actual, borderColor: '#2563eb', tension: 0.4 },
+                    { label: 'Rolling Mean', data: rolling, borderColor: '#64748b', borderDash: [5, 5], tension: 0.4 }
                 ]
             },
             options: {
                 responsive: true,
-                interaction: { mode: 'index', intersect: false }
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } }
             }
         });
 
         const monthNames = <c:out value="${monthNamesJson}" escapeXml="false" />;
         const monthAvg = <c:out value="${monthAvgJson}" escapeXml="false" />;
-        const monthMin = <c:out value="${monthMinJson}" escapeXml="false" />;
-        const monthMax = <c:out value="${monthMaxJson}" escapeXml="false" />;
-
+        
         new Chart(document.getElementById('monthChart'), {
             type: 'bar',
             data: {
                 labels: monthNames,
                 datasets: [
-                    { label: 'Avg', data: monthAvg },
-                    { label: 'Min', data: monthMin },
-                    { label: 'Max', data: monthMax }
+                    { label: 'Avg Monthly Demand', data: monthAvg, backgroundColor: '#4f46e5', borderRadius: 8 }
                 ]
             },
             options: {
-                responsive: true
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
             }
         });
     }
 </script>
 
-<jsp:include page="/WEB-INF/jsp/common/footer.jsp" />
+<jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
