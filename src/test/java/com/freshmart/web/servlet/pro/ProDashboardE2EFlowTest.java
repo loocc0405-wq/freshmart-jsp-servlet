@@ -1,0 +1,532 @@
+package com.freshmart.web.servlet.pro;
+
+import com.freshmart.config.AppConstants;
+import com.freshmart.entity.User;
+import com.freshmart.service.ForecastService;
+import com.freshmart.service.ReplenishmentService;
+import com.freshmart.service.SeasonalityService;
+import com.freshmart.service.SubscriptionService;
+import com.freshmart.service.dto.ForecastBucket;
+import com.freshmart.service.dto.ReplenishSuggestion;
+import com.freshmart.service.dto.SeasonalityMonthStat;
+import com.freshmart.service.dto.SeasonalityPoint;
+import com.freshmart.web.filter.AuthenticationFilter;
+import com.freshmart.web.filter.AuthorizationFilter;
+import com.freshmart.web.filter.TierFilter;
+import com.freshmart.web.servlet.LoginServlet;
+import com.google.gson.Gson;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import org.junit.jupiter.api.Test;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ProDashboardE2EFlowTest {
+
+    @Test
+    void staffLoginRedirect_thenDashboardTabsAndCsvExport_shouldCompleteEndToEndFlow() throws Exception {
+        User staff = newStaffUser(101L);
+
+        SessionContext sessionCtx = new SessionContext();
+        sessionCtx.attrs.put(AppConstants.SESSION_USER, staff);
+        HttpSession session = newSessionProxy(sessionCtx);
+
+        // Step 1: user already logged in visits /login => redirect to /pro/dashboard
+        LoginServlet loginServlet = new LoginServlet();
+        RequestContext loginReqCtx = new RequestContext(sessionCtx);
+        loginReqCtx.contextPath = "/freshmart";
+        loginReqCtx.requestUri = "/freshmart/login";
+
+        ResponseContext loginRespCtx = new ResponseContext();
+        invokeDoGet(loginServlet, newRequestProxy(loginReqCtx, session), newResponseProxy(loginRespCtx));
+
+        assertEquals("/freshmart/pro/dashboard", loginRespCtx.redirectedTo);
+
+        // Shared app components for the protected /pro flow
+        StubSubscriptionService subscriptionService = new StubSubscriptionService(staff);
+
+        AuthenticationFilter authenticationFilter = new AuthenticationFilter();
+        replaceField(authenticationFilter, "subscriptionService", subscriptionService);
+
+        AuthorizationFilter authorizationFilter = new AuthorizationFilter();
+        authorizationFilter.init(null);
+
+        TierFilter tierFilter = new TierFilter();
+
+        StubForecastService forecastService = new StubForecastService(
+                List.of(
+                        new ForecastBucket("2026-03-10", new BigDecimal("100.00"), null),
+                        new ForecastBucket("2026-03-11", null, new BigDecimal("120.00"))
+                )
+        );
+        StubSeasonalityService seasonalityService = new StubSeasonalityService(
+                List.of(
+                        new SeasonalityPoint(
+                                LocalDate.of(2026, 3, 10),
+                                new BigDecimal("100.00"),
+                                new BigDecimal("90.00"),
+                                new BigDecimal("5.00"),
+                                2.10,
+                                "PEAK"
+                        ),
+                        new SeasonalityPoint(
+                                LocalDate.of(2026, 3, 11),
+                                new BigDecimal("60.00"),
+                                new BigDecimal("90.00"),
+                                new BigDecimal("8.00"),
+                                -1.80,
+                                "DIP"
+                        )
+                ),
+                List.of(
+                        new SeasonalityMonthStat(
+                                3,
+                                "Month 3",
+                                new BigDecimal("80.00"),
+                                new BigDecimal("60.00"),
+                                new BigDecimal("100.00")
+                        )
+                )
+        );
+        StubReplenishmentService replenishmentService = new StubReplenishmentService(
+                List.of(
+                        new ReplenishSuggestion(
+                                1L,
+                                "Apple",
+                                new BigDecimal("10.00"),
+                                new BigDecimal("8.00"),
+                                new BigDecimal("1.20"),
+                                new BigDecimal("12.00"),
+                                5,
+                                10,
+                                2,
+                                1,
+                                "Restock soon"
+                        ),
+                        new ReplenishSuggestion(
+                                2L,
+                                "Milk",
+                                new BigDecimal("5.00"),
+                                new BigDecimal("4.00"),
+                                new BigDecimal("1.10"),
+                                new BigDecimal("5.50"),
+                                20,
+                                0,
+                                3,
+                                2,
+                                "Prioritize clearance"
+                        )
+                )
+        );
+
+        ProDashboardServlet dashboardServlet = new ProDashboardServlet(
+                forecastService,
+                seasonalityService,
+                replenishmentService,
+                new Gson()
+        );
+
+        // Step 2: forecast tab with preset 7 / 14
+        RequestContext forecastReqCtx = new RequestContext(sessionCtx);
+        forecastReqCtx.contextPath = "/freshmart";
+        forecastReqCtx.requestUri = "/freshmart/pro/dashboard";
+        forecastReqCtx.params.put("tab", "forecast");
+        forecastReqCtx.params.put("history", "7");
+        forecastReqCtx.params.put("horizon", "14");
+        forecastReqCtx.params.put("window", "7");
+        forecastReqCtx.params.put("method", "ma");
+        forecastReqCtx.params.put("granularity", "day");
+
+        ResponseContext forecastRespCtx = new ResponseContext();
+        runProtectedProFlow(authenticationFilter, authorizationFilter, tierFilter, dashboardServlet,
+                newRequestProxy(forecastReqCtx, session), newResponseProxy(forecastRespCtx));
+
+        assertNull(forecastRespCtx.redirectedTo);
+        assertEquals("/WEB-INF/jsp/pro/dashboard.jsp", forecastReqCtx.forwardedPath);
+        assertEquals("forecast", forecastReqCtx.attrs.get("tab"));
+        assertEquals(7, forecastReqCtx.attrs.get("history"));
+        assertEquals(14, forecastReqCtx.attrs.get("horizon"));
+        assertEquals(7, forecastReqCtx.attrs.get("window"));
+        assertEquals("day", forecastReqCtx.attrs.get("granularity"));
+        assertEquals("ma", forecastReqCtx.attrs.get("method"));
+        assertEquals(new BigDecimal("100.00"), forecastReqCtx.attrs.get("latestActual"));
+        assertEquals(new BigDecimal("120.00"), forecastReqCtx.attrs.get("latestForecast"));
+        assertNotNull(forecastReqCtx.attrs.get("labelsJson"));
+        assertEquals(7, forecastService.lastHistory);
+        assertEquals(14, forecastService.lastHorizon);
+
+        // Step 3: switch to seasonality tab with preset 14
+        RequestContext seasonalityReqCtx = new RequestContext(sessionCtx);
+        seasonalityReqCtx.contextPath = "/freshmart";
+        seasonalityReqCtx.requestUri = "/freshmart/pro/dashboard";
+        seasonalityReqCtx.params.put("tab", "seasonality");
+        seasonalityReqCtx.params.put("seasonalityHistory", "14");
+        seasonalityReqCtx.params.put("rollingWindow", "7");
+        seasonalityReqCtx.params.put("zThreshold", "1.5");
+
+        ResponseContext seasonalityRespCtx = new ResponseContext();
+        runProtectedProFlow(authenticationFilter, authorizationFilter, tierFilter, dashboardServlet,
+                newRequestProxy(seasonalityReqCtx, session), newResponseProxy(seasonalityRespCtx));
+
+        assertNull(seasonalityRespCtx.redirectedTo);
+        assertEquals("/WEB-INF/jsp/pro/dashboard.jsp", seasonalityReqCtx.forwardedPath);
+        assertEquals("seasonality", seasonalityReqCtx.attrs.get("tab"));
+        assertEquals(14, seasonalityReqCtx.attrs.get("seasonalityHistory"));
+        assertEquals(7, seasonalityReqCtx.attrs.get("rollingWindow"));
+        assertEquals(1.5, (Double) seasonalityReqCtx.attrs.get("zThreshold"), 0.0001);
+        assertEquals(1, seasonalityReqCtx.attrs.get("peakCount"));
+        assertEquals(1, seasonalityReqCtx.attrs.get("dipCount"));
+        assertEquals(14, seasonalityService.lastDaysHistory);
+
+        // Step 4: switch to replenishment tab with preset 30
+        RequestContext replenishmentReqCtx = new RequestContext(sessionCtx);
+        replenishmentReqCtx.contextPath = "/freshmart";
+        replenishmentReqCtx.requestUri = "/freshmart/pro/dashboard";
+        replenishmentReqCtx.params.put("tab", "replenishment");
+        replenishmentReqCtx.params.put("replenishmentHistory", "30");
+        replenishmentReqCtx.params.put("leadTimeDays", "3");
+        replenishmentReqCtx.params.put("bufferDays", "2");
+        replenishmentReqCtx.params.put("safetyDays", "1");
+
+        ResponseContext replenishmentRespCtx = new ResponseContext();
+        runProtectedProFlow(authenticationFilter, authorizationFilter, tierFilter, dashboardServlet,
+                newRequestProxy(replenishmentReqCtx, session), newResponseProxy(replenishmentRespCtx));
+
+        assertNull(replenishmentRespCtx.redirectedTo);
+        assertEquals("/WEB-INF/jsp/pro/dashboard.jsp", replenishmentReqCtx.forwardedPath);
+        assertEquals("replenishment", replenishmentReqCtx.attrs.get("tab"));
+        assertEquals(30, replenishmentReqCtx.attrs.get("replenishmentHistory"));
+        assertEquals(1, replenishmentReqCtx.attrs.get("restockCount"));
+        assertEquals(10, replenishmentReqCtx.attrs.get("totalSuggestedQty"));
+        assertEquals(5, replenishmentReqCtx.attrs.get("totalExpiringQty"));
+        assertEquals(30, replenishmentService.lastDaysHistory);
+
+        // Step 5: export CSV from forecast tab in the same protected flow
+        RequestContext exportReqCtx = new RequestContext(sessionCtx);
+        exportReqCtx.contextPath = "/freshmart";
+        exportReqCtx.requestUri = "/freshmart/pro/dashboard";
+        exportReqCtx.params.put("tab", "forecast");
+        exportReqCtx.params.put("export", "csv");
+        exportReqCtx.params.put("granularity", "day");
+        exportReqCtx.params.put("method", "ma");
+        exportReqCtx.params.put("history", "7");
+        exportReqCtx.params.put("horizon", "14");
+        exportReqCtx.params.put("window", "7");
+
+        ResponseContext exportRespCtx = new ResponseContext();
+        runProtectedProFlow(authenticationFilter, authorizationFilter, tierFilter, dashboardServlet,
+                newRequestProxy(exportReqCtx, session), newResponseProxy(exportRespCtx));
+
+        assertEquals("text/csv; charset=UTF-8", exportRespCtx.contentType);
+        assertTrue(exportRespCtx.headers.get("Content-Disposition").contains("forecast_day_ma_"));
+        assertTrue(exportRespCtx.body.toString().startsWith("\uFEFF"));
+        assertTrue(exportRespCtx.body.toString().contains("period_label,actual_revenue,forecast_revenue,method,granularity,history,horizon,generated_at"));
+        assertTrue(exportRespCtx.body.toString().contains("2026-03-10,100.00,,ma,day,7,14,"));
+        assertTrue(exportRespCtx.body.toString().contains("2026-03-11,,120.00,ma,day,7,14,"));
+        assertNull(exportReqCtx.forwardedPath);
+
+        // 4 protected requests passed AuthenticationFilter successfully
+        assertEquals(4, subscriptionService.refreshCalls);
+    }
+
+    private void runProtectedProFlow(AuthenticationFilter authenticationFilter,
+                                     AuthorizationFilter authorizationFilter,
+                                     TierFilter tierFilter,
+                                     ProDashboardServlet dashboardServlet,
+                                     HttpServletRequest request,
+                                     HttpServletResponse response) throws Exception {
+
+        FilterChain terminalChain = (ServletRequest req, ServletResponse resp) ->
+                dashboardServlet.doGet((HttpServletRequest) req, (HttpServletResponse) resp);
+
+        FilterChain tierChain = (ServletRequest req, ServletResponse resp) ->
+                tierFilter.doFilter(req, resp, terminalChain);
+
+        FilterChain authorizationChain = (ServletRequest req, ServletResponse resp) ->
+                authorizationFilter.doFilter(req, resp, tierChain);
+
+        authenticationFilter.doFilter(request, response, authorizationChain);
+    }
+
+    private void invokeDoGet(Object servlet, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        Method method = servlet.getClass().getDeclaredMethod("doGet", HttpServletRequest.class, HttpServletResponse.class);
+        method.setAccessible(true);
+        method.invoke(servlet, request, response);
+    }
+
+    private User newStaffUser(Long id) throws Exception {
+        User user = new User("staff01", "staff01@freshmart.local", "hash", com.freshmart.enums.Role.STAFF);
+        setField(user, "id", id);
+        return user;
+    }
+
+    private void replaceField(Object target, String fieldName, Object value) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    private void setField(Object target, String fieldName, Object value) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, value);
+    }
+
+    private HttpSession newSessionProxy(SessionContext ctx) {
+        return (HttpSession) Proxy.newProxyInstance(
+                HttpSession.class.getClassLoader(),
+                new Class[]{HttpSession.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "getAttribute":
+                            return ctx.attrs.get(args[0]);
+                        case "setAttribute":
+                            ctx.attrs.put((String) args[0], args[1]);
+                            return null;
+                        case "removeAttribute":
+                            ctx.attrs.remove(args[0]);
+                            return null;
+                        case "invalidate":
+                            ctx.invalidated = true;
+                            ctx.attrs.clear();
+                            return null;
+                        case "getId":
+                            return "e2e-session";
+                        default:
+                            return defaultValue(method.getReturnType());
+                    }
+                }
+        );
+    }
+
+    private HttpServletRequest newRequestProxy(RequestContext ctx, HttpSession session) {
+        return (HttpServletRequest) Proxy.newProxyInstance(
+                HttpServletRequest.class.getClassLoader(),
+                new Class[]{HttpServletRequest.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "getParameter":
+                            return ctx.params.get(args[0]);
+                        case "getParameterMap":
+                            Map<String, String[]> parameterMap = new HashMap<>();
+                            for (Map.Entry<String, String> entry : ctx.params.entrySet()) {
+                                parameterMap.put(entry.getKey(), new String[]{entry.getValue()});
+                            }
+                            return parameterMap;
+                        case "getParameterNames":
+                            return java.util.Collections.enumeration(ctx.params.keySet());
+                        case "getParameterValues":
+                            String value = ctx.params.get(args[0]);
+                            return value == null ? null : new String[]{value};
+                        case "setAttribute":
+                            ctx.attrs.put((String) args[0], args[1]);
+                            return null;
+                        case "getAttribute":
+                            return ctx.attrs.get(args[0]);
+                        case "removeAttribute":
+                            ctx.attrs.remove(args[0]);
+                            return null;
+                        case "getRequestDispatcher":
+                            return newDispatcherProxy(ctx, (String) args[0]);
+                        case "getContextPath":
+                            return ctx.contextPath;
+                        case "getRequestURI":
+                            return ctx.requestUri;
+                        case "getQueryString":
+                            return ctx.toQueryString();
+                        case "getSession":
+                            if (args == null || args.length == 0) {
+                                return session;
+                            }
+                            boolean create = (Boolean) args[0];
+                            return (!ctx.sessionCtx.invalidated && session != null) ? session : (create ? session : null);
+                        default:
+                            return defaultValue(method.getReturnType());
+                    }
+                }
+        );
+    }
+
+    private RequestDispatcher newDispatcherProxy(RequestContext ctx, String path) {
+        return (RequestDispatcher) Proxy.newProxyInstance(
+                RequestDispatcher.class.getClassLoader(),
+                new Class[]{RequestDispatcher.class},
+                (proxy, method, args) -> {
+                    if ("forward".equals(method.getName())) {
+                        ctx.forwardedPath = path;
+                        return null;
+                    }
+                    return defaultValue(method.getReturnType());
+                }
+        );
+    }
+
+    private HttpServletResponse newResponseProxy(ResponseContext ctx) {
+        return (HttpServletResponse) Proxy.newProxyInstance(
+                HttpServletResponse.class.getClassLoader(),
+                new Class[]{HttpServletResponse.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "sendRedirect":
+                            ctx.redirectedTo = (String) args[0];
+                            return null;
+                        case "setStatus":
+                            return null;
+                        case "setContentType":
+                            ctx.contentType = (String) args[0];
+                            return null;
+                        case "setHeader":
+                            ctx.headers.put((String) args[0], (String) args[1]);
+                            return null;
+                        case "getWriter":
+                            return new PrintWriter(ctx.body, true);
+                        default:
+                            return defaultValue(method.getReturnType());
+                    }
+                }
+        );
+    }
+
+    private Object defaultValue(Class<?> returnType) {
+        if (!returnType.isPrimitive()) {
+            return null;
+        }
+        if (returnType == boolean.class) return false;
+        if (returnType == byte.class) return (byte) 0;
+        if (returnType == short.class) return (short) 0;
+        if (returnType == int.class) return 0;
+        if (returnType == long.class) return 0L;
+        if (returnType == float.class) return 0f;
+        if (returnType == double.class) return 0d;
+        if (returnType == char.class) return '\0';
+        return null;
+    }
+
+    private static class StubSubscriptionService extends SubscriptionService {
+        private final User freshUser;
+        private int refreshCalls;
+
+        private StubSubscriptionService(User freshUser) {
+            this.freshUser = freshUser;
+        }
+
+        @Override
+        public User refreshAndSync(Long userId) {
+            refreshCalls++;
+            return freshUser;
+        }
+    }
+
+    private static class StubForecastService extends ForecastService {
+        private final List<ForecastBucket> result;
+        private int lastHistory;
+        private int lastHorizon;
+
+        private StubForecastService(List<ForecastBucket> result) {
+            this.result = result;
+        }
+
+        @Override
+        public List<ForecastBucket> forecastByGranularity(String granularity, String method,
+                                                          int history, int horizon,
+                                                          int window, double alpha) {
+            this.lastHistory = history;
+            this.lastHorizon = horizon;
+            return result;
+        }
+    }
+
+    private static class StubSeasonalityService extends SeasonalityService {
+        private final List<SeasonalityPoint> points;
+        private final List<SeasonalityMonthStat> monthStats;
+        private int lastDaysHistory;
+
+        private StubSeasonalityService(List<SeasonalityPoint> points,
+                                       List<SeasonalityMonthStat> monthStats) {
+            this.points = points;
+            this.monthStats = monthStats;
+        }
+
+        @Override
+        public List<SeasonalityPoint> analyze(int daysHistory, int window, double zThreshold) {
+            this.lastDaysHistory = daysHistory;
+            return points;
+        }
+
+        @Override
+        public List<SeasonalityMonthStat> summarizeByMonth(List<SeasonalityPoint> points) {
+            return monthStats;
+        }
+    }
+
+    private static class StubReplenishmentService extends ReplenishmentService {
+        private final List<ReplenishSuggestion> result;
+        private int lastDaysHistory;
+
+        private StubReplenishmentService(List<ReplenishSuggestion> result) {
+            this.result = result;
+        }
+
+        @Override
+        public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int bufferDays, int safetyDays) {
+            this.lastDaysHistory = daysHistory;
+            return result;
+        }
+    }
+
+    private static class SessionContext {
+        private final Map<String, Object> attrs = new HashMap<>();
+        private boolean invalidated;
+    }
+
+    private static class RequestContext {
+        private final SessionContext sessionCtx;
+        private final Map<String, String> params = new HashMap<>();
+        private final Map<String, Object> attrs = new HashMap<>();
+        private String contextPath;
+        private String requestUri;
+        private String forwardedPath;
+
+        private RequestContext(SessionContext sessionCtx) {
+            this.sessionCtx = sessionCtx;
+        }
+
+        private String toQueryString() {
+            if (params.isEmpty()) {
+                return null;
+            }
+            List<String> parts = new ArrayList<>();
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                parts.add(entry.getKey() + "=" + entry.getValue());
+            }
+            return String.join("&", parts);
+        }
+    }
+
+    private static class ResponseContext {
+        private final Map<String, String> headers = new HashMap<>();
+        private final StringWriter body = new StringWriter();
+        private String redirectedTo;
+        private String contentType;
+    }
+}
