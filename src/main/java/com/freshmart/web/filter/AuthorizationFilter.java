@@ -25,13 +25,12 @@ public class AuthorizationFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) {
-        rules.put("/admin/", EnumSet.of(Role.ADMIN));
-        rules.put("/staff/", EnumSet.of(Role.STAFF, Role.ADMIN));
-        rules.put("/seller/", EnumSet.of(Role.SELLER, Role.ADMIN));
-        rules.put("/pro/", EnumSet.of(Role.CUSTOMER, Role.STAFF, Role.ADMIN)); // dashboard/forecast
-        rules.put("/customer/", EnumSet.of(Role.CUSTOMER, Role.ADMIN));
-        rules.put("/subscription/", EnumSet.of(Role.CUSTOMER, Role.ADMIN));
-
+        rules.put("/admin", EnumSet.of(Role.ADMIN));
+        rules.put("/staff", EnumSet.of(Role.STAFF, Role.ADMIN));
+        rules.put("/seller", EnumSet.of(Role.SELLER, Role.ADMIN));
+        rules.put("/pro", EnumSet.of(Role.CUSTOMER, Role.STAFF, Role.ADMIN));
+        rules.put("/customer", EnumSet.of(Role.CUSTOMER, Role.ADMIN));
+        rules.put("/subscription", EnumSet.of(Role.CUSTOMER, Role.ADMIN));
     }
 
     @Override
@@ -52,7 +51,8 @@ public class AuthorizationFilter implements Filter {
         String path = uri.substring(ctx.length()); // "/seller/pos"
 
         for (Map.Entry<String, Set<Role>> e : rules.entrySet()) {
-            if (path.startsWith(e.getKey())) {
+            String rulePath = e.getKey();
+            if (path.equals(rulePath) || path.startsWith(rulePath + "/")) {
                 if (!e.getValue().contains(u.getRole())) {
                     response.setStatus(403);
                     request.setAttribute("errorMessage", "Bạn không có quyền truy cập trang này.");
