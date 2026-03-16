@@ -9,239 +9,204 @@
     <title>
         <c:choose>
             <c:when test="${not empty pageTitle}">
-                <c:out value="${pageTitle}"/>
+                <c:out value="${pageTitle}"/> | FreshMart
             </c:when>
-            <c:otherwise>FreshMart</c:otherwise>
+            <c:otherwise>FreshMart - Enterprise Grocery Operations</c:otherwise>
         </c:choose>
     </title>
 
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet"/>
 
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css?v=3"/>
+    <!-- FM Design System -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fm-design-system.css?v=1"/>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fm-components.css?v=1"/>
+    
+    <!-- Legacy Support (if needed) -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/app.css?v=4"/>
+    
+    <style>
+        /* Topbar specific overrides for enterprise feel */
+        .fm-nav-link {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--fm-slate-600);
+            padding: 0.5rem 1rem;
+            border-radius: var(--fm-radius-control);
+        }
+        .fm-nav-link:hover, .fm-nav-link.active {
+            color: var(--fm-primary-600);
+            background: var(--fm-primary-50);
+        }
+        .navbar-brand {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            color: var(--fm-primary-600) !important;
+        }
+    </style>
 </head>
 
-<body class="app-body">
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand" href="${pageContext.request.contextPath}/">FreshMart</a>
+<body class="fm-app-shell">
+<header class="fm-topbar">
+    <div class="container-fluid px-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-4">
+                <a class="navbar-brand fs-4" href="${pageContext.request.contextPath}/">
+                    <i class="bi bi-leaf-fill me-2"></i>FreshMart
+                </a>
 
-        <button class="navbar-toggler" type="button"
-                data-bs-toggle="collapse" data-bs-target="#nav"
-                aria-controls="nav" aria-expanded="false"
-                aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+                <nav class="d-none d-lg-flex align-items-center gap-1">
+                    <a class="fm-nav-link ${pageContext.request.servletPath == '/' ? 'active' : ''}" 
+                       href="${pageContext.request.contextPath}/">Home</a>
+                    
+                    <a class="fm-nav-link ${pageContext.request.servletPath == '/catalog' ? 'active' : ''}" 
+                       href="${pageContext.request.contextPath}/catalog">Catalog</a>
 
-        <div class="collapse navbar-collapse" id="nav">
+                    <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
+                        <div class="dropdown">
+                            <a class="fm-nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Customer</a>
+                            <ul class="dropdown-menu border-0 shadow-sm">
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/dashboard">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/orders">My Orders</a></li>
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/profile">My Profile</a></li>
+                            </ul>
+                        </div>
+                    </c:if>
 
-            <ul class="navbar-nav me-auto">
+                    <c:if test="${sessionScope.authUser != null && (sessionScope.authUser.role.toString() eq 'STAFF' || sessionScope.authUser.role.toString() eq 'ADMIN')}">
+                        <div class="dropdown">
+                            <a class="fm-nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Operations</a>
+                            <ul class="dropdown-menu border-0 shadow-sm">
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff">Dashboard</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/inventory">Real-time Inventory</a></li>
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/import-lot">Import Lot (FEFO)</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/products">Product Master</a></li>
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/suppliers">Supplier Management</a></li>
+                            </ul>
+                        </div>
+                    </c:if>
+                </nav>
+            </div>
 
-                <li class="nav-item">
-                    <a class="nav-link ${pageContext.request.servletPath == '/' || pageContext.request.servletPath == '/home' ? 'active' : ''}"
-                       href="${pageContext.request.contextPath}/">
-                        Home
-                    </a>
-                </li>
+            <div class="d-flex align-items-center gap-3">
+                <a href="${pageContext.request.contextPath}/cart-view" class="btn btn-link link-dark position-relative p-2">
+                    <i class="bi bi-cart3 fs-5"></i>
+                    <c:if test="${not empty sessionScope.cart and sessionScope.cart.itemCount > 0}">
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.65rem;">
+                            ${sessionScope.cart.itemCount}
+                        </span>
+                    </c:if>
+                </a>
 
-                <li class="nav-item">
-                    <a class="nav-link ${pageContext.request.servletPath == '/catalog' || pageContext.request.servletPath == '/product' ? 'active' : ''}"
-                       href="${pageContext.request.contextPath}/catalog">
-                        Catalog
-                    </a>
-                </li>
-
-                <c:if test="${sessionScope.authUser != null}">
-                    <li class="nav-item">
-                        <a class="nav-link ${pageContext.request.servletPath == '/cart-view' ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/cart-view">
-                            Cart
-                        </a>
-                    </li>
-                </c:if>
-
-                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/customer') ? 'active' : ''}"
-                           href="#" role="button" data-bs-toggle="dropdown">
-                            Customer
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/dashboard">Dashboard</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/orders">My Orders</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/customer/profile">My Profile</a></li>
-                        </ul>
-                    </li>
-                </c:if>
-
-                <c:if test="${sessionScope.authUser != null 
-                             && (sessionScope.authUser.role.toString() eq 'CUSTOMER' 
-                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
-                    <li class="nav-item">
-                        <a class="nav-link ${pageContext.request.servletPath.startsWith('/subscription') ? 'active' : ''}"
-                           href="${pageContext.request.contextPath}/subscription/upgrade">
-                            Upgrade
-                        </a>
-                    </li>
-                </c:if>
-
-                <c:if test="${sessionScope.authUser != null 
-                             && (sessionScope.authUser.tier.toString() eq 'PRO'
-                                 || sessionScope.authUser.role.toString() eq 'STAFF'
-                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/pro') ? 'active' : ''}"
-                           href="#" role="button" data-bs-toggle="dropdown">
-                            PRO
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/dashboard">Dashboard</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/seasonality">Seasonality</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/pro/replenishment">Replenishment</a></li>
-                        </ul>
-                    </li>
-                </c:if>
-
-                <c:if test="${sessionScope.authUser != null 
-                             && (sessionScope.authUser.role.toString() eq 'SELLER'
-                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/seller') ? 'active' : ''}"
-                           href="#" role="button" data-bs-toggle="dropdown">
-                            Seller
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/seller/pos">POS</a></li>
-                        </ul>
-                    </li>
-                </c:if>
-
-                <c:if test="${sessionScope.authUser != null 
-                             && (sessionScope.authUser.role.toString() eq 'STAFF'
-                                 || sessionScope.authUser.role.toString() eq 'ADMIN')}">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/staff') ? 'active' : ''}"
-                           href="#" role="button" data-bs-toggle="dropdown">
-                            Staff
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff">Staff Home</a></li>
-                            <li><hr class="dropdown-divider"/></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/suppliers">Suppliers</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/products">Products</a></li>
-                            <li><hr class="dropdown-divider"/></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/inventory">Inventory (FEFO)</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/import-lot">Import lot</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/inventory-report">Inventory report</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/staff/forecast">Forecast</a></li>
-                        </ul>
-                    </li>
-                </c:if>
-
-                <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'ADMIN'}">
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle ${pageContext.request.servletPath.startsWith('/admin') ? 'active' : ''}"
-                           href="#" role="button" data-bs-toggle="dropdown">
-                            Admin
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin">Dashboard</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/sellers">Manage sellers</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/products">Manage products</a></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/add-product">Add product</a></li>
-                            <li><hr class="dropdown-divider"/></li>
-                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin/subscriptions">Subscriptions</a></li>
-                        </ul>
-                    </li>
-                </c:if>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="${pageContext.request.contextPath}/cart-view">
-                        <i class="bi bi-cart3 me-1"></i>Cart
-                    </a>
-                </li>
-
-            </ul>
-
-            <ul class="navbar-nav">
                 <c:choose>
-                    <c:when test="${sessionScope.authUser != null}">
-                        <c:if test="${sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
-                            <li class="nav-item dropdown me-2">
-                                <a class="nav-link dropdown-toggle position-relative" href="#" role="button" data-bs-toggle="dropdown"
-                                   aria-label="Thông báo subscription">
-                                    <i class="bi bi-bell"></i>
-                                    <c:if test="${not empty requestScope.subscriptionUnreadCount && requestScope.subscriptionUnreadCount > 0}">
-                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
-                                            ${requestScope.subscriptionUnreadCount}
-                                        </span>
-                                    </c:if>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end p-0" style="min-width: 340px;">
-                                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-                                        <strong>Thông báo subscription</strong>
-                                        <a class="small text-decoration-none" href="${pageContext.request.contextPath}/subscription/notifications">
-                                            Xem tất cả
-                                        </a>
-                                    </div>
+                   <c:when test="${sessionScope.authUser != null}">
+    <c:if test="${sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
+        <div class="dropdown me-2">
+            <a class="btn btn-link link-dark position-relative p-2" href="#" role="button" data-bs-toggle="dropdown"
+               aria-label="Thông báo subscription">
+                <i class="bi bi-bell fs-5"></i>
+                <c:if test="${not empty requestScope.subscriptionUnreadCount && requestScope.subscriptionUnreadCount > 0}">
+                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill text-bg-danger">
+                        ${requestScope.subscriptionUnreadCount}
+                    </span>
+                </c:if>
+            </a>
 
-                                    <c:choose>
-                                        <c:when test="${empty requestScope.subscriptionHeaderNotifications}">
-                                            <div class="p-3 text-muted small">Chưa có thông báo nào.</div>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <c:forEach items="${requestScope.subscriptionHeaderNotifications}" var="notify">
-                                                <a class="dropdown-item py-3 border-bottom"
-                                                   href="${pageContext.request.contextPath}/subscription/upgrade">
-                                                    <div class="d-flex justify-content-between align-items-start gap-2">
-                                                        <div>
-                                                            <div class="fw-semibold"><c:out value="${notify.title}" /></div>
-                                                            <div class="small text-muted"><c:out value="${notify.message}" /></div>
-                                                        </div>
-                                                        <c:if test="${not notify.read}">
-                                                            <span class="badge text-bg-danger">Mới</span>
-                                                        </c:if>
-                                                    </div>
-                                                </a>
-                                            </c:forEach>
-                                        </c:otherwise>
-                                    </c:choose>
-                                </div>
-                            </li>
-                        </c:if>
-                        <li class="nav-item">
-                            <span class="navbar-text me-3">
-                                Xin chào,
-                                <b><c:out value="${sessionScope.authUser.username}"/></b>
-                                (<c:out value="${sessionScope.authUser.role}"/>)
-                            </span>
-                        </li>
-                        <li class="nav-item">
-                            <form action="${pageContext.request.contextPath}/logout" method="post" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
-                                <button type="submit" class="nav-link btn btn-link p-0" style="text-decoration:none;">
-                                    Logout
-                                </button>
-                            </form>
-                        </li>
+            <div class="dropdown-menu dropdown-menu-end p-0 border-0 shadow-lg" style="min-width: 340px; border-radius: 12px;">
+                <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <strong>Thông báo subscription</strong>
+                    <a class="small text-decoration-none" href="${pageContext.request.contextPath}/subscription/notifications">
+                        Xem tất cả
+                    </a>
+                </div>
+
+                <c:choose>
+                    <c:when test="${empty requestScope.subscriptionHeaderNotifications}">
+                        <div class="p-3 text-muted small">Chưa có thông báo nào.</div>
                     </c:when>
                     <c:otherwise>
-                        <li class="nav-item">
-                            <a class="nav-link" href="${pageContext.request.contextPath}/login">Login</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="${pageContext.request.contextPath}/register">Register</a>
-                        </li>
+                        <c:forEach items="${requestScope.subscriptionHeaderNotifications}" var="notify">
+                            <a class="dropdown-item py-3 border-bottom"
+                               href="${pageContext.request.contextPath}/subscription/upgrade">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-semibold"><c:out value="${notify.title}" /></div>
+                                        <div class="small text-muted"><c:out value="${notify.message}" /></div>
+                                    </div>
+                                    <c:if test="${not notify.read}">
+                                        <span class="badge text-bg-danger">Mới</span>
+                                    </c:if>
+                                </div>
+                            </a>
+                        </c:forEach>
                     </c:otherwise>
                 </c:choose>
-            </ul>
+            </div>
+        </div>
+    </c:if>
 
+    <div class="dropdown">
+        <button class="btn btn-light d-flex align-items-center gap-2 border-0 bg-transparent px-2" data-bs-toggle="dropdown">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700; font-size: 0.8rem;">
+                ${sessionScope.authUser.username.substring(0,1).toUpperCase()}
+            </div>
+            <div class="text-start d-none d-md-block">
+                <div class="fw-bold lh-1" style="font-size: 0.85rem;"><c:out value="${sessionScope.authUser.username}"/></div>
+                <div class="text-muted" style="font-size: 0.75rem;"><c:out value="${sessionScope.authUser.role}"/></div>
+            </div>
+            <i class="bi bi-chevron-down ms-1 text-muted" style="font-size: 0.75rem;"></i>
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg mt-2 py-2" style="min-width: 200px; border-radius: 12px;">
+            <li class="px-3 py-2 border-bottom mb-2">
+                <div class="fw-bold"><c:out value="${sessionScope.authUser.fullName}"/></div>
+                <div class="small text-muted"><c:out value="${sessionScope.authUser.email}"/></div>
+            </li>
+
+            <li>
+                <a class="dropdown-item" href="${pageContext.request.contextPath}/profile">
+                    <i class="bi bi-person me-2"></i>Account Settings
+                </a>
+            </li>
+
+            <c:if test="${sessionScope.authUser.role.toString() eq 'ADMIN'}">
+                <li>
+                    <a class="dropdown-item" href="${pageContext.request.contextPath}/admin">
+                        <i class="bi bi-shield-check me-2"></i>Admin Console
+                    </a>
+                </li>
+            </c:if>
+
+            <li><hr class="dropdown-divider"></li>
+
+            <li>
+                <form action="${pageContext.request.contextPath}/logout" method="post">
+                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
+                    <button type="submit" class="dropdown-item text-danger">
+                        <i class="bi bi-box-arrow-right me-2"></i>Logout
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </div>
+</c:when>
+                    </c:when>
+                    <c:otherwise>
+                        <a href="${pageContext.request.contextPath}/login" class="fm-btn btn-light border p-2 px-3 fs-6" style="background: white; border-radius: 8px;">Login</a>
+                        <a href="${pageContext.request.contextPath}/register" class="fm-btn fm-btn-primary p-2 px-3 fs-6">Get Started</a>
+                    </c:otherwise>
+                </c:choose>
+            </div>
         </div>
     </div>
-</nav>
+</header>
 
-<main class="container py-4 fm-page">
+<main class="fm-page-content flex-grow-1">

@@ -21,20 +21,29 @@ import java.util.Optional;
  */
 public class ProductLotService {
 
-    private final JpaExecutor executor = new JpaExecutor();
-    private final ProductLotRepository lotRepo = new ProductLotRepository();
+    private final JpaExecutor executor;
+    private final ProductLotRepository lotRepo;
+
+    public ProductLotService() {
+        this(new JpaExecutor(), new ProductLotRepository());
+    }
+
+    ProductLotService(JpaExecutor executor, ProductLotRepository lotRepo) {
+        this.executor = executor;
+        this.lotRepo = lotRepo;
+    }
 
     /**
      * Import a new lot (create/add stock).
      * MUST be called inside a transaction.
      */
     public ProductLot importLot(Long productId,
-                                Long supplierId,
-                                LocalDate importDate,
-                                LocalDate expiryDate,
-                                int quantity,
-                                BigDecimal importPrice,
-                                EntityManager em) {
+            Long supplierId,
+            LocalDate importDate,
+            LocalDate expiryDate,
+            int quantity,
+            BigDecimal importPrice,
+            EntityManager em) {
         Product product = em.find(Product.class, productId);
         if (product == null) {
             throw new IllegalArgumentException("Product not found: " + productId);
@@ -66,8 +75,7 @@ public class ProductLotService {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE p.id = :pid " +
                         "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                ProductLot.class
-        ).setParameter("pid", productId).getResultList());
+                ProductLot.class).setParameter("pid", productId).getResultList());
     }
 
     /**
@@ -86,7 +94,8 @@ public class ProductLotService {
 
     /**
      * Get expired lots for a product (for cleanup/reporting).
-     * Only returns lots where expiryDate < today AND qtyLeft > 0 (expired items needing cleanup).
+     * Only returns lots where expiryDate < today AND qtyLeft > 0 (expired items
+     * needing cleanup).
      */
     public List<ProductLot> getExpiredLotsForProduct(Long productId) {
         return executor.execute(em -> em.createQuery(
@@ -95,8 +104,7 @@ public class ProductLotService {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE p.id = :pid AND l.expiryDate < :today AND l.qtyLeft > 0 " +
                         "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                ProductLot.class
-        ).setParameter("pid", productId)
+                ProductLot.class).setParameter("pid", productId)
                 .setParameter("today", LocalDate.now())
                 .getResultList());
     }
@@ -114,8 +122,7 @@ public class ProductLotService {
                             "LEFT JOIN FETCH l.supplier s " +
                             "WHERE l.expiryDate BETWEEN :today AND :deadline AND l.qtyLeft > 0 " +
                             "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                    ProductLot.class
-            ).setParameter("today", today)
+                    ProductLot.class).setParameter("today", today)
                     .setParameter("deadline", deadline)
                     .getResultList();
         });
@@ -123,9 +130,12 @@ public class ProductLotService {
 
     /**
      * Delete a lot (e.g., after expiry or waste).
-     * Only allows deletion of lots that are expired (expiryDate < today) OR fully consumed (qtyLeft <= 0).
-     * NOTE: for production-grade inventory, physical deletion should eventually be replaced by
-     * a dedicated disposal/audit flow. This method keeps the existing behavior for compatibility.
+     * Only allows deletion of lots that are expired (expiryDate < today) OR fully
+     * consumed (qtyLeft <= 0).
+     * NOTE: for production-grade inventory, physical deletion should eventually be
+     * replaced by
+     * a dedicated disposal/audit flow. This method keeps the existing behavior for
+     * compatibility.
      */
     public void deleteLot(Long lotId) {
         executor.executeVoid(em -> {
@@ -140,8 +150,7 @@ public class ProductLotService {
 
             if (!expired && !fullyConsumed) {
                 throw new IllegalStateException(
-                        "Chỉ được loại bỏ lô đã hết hạn hoặc đã dùng hết để tránh sai lệch tồn kho."
-                );
+                        "Chỉ được loại bỏ lô đã hết hạn hoặc đã dùng hết để tránh sai lệch tồn kho.");
             }
 
             em.remove(lot);
@@ -158,8 +167,7 @@ public class ProductLotService {
                     "SELECT COALESCE(SUM(l.qtyLeft * COALESCE(l.importPrice, 0)), 0) " +
                             "FROM ProductLot l " +
                             "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
-                    BigDecimal.class
-            ).setParameter("pid", productId)
+                    BigDecimal.class).setParameter("pid", productId)
                     .setParameter("today", LocalDate.now())
                     .getSingleResult();
             return value == null ? BigDecimal.ZERO : value;
@@ -173,8 +181,7 @@ public class ProductLotService {
         return executor.execute(em -> {
             List<ProductLot> lots = em.createQuery(
                     "SELECT l FROM ProductLot l WHERE l.product.id = :pid",
-                    ProductLot.class
-            ).setParameter("pid", productId).getResultList();
+                    ProductLot.class).setParameter("pid", productId).getResultList();
 
             int totalIn = lots.stream().mapToInt(ProductLot::getQtyIn).sum();
             int totalLeft = lots.stream().mapToInt(ProductLot::getQtyLeft).sum();
@@ -195,13 +202,13 @@ public class ProductLotService {
      * MUST be called inside a transaction.
      */
     public ProductLot updateLot(Long lotId,
-                                Long productId,
-                                Long supplierId,
-                                LocalDate importDate,
-                                LocalDate expiryDate,
-                                int newQtyIn,
-                                BigDecimal importPrice,
-                                EntityManager em) {
+            Long productId,
+            Long supplierId,
+            LocalDate importDate,
+            LocalDate expiryDate,
+            int newQtyIn,
+            BigDecimal importPrice,
+            EntityManager em) {
         ProductLot lot = em.find(ProductLot.class, lotId);
         if (lot == null) {
             throw new IllegalArgumentException("Lot not found: " + lotId);
@@ -221,14 +228,12 @@ public class ProductLotService {
 
         if (newQtyIn < consumed) {
             throw new IllegalArgumentException(
-                    "New qtyIn cannot be smaller than already consumed quantity: " + consumed
-            );
+                    "New qtyIn cannot be smaller than already consumed quantity: " + consumed);
         }
 
         if (consumed > 0 && !lot.getProduct().getId().equals(productId)) {
             throw new IllegalStateException(
-                    "Không thể thay đổi sản phẩm cho lô đã có lịch sử tiêu thụ."
-            );
+                    "Không thể thay đổi sản phẩm cho lô đã có lịch sử tiêu thụ.");
         }
 
         lot.setProduct(product);
@@ -259,8 +264,7 @@ public class ProductLotService {
 
             List<ProductLot> lots = em.createQuery(
                     "SELECT l FROM ProductLot l WHERE l.product.id = :pid",
-                    ProductLot.class
-            ).setParameter("pid", productId).getResultList();
+                    ProductLot.class).setParameter("pid", productId).getResultList();
 
             if (lots.isEmpty()) {
                 return new StockSummaryDto(0, 0, 0, 0, 0, 0, 0, 0, BigDecimal.ZERO, null);
@@ -323,8 +327,7 @@ public class ProductLotService {
                     (int) expiredLotsCount,
                     expiringQty,
                     availableValue,
-                    nearestExpiry
-            );
+                    nearestExpiry);
         });
     }
 
@@ -341,9 +344,9 @@ public class ProductLotService {
     }
 
     private void validateLotInput(LocalDate importDate,
-                                  LocalDate expiryDate,
-                                  int quantity,
-                                  BigDecimal importPrice) {
+            LocalDate expiryDate,
+            int quantity,
+            BigDecimal importPrice) {
         if (importDate == null || expiryDate == null) {
             throw new IllegalArgumentException("Import date and expiry date are required");
         }

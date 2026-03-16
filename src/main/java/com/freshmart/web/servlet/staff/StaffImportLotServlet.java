@@ -20,13 +20,27 @@ import java.time.format.DateTimeFormatter;
  * Servlet để nhập lô sản phẩm (import lot / import stock).
  * Map: /staff/import-lot
  */
-@WebServlet(urlPatterns = {"/staff/import-lot", "/staff/inventory/import"})
+@WebServlet(urlPatterns = { "/staff/import-lot", "/staff/inventory/import" })
 public class StaffImportLotServlet extends HttpServlet {
 
-    private final JpaExecutor executor = new JpaExecutor();
-    private final ProductRepository productRepo = new ProductRepository();
-    private final SupplierRepository supplierRepo = new SupplierRepository();
-    private final ProductLotService lotService = new ProductLotService();
+    private final JpaExecutor executor;
+    private final ProductRepository productRepo;
+    private final SupplierRepository supplierRepo;
+    private final ProductLotService lotService;
+
+    public StaffImportLotServlet() {
+        this(new JpaExecutor(), new ProductRepository(), new SupplierRepository(), new ProductLotService());
+    }
+
+    StaffImportLotServlet(JpaExecutor executor,
+            ProductRepository productRepo,
+            SupplierRepository supplierRepo,
+            ProductLotService lotService) {
+        this.executor = executor;
+        this.productRepo = productRepo;
+        this.supplierRepo = supplierRepo;
+        this.lotService = lotService;
+    }
 
     private void loadReferenceData(HttpServletRequest req) {
         req.setAttribute("products", executor.execute(em -> productRepo.findAll(em, true)));
@@ -111,8 +125,7 @@ public class StaffImportLotServlet extends HttpServlet {
                             expiryDate,
                             quantity,
                             importPrice,
-                            em
-                    );
+                            em);
                 }
                 return lotService.importLot(
                         productId,
@@ -121,8 +134,7 @@ public class StaffImportLotServlet extends HttpServlet {
                         expiryDate,
                         quantity,
                         importPrice,
-                        em
-                );
+                        em);
             });
 
             if (lotIdRaw != null && !lotIdRaw.isBlank()) {
