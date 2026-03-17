@@ -96,6 +96,48 @@ public final class JPAUtil {
                                 "CONSTRAINT fk_user_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)" +
                                 ")"
                 );
+
+                // Chat tables for AI chatbot
+                ensureTableExists(
+                        conn,
+                        "chat_sessions",
+                        "CREATE TABLE chat_sessions (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "user_id BIGINT NULL, " +
+                                "session_token NVARCHAR(100) NOT NULL, " +
+                                "status NVARCHAR(20) NOT NULL DEFAULT 'active', " +
+                                "created_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "updated_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME())" +
+                                ")"
+                );
+
+                ensureTableExists(
+                        conn,
+                        "chat_messages",
+                        "CREATE TABLE chat_messages (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "chat_session_id BIGINT NOT NULL, " +
+                                "role NVARCHAR(20) NOT NULL, " +
+                                "message_content NVARCHAR(MAX) NOT NULL, " +
+                                "intent NVARCHAR(30) NULL, " +
+                                "source_type NVARCHAR(20) NULL, " +
+                                "created_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "CONSTRAINT fk_chat_messages_session FOREIGN KEY (chat_session_id) REFERENCES chat_sessions(id)" +
+                                ")"
+                );
+
+                ensureTableExists(
+                        conn,
+                        "chat_feedback",
+                        "CREATE TABLE chat_feedback (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "chat_message_id BIGINT NOT NULL, " +
+                                "rating INT NOT NULL, " +
+                                "comment NVARCHAR(500) NULL, " +
+                                "created_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "CONSTRAINT fk_chat_feedback_message FOREIGN KEY (chat_message_id) REFERENCES chat_messages(id)" +
+                                ")"
+                );
             }
         } catch (Exception e) {
             System.err.println("schema pre-check failed: " + e.getMessage());

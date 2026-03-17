@@ -2,8 +2,8 @@ package com.freshmart.util;
 
 public class AiConstants {
     // API Key should ideally be loaded from environment variables
-    public static final String GEMINI_API_KEY = "AIzaSyAyvkAQAWt02eGVoXTBbPWeryiKBrUm-8o";
-    public static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+    public static final String GEMINI_API_KEY = "AIzaSyCaDShWYkrfUlx-MhUDkmmKDwJ4ddWyvRs";
+    public static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
     // System Prompts Constants
     public static final String SYSTEM_INSTRUCTION = "Bạn là trợ lý AI ảo của FreshMart, một hệ thống chuyên cung cấp thực phẩm tươi sạch. " +
