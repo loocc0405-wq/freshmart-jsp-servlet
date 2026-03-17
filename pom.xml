@@ -9,7 +9,7 @@
     <packaging>war</packaging>
 
     <name>FreshMart - Fresh Food Management</name>
-    <description>JSP/Servlet/JPA (Hibernate) MVC - Fresh food inventory by lot (FEFO) + revenue forecasting (no AI)</description>
+    <description>JSP/Servlet/JPA (Hibernate) MVC - Fresh food inventory by lot (FEFO) + revenue forecasting (no AI). (Trigger refresh)</description>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>

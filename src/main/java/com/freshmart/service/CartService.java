@@ -1,7 +1,13 @@
 package com.freshmart.service;
 
-import com.freshmart.entity.*;
-import com.freshmart.repository.*;
+import com.freshmart.entity.Cart;
+import com.freshmart.entity.CartItem;
+import com.freshmart.entity.Product;
+import com.freshmart.entity.ProductLot;
+import com.freshmart.repository.CartItemRepository;
+import com.freshmart.repository.CartRepository;
+import com.freshmart.repository.ProductLotRepository;
+import com.freshmart.repository.ProductRepository;
 import com.freshmart.util.JpaExecutor;
 
 import java.time.LocalDate;
