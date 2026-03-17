@@ -90,7 +90,20 @@
                     </a>
 
                     <c:if test="${sessionScope.authUser != null}">
-                        <c:set var="dashUrl" value="${sessionScope.authUser.role == 'CUSTOMER' ? '/customer/dashboard' : '/staff'}"/>
+                        <c:choose>
+                            <c:when test="${sessionScope.authUser.role == 'ADMIN'}">
+                                <c:set var="dashUrl" value="/admin"/>
+                            </c:when>
+                            <c:when test="${sessionScope.authUser.role == 'STAFF'}">
+                                <c:set var="dashUrl" value="/staff"/>
+                            </c:when>
+                            <c:when test="${sessionScope.authUser.role == 'SELLER'}">
+                                <c:set var="dashUrl" value="/seller/pos"/>
+                            </c:when>
+                            <c:otherwise>
+                                <c:set var="dashUrl" value="${sessionScope.authUser.tier == 'PRO' ? '/pro/dashboard' : '/customer/dashboard'}"/>
+                            </c:otherwise>
+                        </c:choose>
                         <a class="fm-nav-link ${fn:startsWith(pageContext.request.servletPath, dashUrl) ? 'active' : ''}" 
                            href="${pageContext.request.contextPath}${dashUrl}">
                             <i class="bi bi-speedometer2"></i> Dashboard
@@ -104,7 +117,10 @@
                                 <i class="bi bi-person-badge"></i> My Account
                             </a>
                             <ul class="dropdown-menu border-0 shadow-lg mt-2 py-2" style="border-radius: 12px;">
-                                <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/customer/dashboard"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                                <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/customer/dashboard"><i class="bi bi-speedometer2 me-2"></i>My Cockpit</a></li>
+                                <c:if test="${sessionScope.authUser.tier == 'PRO'}">
+                                    <li><a class="dropdown-item py-2 fw-bold text-primary" href="${pageContext.request.contextPath}/pro/dashboard"><i class="bi bi-lightning-charge-fill text-warning me-2"></i>PRO Insights</a></li>
+                                </c:if>
                                 <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/customer/orders"><i class="bi bi-bag me-2"></i>My Orders</a></li>
                                 <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/customer/profile"><i class="bi bi-person me-2"></i>Profile Settings</a></li>
                             </ul>
@@ -177,6 +193,8 @@
                                 <c:if test="${sessionScope.authUser.role == 'ADMIN'}">
                                     <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin"><i class="bi bi-shield-lock me-2 text-primary"></i>Admin Console</a></li>
                                 </c:if>
+                                
+                                <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/subscription/upgrade"><i class="bi bi-star me-2 text-warning"></i>Upgrade to PRO</a></li>
                                 
                                 <li><hr class="dropdown-divider opacity-50"></li>
                                 <li>
