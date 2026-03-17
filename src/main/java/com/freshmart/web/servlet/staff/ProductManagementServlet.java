@@ -39,9 +39,12 @@ public class ProductManagementServlet extends HttpServlet {
         }
 
         switch (action) {
-            case "add":
-                showForm(request, response, null);
+            case "add": {
+                Product emptyProduct = new Product();
+                emptyProduct.setActive(true); // Default to active for new products
+                showForm(request, response, emptyProduct);
                 break;
+            }
 
             case "edit": {
                 String idStr = request.getParameter("id");
