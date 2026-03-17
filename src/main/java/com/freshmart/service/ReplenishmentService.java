@@ -190,7 +190,7 @@ public List<ReplenishSuggestion> suggest(int daysHistory, int leadTimeDays, int 
         reason.append(best.getSupplierName());
         reason.append(" (Lead: ").append(best.getSupplierLeadTimeDays()).append("d");
         if (best.getAvgImportPrice() != null) {
-            reason.append(", Avg price: ").append(best.getAvgImportPrice());
+            reason.append(", Avg price: ").append(best.getAvgImportPrice().setScale(2, java.math.RoundingMode.HALF_UP));
         }
         reason.append(", Lots: ").append(best.getLotCount());
         reason.append(")");

@@ -1170,75 +1170,75 @@ public class AiForecastEngineService {
         }
     }
 
-    private static final class DeterministicForecastReport {
-        private String periodLabel;
-        private String scopeLabel;
-        private String productName;
-        private String engineMode;
-        private LocalDate analysisDate;
-        private LocalDate forecastStart;
-        private LocalDate forecastEnd;
-        private BigDecimal forecastRevenue = BigDecimal.ZERO;
-        private BigDecimal lowerBound = BigDecimal.ZERO;
-        private BigDecimal upperBound = BigDecimal.ZERO;
-        private BigDecimal lastActual = BigDecimal.ZERO;
-        private BigDecimal maForecast = BigDecimal.ZERO;
-        private BigDecimal esForecast = BigDecimal.ZERO;
-        private BigDecimal adjustmentFactor = BigDecimal.ONE;
-        private BigDecimal seasonalityFactor = BigDecimal.ONE;
-        private BigDecimal marketingFactor = BigDecimal.ONE;
-        private BigDecimal weatherProxyFactor = BigDecimal.ONE;
-        private BigDecimal pricePressureFactor = BigDecimal.ONE;
-        private double trendPercent;
-        private double volatilityPercent;
-        private String confidenceLabel;
-        private int historicalBucketsUsed;
-        private double procurementRiskPenalty;
-        private double marginRiskPenalty;
-        private double seasonalityRiskPenalty;
-        private List<String> preprocessingNotes = new ArrayList<>();
-        private List<String> procurementLines = new ArrayList<>();
-        private List<String> marginLines = new ArrayList<>();
-        private List<String> seasonalityLines = new ArrayList<>();
-        private List<String> dataNotes = new ArrayList<>();
+    static final class DeterministicForecastReport {
+        String periodLabel;
+        String scopeLabel;
+        String productName;
+        String engineMode;
+        LocalDate analysisDate;
+        LocalDate forecastStart;
+        LocalDate forecastEnd;
+        BigDecimal forecastRevenue = BigDecimal.ZERO;
+        BigDecimal lowerBound = BigDecimal.ZERO;
+        BigDecimal upperBound = BigDecimal.ZERO;
+        BigDecimal lastActual = BigDecimal.ZERO;
+        BigDecimal maForecast = BigDecimal.ZERO;
+        BigDecimal esForecast = BigDecimal.ZERO;
+        BigDecimal adjustmentFactor = BigDecimal.ONE;
+        BigDecimal seasonalityFactor = BigDecimal.ONE;
+        BigDecimal marketingFactor = BigDecimal.ONE;
+        BigDecimal weatherProxyFactor = BigDecimal.ONE;
+        BigDecimal pricePressureFactor = BigDecimal.ONE;
+        double trendPercent;
+        double volatilityPercent;
+        String confidenceLabel;
+        int historicalBucketsUsed;
+        double procurementRiskPenalty;
+        double marginRiskPenalty;
+        double seasonalityRiskPenalty;
+        List<String> preprocessingNotes = new ArrayList<>();
+        List<String> procurementLines = new ArrayList<>();
+        List<String> marginLines = new ArrayList<>();
+        List<String> seasonalityLines = new ArrayList<>();
+        List<String> dataNotes = new ArrayList<>();
     }
 
-    private static final class MarketingSignal {
-        private BigDecimal factor = BigDecimal.ONE;
-        private final List<String> notes = new ArrayList<>();
+    static final class MarketingSignal {
+        BigDecimal factor = BigDecimal.ONE;
+        final List<String> notes = new ArrayList<>();
     }
 
-    private static final class MarginDiagnostic {
-        private BigDecimal pricePressureFactor = BigDecimal.ONE;
-        private double uncertaintyPenalty;
-        private final List<String> lines = new ArrayList<>();
+    static final class MarginDiagnostic {
+        BigDecimal pricePressureFactor = BigDecimal.ONE;
+        double uncertaintyPenalty;
+        final List<String> lines = new ArrayList<>();
     }
 
-    private static final class ProcurementDiagnostic {
-        private double uncertaintyPenalty;
-        private final List<String> lines = new ArrayList<>();
-        private final List<String> additionalNotes = new ArrayList<>();
+    static final class ProcurementDiagnostic {
+        double uncertaintyPenalty;
+        final List<String> lines = new ArrayList<>();
+        final List<String> additionalNotes = new ArrayList<>();
     }
 
-    private static final class SeasonalityDiagnostic {
-        private double uncertaintyPenalty;
-        private final List<String> lines = new ArrayList<>();
+    static final class SeasonalityDiagnostic {
+        double uncertaintyPenalty;
+        final List<String> lines = new ArrayList<>();
     }
 
-    private static final class MarginFinding {
-        private final String line;
-        private final double severity;
-        private final double importChangePct;
-        private final double marginPct;
+    static final class MarginFinding {
+        final String line;
+        final double severity;
+        final double importChangePct;
+        final double marginPct;
 
-        private MarginFinding(String line, double severity, double importChangePct, double marginPct) {
+        MarginFinding(String line, double severity, double importChangePct, double marginPct) {
             this.line = line;
             this.severity = severity;
             this.importChangePct = importChangePct;
             this.marginPct = marginPct;
         }
 
-        private double getSeverity() {
+        double getSeverity() {
             return severity;
         }
     }
