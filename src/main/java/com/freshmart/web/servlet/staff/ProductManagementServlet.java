@@ -175,10 +175,13 @@ public class ProductManagementServlet extends HttpServlet {
 
         // validate imageUrl if provided and no file uploaded
         if (uploadedImagePath == null && imageUrl != null && !imageUrl.isEmpty()) {
-            try {
-                new java.net.URL(imageUrl);
-            } catch (Exception e) {
-                errors.append("Image URL is not a valid URL. ");
+            // Allow local paths (starting with /) or external URLs
+            if (!imageUrl.startsWith("/")) {
+                try {
+                    new java.net.URL(imageUrl);
+                } catch (Exception e) {
+                    errors.append("Image URL is not a valid URL. ");
+                }
             }
         }
 
