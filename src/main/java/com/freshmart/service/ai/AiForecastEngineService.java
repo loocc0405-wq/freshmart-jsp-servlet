@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class AiForecastEngineService {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
-    private static final Locale VI_LOCALE = new Locale("vi", "VN");
+    private static final Locale VI_LOCALE = new Locale.Builder().setLanguage("vi").setRegion("VN").build();
 
     private final AiForecastDataService dataService;
     private final GeminiService geminiService;
