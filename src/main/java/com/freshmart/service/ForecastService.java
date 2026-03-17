@@ -13,7 +13,7 @@ import java.time.YearMonth;
 import java.util.*;
 
 /**
- * Module 9 - Revenue Forecasting (No AI):
+ * Module 9 - Revenue Forecasting (classical baseline):
  * - Moving Average
  * - Exponential Smoothing
  *

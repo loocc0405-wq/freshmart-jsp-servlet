@@ -6,6 +6,7 @@ public enum ChatIntent {
     POLICY_QUERY,
     PROMOTION_QUERY,
     ACCOUNT_SUPPORT,
+    REVENUE_FORECAST,
     GENERAL_FAQ,
     OUT_OF_SCOPE
 }

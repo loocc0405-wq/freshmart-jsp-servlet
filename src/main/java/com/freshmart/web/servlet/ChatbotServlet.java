@@ -3,6 +3,8 @@ package com.freshmart.web.servlet;
 import com.freshmart.config.AppConstants;
 import com.freshmart.entity.User;
 import com.freshmart.service.chat.ChatbotService;
+import com.freshmart.service.chat.ChatbotService.ChatResponse;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
@@ -60,18 +62,35 @@ public class ChatbotServlet extends HttpServlet {
 
             Long userId = extractLoggedInUserId(request);
 
-            String aiResponse;
+            ChatResponse chatResponse;
             try {
-                aiResponse = chatbotService.processUserMessage(sessionToken, userId, userMessage);
+                chatResponse = chatbotService.processUserMessage(sessionToken, userId, userMessage);
             } catch (Exception serviceEx) {
                 log("ChatbotService failed", serviceEx);
-                aiResponse = "Xin lỗi, hiện tại chatbot đang gặp sự cố tạm thời. Bạn vui lòng thử lại sau.";
+                chatResponse = new ChatResponse(
+                    "Xin lỗi, chatbot đang gặp sự cố tạm thời. Bạn vui lòng thử lại sau nhé! 😊",
+                    null
+                );
             }
 
             JsonObject jsonResponse = new JsonObject();
             jsonResponse.addProperty("status", "success");
-            jsonResponse.addProperty("reply", aiResponse);
+            jsonResponse.addProperty("reply", chatResponse.getReply());
             jsonResponse.addProperty("sessionToken", sessionToken);
+
+            // Add intent for frontend context
+            if (chatResponse.getIntent() != null) {
+                jsonResponse.addProperty("intent", chatResponse.getIntent().name());
+            }
+
+            // Add suggested replies for quick reply buttons
+            if (chatResponse.getSuggestedReplies() != null && !chatResponse.getSuggestedReplies().isEmpty()) {
+                JsonArray suggestionsArray = new JsonArray();
+                for (String suggestion : chatResponse.getSuggestedReplies()) {
+                    suggestionsArray.add(suggestion);
+                }
+                jsonResponse.add("suggestedReplies", suggestionsArray);
+            }
 
             response.getWriter().write(jsonResponse.toString());
 

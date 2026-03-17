@@ -33,42 +33,50 @@ public class PromptBuilderService {
                 break;
             }
 
-            case POLICY_QUERY:
-            case GENERAL_FAQ: {
+            case POLICY_QUERY: {
                 String faqContext = contextService.buildFaqContext();
                 contextPrompt = PromptTemplates.buildFaqContextPrompt(safeMessage, faqContext);
                 break;
             }
 
-            case PROMOTION_QUERY: {
+            case GENERAL_FAQ: {
                 String faqContext = contextService.buildFaqContext();
-                contextPrompt =
-                        "NGỮ CẢNH KHUYẾN MÃI FRESHMART:\n" +
-                        faqContext + "\n\n" +
-                        "YÊU CẦU TRẢ LỜI:\n" +
-                        "- Nếu chưa có dữ liệu khuyến mãi realtime, hãy nói rõ là cần kiểm tra trong hệ thống hoặc tại trang ưu đãi.\n" +
-                        "- Không tự bịa voucher hoặc mức giảm giá.\n" +
-                        "- Nếu người dùng hỏi chung chung, hãy gợi ý họ kiểm tra mục khuyến mãi hoặc nêu sản phẩm cụ thể.\n\n" +
-                        "Câu hỏi khách hàng: " + safeMessage;
+                String productContext = contextService.buildProductContext();
+                contextPrompt = "Người dùng đang hỏi chung.\n\n" +
+                        "[CONTEXT - CHÍNH SÁCH]:\n" + faqContext + "\n\n" +
+                        "[CONTEXT - SẢN PHẨM]:\n" + productContext + "\n\n" +
+                        "[HƯỚNG DẪN]:\n" +
+                        "- Chào hỏi thân thiện, giới thiệu bản thân là FreshBot.\n" +
+                        "- Gợi ý các chủ đề có thể hỗ trợ: sản phẩm, đơn hàng, chính sách, tài khoản.\n" +
+                        "- Nếu khách hỏi 'bán gì', liệt kê danh mục sản phẩm từ dữ liệu.\n\n" +
+                        "[CÂU HỎI CỦA KHÁCH]: " + safeMessage;
+                break;
+            }
+
+            case PROMOTION_QUERY: {
+                String promotionContext = contextService.buildPromotionContext();
+                contextPrompt = PromptTemplates.buildPromotionContextPrompt(safeMessage, promotionContext);
                 break;
             }
 
             case ACCOUNT_SUPPORT: {
-                contextPrompt =
-                        "NGỮ CẢNH HỖ TRỢ TÀI KHOẢN FRESHMART:\n" +
-                        "- Hỗ trợ đăng nhập, quên mật khẩu, cập nhật hồ sơ, lịch sử đơn hàng và thông tin tài khoản.\n" +
-                        "- Nếu câu hỏi liên quan đến dữ liệu cá nhân hoặc đơn hàng riêng, ưu tiên nhắc người dùng đăng nhập.\n" +
-                        "- Không tự bịa thông tin tài khoản nếu không có dữ liệu xác thực.\n\n" +
-                        "Câu hỏi khách hàng: " + safeMessage;
+                contextPrompt = PromptTemplates.buildAccountContextPrompt(safeMessage);
                 break;
             }
 
-            case OUT_OF_SCOPE:
-                return baseSystem + "\n\n" +
-                        "[HƯỚNG DẪN TRẢ LỜI]\n" +
-                        "- Từ chối lịch sự vì câu hỏi nằm ngoài phạm vi hỗ trợ của FreshMart.\n" +
-                        "- Gợi ý người dùng hỏi về sản phẩm, đơn hàng, giao hàng, chính sách hoặc tài khoản.\n\n" +
-                        "Câu hỏi khách hàng: " + safeMessage;
+            case REVENUE_FORECAST: {
+                AiForecastDataService forecastDataService = new AiForecastDataService();
+                String inferredPeriod = inferForecastPeriod(safeMessage);
+                String forecastContext = forecastDataService.buildForecastContext(inferredPeriod, null);
+                contextPrompt = PromptTemplates.buildForecastContextPrompt(safeMessage, forecastContext);
+                baseSystem = AiConstants.SYSTEM_INSTRUCTION + "\n" + AiConstants.FORECAST_SYSTEM_INSTRUCTION;
+                break;
+            }
+
+            case OUT_OF_SCOPE: {
+                contextPrompt = PromptTemplates.buildOutOfScopePrompt(safeMessage);
+                break;
+            }
 
             default:
                 contextPrompt =
@@ -78,6 +86,17 @@ public class PromptBuilderService {
         }
 
         return baseSystem + "\n\n" + contextPrompt;
+    }
+
+    private String inferForecastPeriod(String message) {
+        String safe = safe(message).toLowerCase();
+        if (safe.contains("quý") || safe.contains("quy") || safe.contains("quarter")) {
+            return "quarter";
+        }
+        if (safe.contains("năm") || safe.contains("nam") || safe.contains("year")) {
+            return "year";
+        }
+        return "month";
     }
 
     private String safe(String value) {
