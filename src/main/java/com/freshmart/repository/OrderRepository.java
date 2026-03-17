@@ -196,17 +196,17 @@ public class OrderRepository {
     }
 
     public BigDecimal getAverageCompletedOrderAmount(EntityManager em, Long customerId) {
-        TypedQuery<BigDecimal> q = em.createQuery(
+        TypedQuery<Double> q = em.createQuery(
                 "SELECT AVG(o.totalAmount) " +
                 "FROM Order o " +
                 "WHERE o.customer.id = :customerId AND o.status = :status",
-                BigDecimal.class
+                Double.class
         );
         q.setParameter("customerId", customerId);
         q.setParameter("status", OrderStatus.COMPLETED);
 
-        BigDecimal result = q.getSingleResult();
-        return result != null ? result : BigDecimal.ZERO;
+        Double result = q.getSingleResult();
+        return result != null ? BigDecimal.valueOf(result) : BigDecimal.ZERO;
     }
 
     public Optional<Order> findLatestCompletedByCustomer(EntityManager em, Long customerId) {
