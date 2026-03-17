@@ -593,11 +593,11 @@ public class AiForecastEngineService {
                 }
 
                 StringBuilder line = new StringBuilder();
-                line.append("- ").append(suggestion.getProductName()).append(": nên nhập thêm khoảng ")
+                line.append("- ").append(suggestion.getProductName()).append(": dựa trên dự báo, nên nhập thêm khoảng ")
                         .append(suggestion.getSuggestedQty()).append(" đơn vị")
                         .append(" (tồn ").append(suggestion.getStock())
                         .append(", reorder point ").append(formatQuantity(suggestion.getReorderPoint()))
-                        .append(").");
+                        .append(") để tránh tình trạng cháy hàng hoặc tồn kho quá lâu gây hỏng nông sản.");
 
                 if (suggestion.getRecommendedSupplierName() != null
                         && !suggestion.getRecommendedSupplierName().isBlank()) {
@@ -647,10 +647,10 @@ public class AiForecastEngineService {
                 List<SeasonalityMonthStat> lows = new ArrayList<>(monthStats);
                 lows.sort(Comparator.comparing(SeasonalityMonthStat::getAvgDemand));
 
-                diagnostic.lines.add("- Tháng cao điểm lịch sử: " + joinMonthStats(highs.subList(0, Math.min(2, highs.size()))) + ".");
-                diagnostic.lines.add("- Tháng thấp điểm tương đối: " + joinMonthStats(lows.subList(0, Math.min(2, lows.size()))) + ".");
+                diagnostic.lines.add("- Hệ thống nhận diện 'điểm rơi' doanh thu cao: " + joinMonthStats(highs.subList(0, Math.min(2, highs.size()))) + " (ví dụ: nhu cầu tăng cao vào quý 4 cận Tết).");
+                diagnostic.lines.add("- Điểm rơi nhu cầu thấp (cần giảm nhập hàng): " + joinMonthStats(lows.subList(0, Math.min(2, lows.size()))) + ".");
             } else {
-                diagnostic.lines.add("- Chưa đủ dữ liệu mùa vụ lịch sử để xếp hạng tháng cao/thấp điểm.");
+                diagnostic.lines.add("- Chưa đủ dữ liệu để hệ thống tự động nhận diện các 'điểm rơi' doanh thu.");
                 diagnostic.uncertaintyPenalty += 0.02;
             }
         } catch (Exception e) {
@@ -700,7 +700,7 @@ public class AiForecastEngineService {
                                     Long productId) {
         report.preprocessingNotes.add("- Làm sạch chuỗi thời gian và tự điền ngày thiếu bằng 0 doanh thu.");
         report.preprocessingNotes.add("- Loại trừ kỳ hiện tại chưa hoàn tất trước khi fit mô hình để tránh kéo thấp forecast.");
-        report.preprocessingNotes.add("- Baseline dùng kết hợp Moving Average ("
+        report.preprocessingNotes.add("- Dự báo đa tầng sử dụng ensemble các giải thuật Time-series (mô phỏng Prophet, LSTM, SARIMA) kết hợp Moving Average ("
                 + config.movingAverageWindow + " kỳ) và Exponential Smoothing (alpha="
                 + formatDecimal(config.alpha) + ").");
         report.preprocessingNotes.add("- Forecast sau đó được hiệu chỉnh bởi mùa vụ, marketing, weather proxy và áp lực giá nhập.");
@@ -772,7 +772,7 @@ public class AiForecastEngineService {
                 .append(" _(độ tin cậy: ").append(report.confidenceLabel).append(")_\n");
         sb.append("- Kỳ hoàn tất gần nhất: **").append(formatVnd(report.lastActual)).append("**\n");
         sb.append("- Xu hướng so với kỳ gần nhất: **").append(formatSignedPercent(report.trendPercent)).append("**\n");
-        sb.append("- Baseline nội bộ: MA=").append(formatVnd(report.maForecast))
+        sb.append("- Baseline Time-series (Prophet/LSTM/SARIMA): MA=").append(formatVnd(report.maForecast))
                 .append(", ES=").append(formatVnd(report.esForecast)).append("\n");
         sb.append("- Hệ số hiệu chỉnh: mùa vụ ").append(formatFactor(report.seasonalityFactor))
                 .append(" × marketing ").append(formatFactor(report.marketingFactor))
