@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Suppliers" />
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -93,19 +94,19 @@
 <!-- Flash Messages -->
 <c:if test="${not empty sessionScope.successMessage}">
   <div class="alert alert-success alert-dismissible fade show" role="alert">
-    <i class="bi bi-check-circle me-2"></i>${sessionScope.successMessage}
+    <i class="bi bi-check-circle me-2"></i>${fn:escapeXml(sessionScope.successMessage)}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
-  <c:set var="temp" value="${sessionScope.remove('successMessage')}" />
+  <c:remove var="successMessage" scope="session" />
 </c:if>
 
 <c:if test="${not empty sessionScope.errorMessage}">
   <div class="alert alert-danger alert-dismissible fade show" role="alert">
     <i class="bi bi-exclamation-circle me-2"></i>
-    <span>${sessionScope.errorMessage}</span>
+    <span>${fn:escapeXml(sessionScope.errorMessage)}</span>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
-  <c:set var="temp" value="${sessionScope.remove('errorMessage')}" />
+  <c:remove var="errorMessage" scope="session" />
 </c:if>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -260,13 +261,13 @@
               <c:set var="riskPct" value="${sc.expiryRiskRate * 100}" />
               <c:choose>
                 <c:when test="${riskPct > 50}">
-                  <span class="text-danger fw-bold">${String.format('%.1f', riskPct)}%</span>
+                  <span class="text-danger fw-bold"><fmt:formatNumber value="${riskPct}" pattern="#0.0"/>%</span>
                 </c:when>
                 <c:when test="${riskPct > 20}">
-                  <span class="text-warning">${String.format('%.1f', riskPct)}%</span>
+                  <span class="text-warning"><fmt:formatNumber value="${riskPct}" pattern="#0.0"/>%</span>
                 </c:when>
                 <c:otherwise>
-                  ${String.format('%.1f', riskPct)}%
+                  <fmt:formatNumber value="${riskPct}" pattern="#0.0"/>%
                 </c:otherwise>
               </c:choose>
             </td>
@@ -274,16 +275,16 @@
               <c:set var="scoreVal" value="${sc.score}" />
               <c:choose>
                 <c:when test="${scoreVal >= 80}">
-                  <span class="text-success fw-bold">${String.format('%.0f', scoreVal)}</span>
+                  <span class="text-success fw-bold"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:when>
                 <c:when test="${scoreVal >= 60}">
-                  <span class="text-primary">${String.format('%.0f', scoreVal)}</span>
+                  <span class="text-primary"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:when>
                 <c:when test="${scoreVal >= 40}">
-                  <span class="text-warning">${String.format('%.0f', scoreVal)}</span>
+                  <span class="text-warning"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:when>
                 <c:otherwise>
-                  <span class="text-danger">${String.format('%.0f', scoreVal)}</span>
+                  <span class="text-danger"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:otherwise>
               </c:choose>
             </td>

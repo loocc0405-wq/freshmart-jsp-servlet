@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 
 <c:set var="pageTitle" value="${supplier == null ? 'Add Supplier' : 'Edit Supplier'}" />
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>

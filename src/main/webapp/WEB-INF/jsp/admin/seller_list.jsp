@@ -1,6 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="Merchant Hub Management | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -19,6 +19,20 @@
             </a>
         </div>
     </div>
+
+    <!-- Alert Messaging -->
+    <c:if test="${not empty sessionScope.sellerActionSuccess}">
+        <div class="alert alert-success fm-surface border-0 shadow-sm mb-4 p-3 anim-fade-in shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i> <c:out value="${sessionScope.sellerActionSuccess}"/>
+        </div>
+        <c:remove var="sellerActionSuccess" scope="session"/>
+    </c:if>
+    <c:if test="${not empty sessionScope.sellerActionError}">
+        <div class="alert alert-danger fm-surface border-0 shadow-sm mb-4 p-3 anim-fade-in shadow-sm">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> <c:out value="${sessionScope.sellerActionError}"/>
+        </div>
+        <c:remove var="sellerActionError" scope="session"/>
+    </c:if>
 
     <!-- Merchant Data Ledger -->
     <div class="fm-surface p-0 overflow-hidden shadow-sm border-0">
@@ -59,13 +73,13 @@
                             <td class="text-end pe-4">
                                 <div class="d-flex justify-content-end gap-2">
                                     <form method="post" action="${pageContext.request.contextPath}/admin/sellers/toggle">
+                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                                         <input type="hidden" name="id" value="${u.id}"/>
                                         <button class="fm-btn ${u.active ? 'btn-outline-danger' : 'btn-outline-success'} btn-sm px-3 fw-bold" type="submit">
-                                            <i class="bi ${u.active ? 'bi-lock' : 'bi-unlock'} me-1"></i>
-                                            ${u.active ? 'Terminate' : 'Activate'}
+                                            <i class="bi ${u.active ? 'bi-lock-fill' : 'bi-unlock-fill'} me-1"></i>
+                                            ${u.active ? 'Lock Account' : 'Unlock Account'}
                                         </button>
                                     </form>
-                                    <button class="fm-btn btn-light border btn-sm px-3 fw-bold">Profile Audit</button>
                                 </div>
                             </td>
                         </tr>

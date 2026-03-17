@@ -45,13 +45,14 @@ public class AdminAddProductServlet extends HttpServlet {
             product.setImageUrl(imageUrl);
             product.setSellPrice(sellPrice);
 
-            productService.save(product); // ✅ đúng kiến trúc
+            productService.save(product);
 
-            resp.sendRedirect(req.getContextPath() + "/admin");
+            req.getSession().setAttribute("productActionSuccess", "Thâm SKU '" + name + "' thành công vào hệ thống.");
+            resp.sendRedirect(req.getContextPath() + "/admin/products");
 
         } catch (Exception e) {
             e.printStackTrace();
-            req.setAttribute("error", "Thêm sản phẩm thất bại!");
+            req.setAttribute("error", "Lỗi khởi tạo SKU: " + e.getMessage());
             req.getRequestDispatcher("/WEB-INF/jsp/admin/add_product.jsp")
                .forward(req, resp);
         }

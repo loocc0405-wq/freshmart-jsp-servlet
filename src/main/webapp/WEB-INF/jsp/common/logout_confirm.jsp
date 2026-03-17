@@ -1,5 +1,5 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <c:set var="pageTitle" value="Logout"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
@@ -7,7 +7,7 @@
 <p>Bạn chắc chắn muốn đăng xuất khỏi hệ thống?</p>
 
 <form method="post" action="${pageContext.request.contextPath}/logout" class="d-inline">
-    <input type="hidden" name="csrf_token" value="${csrfToken}"/>
+    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}"/>
     <button type="submit" class="btn btn-danger">Logout</button>
 </form>
 

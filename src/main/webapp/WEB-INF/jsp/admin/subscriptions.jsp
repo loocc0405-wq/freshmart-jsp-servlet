@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Subscription Engine | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -86,7 +87,7 @@
                             <select class="fm-form-control border-danger-subtle py-2" name="userId" required>
                                 <option value="">-- Identify PRO Subject --</option>
                                 <c:forEach items="${users}" var="u">
-                                    <c:if test="${u.tier.toString() eq 'PRO'}">
+                                    <c:if test="${u.tier == 'PRO'}">
                                         <option value="${u.id}">
                                             <c:out value="${u.username}"/> | Exp: <c:out value="${u.expiredDate}"/>
                                         </option>

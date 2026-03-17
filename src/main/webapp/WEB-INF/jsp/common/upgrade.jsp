@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-    <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-        <%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+    <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+        <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+        <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
             <c:set var="pageTitle" value="Upgrade to PRO" />
             <jsp:include page="/WEB-INF/jsp/common/header.jsp" />
@@ -165,7 +166,7 @@
                                         <dt class="col-sm-5">Tier</dt>
                                         <dd class="col-sm-7">
                                             <c:choose>
-                                                <c:when test="${sessionScope.authUser.tier.toString() eq 'PRO'}">
+                                                <c:when test="${sessionScope.authUser.tier == 'PRO'}">
                                                     <span class="badge text-bg-success">PRO</span>
                                                 </c:when>
                                                 <c:otherwise>
@@ -397,7 +398,7 @@
                                 <c:choose>
                                     <c:when test="${empty paymentHistory}">0 giao dịch</c:when>
                                     <c:otherwise>
-                                        <c:out value="${paymentHistory.size()}" /> giao dịch
+                                        ${fn:length(paymentHistory)} giao dịch
                                     </c:otherwise>
                                 </c:choose>
                             </span>
@@ -515,7 +516,7 @@
                                     <c:choose>
                                         <c:when test="${empty tierHistory}">0 thay đổi</c:when>
                                         <c:otherwise>
-                                            <c:out value="${tierHistory.size()}" /> thay đổi
+                                            ${fn:length(tierHistory)} thay đổi
                                         </c:otherwise>
                                     </c:choose>
                                 </span>
@@ -551,7 +552,7 @@
                                                         </td>
                                                         <td>
                                                             <c:choose>
-                                                                <c:when test="${h.oldTier.toString() eq 'PRO'}">
+                                                                <c:when test="${h.oldTier == 'PRO'}">
                                                                     <span class="badge text-bg-success">PRO</span>
                                                                 </c:when>
                                                                 <c:otherwise>
@@ -562,7 +563,7 @@
                                                         <td><i class="bi bi-arrow-right"></i></td>
                                                         <td>
                                                             <c:choose>
-                                                                <c:when test="${h.newTier.toString() eq 'PRO'}">
+                                                                <c:when test="${h.newTier == 'PRO'}">
                                                                     <span class="badge text-bg-success">PRO</span>
                                                                 </c:when>
                                                                 <c:otherwise>
