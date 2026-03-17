@@ -47,7 +47,7 @@ public class AdminAddProductServlet extends HttpServlet {
 
             productService.save(product); // ✅ đúng kiến trúc
 
-            resp.sendRedirect(req.getContextPath() + "/admin/home");
+            resp.sendRedirect(req.getContextPath() + "/admin");
 
         } catch (Exception e) {
             e.printStackTrace();
