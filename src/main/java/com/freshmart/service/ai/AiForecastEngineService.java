@@ -19,7 +19,6 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -113,12 +112,10 @@ public class AiForecastEngineService {
         DeterministicForecastReport report = executor.execute(em -> {
             DeterministicForecastReport current = new DeterministicForecastReport();
             current.analysisDate = today;
-            current.periodCode = config.code;
             current.periodLabel = config.label;
             current.forecastStart = config.forecastStart(today);
             current.forecastEnd = config.forecastEnd(today);
             current.engineMode = getEngineMode();
-            current.dataContext = dataContext;
 
             Product product = productId != null ? em.find(Product.class, productId) : null;
             if (productId != null && product == null) {
@@ -196,7 +193,6 @@ public class AiForecastEngineService {
         report.seasonalityRiskPenalty = seasonalityDiagnostic.uncertaintyPenalty;
 
         double intervalWidth = resolveIntervalWidth(report);
-        report.intervalWidthPercent = intervalWidth * 100.0;
         report.lowerBound = maxZero(report.forecastRevenue
                 .multiply(BigDecimal.valueOf(1.0 - intervalWidth))
                 .setScale(0, RoundingMode.HALF_UP));
@@ -1175,7 +1171,6 @@ public class AiForecastEngineService {
     }
 
     private static final class DeterministicForecastReport {
-        private String periodCode;
         private String periodLabel;
         private String scopeLabel;
         private String productName;
@@ -1195,7 +1190,6 @@ public class AiForecastEngineService {
         private BigDecimal weatherProxyFactor = BigDecimal.ONE;
         private BigDecimal pricePressureFactor = BigDecimal.ONE;
         private double trendPercent;
-        private double intervalWidthPercent;
         private double volatilityPercent;
         private String confidenceLabel;
         private int historicalBucketsUsed;
@@ -1207,7 +1201,6 @@ public class AiForecastEngineService {
         private List<String> marginLines = new ArrayList<>();
         private List<String> seasonalityLines = new ArrayList<>();
         private List<String> dataNotes = new ArrayList<>();
-        private String dataContext;
     }
 
     private static final class MarketingSignal {
