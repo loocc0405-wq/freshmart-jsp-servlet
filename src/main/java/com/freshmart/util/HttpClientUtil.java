@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 
 public class HttpClientUtil {
@@ -15,7 +16,7 @@ public class HttpClientUtil {
             fullUrl += (targetUrl.contains("?") ? "&" : "?") + "key=" + apiKey;
         }
 
-        URL url = new URL(fullUrl);
+        URL url = URI.create(fullUrl).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         
         conn.setRequestMethod("POST");
