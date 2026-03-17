@@ -9,14 +9,19 @@ import java.net.URL;
 public class HttpClientUtil {
 
     public static String postJson(String targetUrl, String jsonPayload, String apiKey) throws Exception {
-        URL url = new URL(targetUrl);
+        // Append API key as query parameter (required by Gemini REST API)
+        String fullUrl = targetUrl;
+        if (apiKey != null && !apiKey.isEmpty()) {
+            fullUrl += (targetUrl.contains("?") ? "&" : "?") + "key=" + apiKey;
+        }
+
+        URL url = new URL(fullUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-        if (apiKey != null && !apiKey.isEmpty()) {
-            conn.setRequestProperty("X-goog-api-key", apiKey);
-        }
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(30000);
         conn.setDoOutput(true);
 
         try (OutputStream os = conn.getOutputStream()) {
