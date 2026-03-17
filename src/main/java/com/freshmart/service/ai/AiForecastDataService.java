@@ -19,15 +19,11 @@ import java.text.NumberFormat;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,7 +49,7 @@ public class AiForecastDataService {
     private static final int MAX_PRODUCT_SIGNALS = 8;
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
-    @SuppressWarnings("deprecation")
+
     private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale("vi", "VN"));
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
@@ -515,8 +511,7 @@ public class AiForecastDataService {
         }
         jpql.append("GROUP BY oi.product.id");
 
-        @SuppressWarnings("unchecked")
-        var query = em.createQuery(jpql.toString())
+        var query = em.createQuery(jpql.toString(), Object[].class)
                 .setParameter("status", OrderStatus.COMPLETED)
                 .setParameter("fromTs", from)
                 .setParameter("toTs", to);

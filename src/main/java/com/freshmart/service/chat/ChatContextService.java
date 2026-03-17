@@ -29,7 +29,7 @@ public class ChatContextService {
     private final RevenueDailyRepository revenueRepo;
     private final JpaExecutor executor;
 
-    @SuppressWarnings("deprecation")
+
     private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale("vi", "VN"));
 
     public ChatContextService() {
