@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Order Audit | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -70,7 +71,7 @@
                 <div class="fm-surface p-0 overflow-hidden shadow-sm border-0 mb-4">
                     <div class="p-4 border-bottom d-flex align-items-center justify-content-between bg-white">
                         <h2 class="fm-h3 mb-0">Itemized Breakdown</h2>
-                        <span class="badge bg-light text-dark border py-2 px-3 fw-bold rounded-pill">${order.items.size()} Unit Types</span>
+                        <span class="badge bg-light text-dark border py-2 px-3 fw-bold rounded-pill">${fn:length(order.items)} Unit Types</span>
                     </div>
 
                     <div class="table-responsive">

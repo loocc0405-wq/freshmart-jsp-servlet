@@ -191,10 +191,10 @@ public class SupplierRepository {
         java.time.LocalDate nearExpiryThreshold = today.plusDays(7);
         
         String jpql = "SELECT l.supplier.id, " +
-                "COUNT(l), " +
-                "SUM(l.qtyIn), " +
-                "SUM(l.qtyIn * l.importPrice), " +
-                "COUNT(DISTINCT l.product), " +
+                "COUNT(l), " +  //Tổng số lô
+                "SUM(l.qtyIn), " + //Tổng số lượng nhập
+                "SUM(l.qtyIn * l.importPrice), " + // Tổng giá trị nhập
+                "COUNT(DISTINCT l.product), " + //số sản phẩm khác nhau
                 "SUM(CASE WHEN l.expiryDate > :today AND l.expiryDate <= :nearExpiry THEN 1 ELSE 0 END), " +
                 "SUM(CASE WHEN l.expiryDate <= :today THEN 1 ELSE 0 END), " +
                 "MAX(l.importDate) " +

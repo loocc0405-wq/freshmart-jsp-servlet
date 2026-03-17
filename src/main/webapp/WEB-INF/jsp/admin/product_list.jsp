@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 
 <c:set var="pageTitle" value="SKU Master Ledger | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -19,6 +19,14 @@
             </a>
         </div>
     </div>
+
+    <!-- Alert Messaging -->
+    <c:if test="${not empty sessionScope.productActionSuccess}">
+        <div class="alert alert-success fm-surface border-0 shadow-sm mb-4 p-3 anim-fade-in shadow-sm">
+            <i class="bi bi-check-circle-fill me-2"></i> <c:out value="${sessionScope.productActionSuccess}"/>
+        </div>
+        <c:remove var="productActionSuccess" scope="session"/>
+    </c:if>
 
     <!-- Advanced SKU Query Engine -->
     <div class="fm-surface p-4 mb-5 border-0 shadow-sm bg-slate-50">
@@ -96,8 +104,8 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="d-flex justify-content-end gap-2">
-                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1 small fw-bold">Edit</button>
                                     <form method="post" action="${pageContext.request.contextPath}/admin/delete-product" onsubmit="return confirm('You are about to purge this SKU metadata. Proceed?');">
+                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
                                         <input type="hidden" name="id" value="${p.id}" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 small fw-bold">Purge</button>
                                     </form>

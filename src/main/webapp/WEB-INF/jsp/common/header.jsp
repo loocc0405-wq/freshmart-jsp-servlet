@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <!DOCTYPE html>
 <html lang="vi">
@@ -89,15 +90,15 @@
                     </a>
 
                     <c:if test="${sessionScope.authUser != null}">
-                        <c:set var="dashUrl" value="${sessionScope.authUser.role.toString() eq 'CUSTOMER' ? '/customer/dashboard' : '/staff'}"/>
-                        <a class="fm-nav-link ${pageContext.request.servletPath.startsWith(dashUrl) ? 'active' : ''}" 
+                        <c:set var="dashUrl" value="${sessionScope.authUser.role == 'CUSTOMER' ? '/customer/dashboard' : '/staff'}"/>
+                        <a class="fm-nav-link ${fn:startsWith(pageContext.request.servletPath, dashUrl) ? 'active' : ''}" 
                            href="${pageContext.request.contextPath}${dashUrl}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </c:if>
 
                     <!-- Role Based View: Customer -->
-                    <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role.toString() eq 'CUSTOMER'}">
+                    <c:if test="${sessionScope.authUser != null && sessionScope.authUser.role == 'CUSTOMER'}">
                         <div class="dropdown">
                             <a class="fm-nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
                                 <i class="bi bi-person-badge"></i> My Account
@@ -111,7 +112,7 @@
                     </c:if>
 
                     <!-- Role Based View: Operations (Staff/Admin) -->
-                    <c:if test="${sessionScope.authUser != null && (sessionScope.authUser.role.toString() eq 'STAFF' || sessionScope.authUser.role.toString() eq 'ADMIN')}">
+                    <c:if test="${sessionScope.authUser != null && (sessionScope.authUser.role == 'STAFF' || sessionScope.authUser.role == 'ADMIN')}">
                         <div class="dropdown">
                             <a class="fm-nav-link dropdown-toggle active" href="#" data-bs-toggle="dropdown">
                                 <i class="bi bi-briefcase"></i> Operations
@@ -158,7 +159,7 @@
                         <div class="dropdown">
                             <button class="btn btn-link d-flex align-items-center gap-2 border-0 bg-transparent p-1 text-decoration-none" data-bs-toggle="dropdown">
                                 <div class="fm-user-avatar rounded-circle d-flex align-items-center justify-content-center">
-                                    ${sessionScope.authUser.username.substring(0,1).toUpperCase()}
+                                    ${fn:toUpperCase(fn:substring(sessionScope.authUser.username, 0, 1))}
                                 </div>
                                 <div class="text-start d-none d-md-block">
                                     <div class="fw-bold text-dark lh-1" style="font-size: 0.85rem;"><c:out value="${sessionScope.authUser.username}"/></div>
@@ -173,7 +174,7 @@
                                 </li>
                                 <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/customer/profile"><i class="bi bi-gear me-2 text-muted"></i>Account Settings</a></li>
                                 
-                                <c:if test="${sessionScope.authUser.role.toString() eq 'ADMIN'}">
+                                <c:if test="${sessionScope.authUser.role == 'ADMIN'}">
                                     <li><a class="dropdown-item py-2" href="${pageContext.request.contextPath}/admin"><i class="bi bi-shield-lock me-2 text-primary"></i>Admin Console</a></li>
                                 </c:if>
                                 

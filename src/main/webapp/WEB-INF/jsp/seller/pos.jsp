@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Merchant Terminal | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -60,6 +61,20 @@
         border-top: 1px solid var(--fm-slate-200);
         border-radius: 0 0 20px 20px;
     }
+    .btn-remove-line {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        color: var(--fm-slate-400);
+        transition: color 0.2s;
+        background: transparent;
+        border: none;
+    }
+    .btn-remove-line:hover {
+        color: var(--fm-danger-500);
+    }
 </style>
 
 <div class="container-fluid px-4 py-4">
@@ -111,7 +126,7 @@
 
             <div class="fm-catalog-grid" id="posItems">
                 <c:forEach items="${products}" var="p">
-                    <div class="fm-pos-item-card ${availableMap[p.id] <= 0 ? 'disabled' : ''}" data-name="${p.name.toUpperCase()}">
+                    <div class="fm-pos-item-card ${availableMap[p.id] <= 0 ? 'disabled' : ''}" data-name="${fn:toUpperCase(p.name)}">
                         <div>
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <span class="badge bg-slate-100 text-slate-500 font-monospace small">#${p.id}</span>
@@ -135,6 +150,7 @@
                             </div>
                             <form method="post" action="${pageContext.request.contextPath}/seller/pos">
                                 <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                                <input type="hidden" name="action" value="add"/>
                                 <input type="hidden" name="productId" value="${p.id}"/>
                                 <div class="input-group input-group-sm">
                                     <input class="form-control text-center" name="quantity" type="number" min="1" value="1" style="max-width: 60px;"/>
@@ -154,7 +170,7 @@
             <div class="p-4 border-bottom bg-white rounded-top-4">
                 <h5 class="fm-h3 mb-0 d-flex justify-content-between align-items-center text-dark">
                     <span>Active Order</span>
-                    <span class="badge bg-indigo-600 rounded-pill fs-6">${lines.size()}</span>
+                    <span class="badge bg-indigo-600 rounded-pill fs-6">${fn:length(lines)}</span>
                 </h5>
             </div>
 
@@ -170,6 +186,14 @@
                     <div class="vstack gap-3">
                         <c:forEach items="${lines}" var="l">
                             <div class="p-3 border rounded-4 bg-light position-relative">
+                                <form method="post" action="${pageContext.request.contextPath}/seller/pos">
+                                    <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                                    <input type="hidden" name="action" value="remove"/>
+                                    <input type="hidden" name="productId" value="${l.product.id}"/>
+                                    <button type="submit" class="btn-remove-line" title="Remove item">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </form>
                                 <div class="d-flex justify-content-between align-items-start mb-1">
                                     <div class="fw-bold text-dark lh-sm pe-4">${l.product.name}</div>
                                     <div class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded small fw-bold">₫<fmt:formatNumber value="${l.lineTotal}" groupingUsed="true"/></div>
@@ -198,8 +222,9 @@
                 </div>
 
                 <c:if test="${not empty lines}">
-                    <form method="post" action="${pageContext.request.contextPath}/seller/pos/checkout">
-                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                    <form method="post" action="${pageContext.request.contextPath}/seller/pos">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.csrf_token}" />
+                        <input type="hidden" name="action" value="checkout"/>
                         <div class="mb-3">
                             <label class="fm-caption fw-bold d-block mb-2 text-muted">Settlement Method</label>
                             <select class="fm-form-control py-3 fw-bold" name="paymentMethod">
@@ -213,8 +238,9 @@
                         </button>
                     </form>
 
-                    <form method="post" action="${pageContext.request.contextPath}/seller/pos/clear" class="mt-2">
-                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}" />
+                    <form method="post" action="${pageContext.request.contextPath}/seller/pos" class="mt-2">
+                        <input type="hidden" name="csrf_token" value="${sessionScope.csrf_token}" />
+                        <input type="hidden" name="action" value="clear"/>
                         <button class="btn btn-link text-danger w-100 border-0 text-decoration-none fw-bold small" type="submit">
                             <i class="bi bi-trash3 me-1"></i> RESET TERMINAL
                         </button>

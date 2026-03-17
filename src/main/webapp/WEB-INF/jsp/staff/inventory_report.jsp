@@ -1,6 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Inventory Performance Analytics"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -31,7 +31,7 @@
             <div class="fm-card border-start border-4 border-info p-4 h-100">
                 <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Operational Batches</div>
                 <div class="fm-h2 mb-2 text-info">${totalActiveLots}</div>
-                <div class="small text-muted">Across ${allProductsOverview.size()} Product SKU Types</div>
+                <div class="small text-muted">Across ${fn:length(allProductsOverview)} Product SKU Types</div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
@@ -121,9 +121,9 @@
                                 <td class="text-end">
                                     <div class="d-flex align-items-center justify-content-end gap-2">
                                         <div class="progress me-1" style="width: 50px; height: 4px;">
-                                            <div class="progress-bar bg-info" style="width: ${fillPercent}%"></div>
+                                            <div class="progress-bar bg-info" style="width: <fmt:formatNumber value="${fillPercent}" maxFractionDigits="0"/>%"></div>
                                         </div>
-                                        <span class="small fw-semibold">${fn:substringBefore(fillPercent, ".")} %</span>
+                                        <span class="small fw-semibold"><fmt:formatNumber value="${fillPercent}" maxFractionDigits="0"/> %</span>
                                     </div>
                                 </td>
                                 <td>

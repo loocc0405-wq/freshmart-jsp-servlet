@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" %>
-<%@ taglib uri="jakarta.tags.core" prefix="c" %>
-<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Audit & Finalize Order | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -30,7 +31,7 @@
                     <div class="fm-surface p-0 overflow-hidden shadow-sm border-0 mb-4">
                         <div class="p-4 bg-light border-bottom d-flex align-items-center justify-content-between">
                             <h2 class="fm-h3 mb-0">Procurement Ledger</h2>
-                            <span class="badge bg-white text-dark border py-2 px-3 fw-bold rounded-pill shadow-xs">${items.size()} Unique SKU Entries</span>
+                            <span class="badge bg-white text-dark border py-2 px-3 fw-bold rounded-pill shadow-xs">${fn:length(items)} Unique SKU Entries</span>
                         </div>
 
                         <c:set var="cartTotal" value="0"/>

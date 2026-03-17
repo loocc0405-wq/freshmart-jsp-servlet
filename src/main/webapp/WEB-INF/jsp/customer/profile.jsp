@@ -1,6 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 
 <c:set var="pageTitle" value="Account Security & Identity | FreshMart Enterprise"/>
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
@@ -67,9 +67,9 @@
                                         <label class="fm-caption fw-bold d-block mb-2">Gender Category</label>
                                         <select name="gender" class="fm-form-control">
                                             <option value="">-- Classified --</option>
-                                            <option value="MALE"   ${form.gender != null && form.gender.toString() == 'MALE'   ? 'selected' : ''}>Male</option>
-                                            <option value="FEMALE" ${form.gender != null && form.gender.toString() == 'FEMALE' ? 'selected' : ''}>Female</option>
-                                            <option value="OTHER"  ${form.gender != null && form.gender.toString() == 'OTHER'  ? 'selected' : ''}>Other</option>
+                                            <option value="MALE"   ${form.gender != null && form.gender == 'MALE'   ? 'selected' : ''}>Male</option>
+                                            <option value="FEMALE" ${form.gender != null && form.gender == 'FEMALE' ? 'selected' : ''}>Female</option>
+                                            <option value="OTHER"  ${form.gender != null && form.gender == 'OTHER'  ? 'selected' : ''}>Other</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">

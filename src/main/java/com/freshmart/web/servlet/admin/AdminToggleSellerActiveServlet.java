@@ -17,14 +17,29 @@ public class AdminToggleSellerActiveServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        Long id = Long.parseLong(req.getParameter("id"));
+        String idRaw = req.getParameter("id");
+        if (idRaw == null || idRaw.isBlank()) {
+            req.getSession().setAttribute("sellerActionError", "Thiếu ID seller.");
+            resp.sendRedirect(req.getContextPath() + "/admin/sellers");
+            return;
+        }
 
-        executor.executeVoid(em -> {
-            User u = userRepo.findById(em, id).orElseThrow();
-            if (u.getRole() != Role.SELLER) throw new RuntimeException("NOT_SELLER");
-            u.setActive(!u.isActive());
-            userRepo.save(em, u);
-        });
+        try {
+            Long id = Long.parseLong(idRaw);
+            String newStatus = executor.execute(em -> {
+                User u = userRepo.findById(em, id).orElseThrow(() -> new RuntimeException("Không tìm thấy seller."));
+                if (u.getRole() != Role.SELLER) throw new RuntimeException("Tài khoản không phải là Seller.");
+                
+                boolean targetStatus = !u.isActive();
+                u.setActive(targetStatus);
+                userRepo.save(em, u);
+                return targetStatus ? "kích hoạt" : "khoán (lock)";
+            });
+
+            req.getSession().setAttribute("sellerActionSuccess", "Đã " + newStatus + " seller thành công.");
+        } catch (Exception ex) {
+            req.getSession().setAttribute("sellerActionError", "Lỗi: " + ex.getMessage());
+        }
 
         resp.sendRedirect(req.getContextPath() + "/admin/sellers");
     }

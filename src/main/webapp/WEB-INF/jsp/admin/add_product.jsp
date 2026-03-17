@@ -31,28 +31,28 @@
                             <h3 class="fm-h3 mb-4 border-bottom pb-2">Core Product Metadata</h3>
                             <div class="mb-4">
                                 <label class="fm-caption fw-bold d-block mb-2">Display Registry Name</label>
-                                <input type="text" name="name" class="fm-form-control py-3" required placeholder="e.g. Premium Norwegian Salmon Fillet">
+                                <input type="text" name="name" class="fm-form-control py-3" required placeholder="e.g. Premium Norwegian Salmon Fillet" value="<c:out value='${param.name}'/>">
                             </div>
 
                             <div class="row g-4 mb-4">
                                 <div class="col-md-6">
                                     <label class="fm-caption fw-bold d-block mb-2">Operational Department</label>
-                                    <input type="text" name="category" class="fm-form-control" placeholder="Seafood, Produce, etc.">
+                                    <input type="text" name="category" class="fm-form-control" placeholder="Seafood, Produce, etc." value="<c:out value='${param.category}'/>">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="fm-caption fw-bold d-block mb-2">Logistics Unit</label>
-                                    <input type="text" name="unit" class="fm-form-control" placeholder="kg, pack, unit">
+                                    <input type="text" name="unit" class="fm-form-control" placeholder="kg, pack, unit" value="<c:out value='${param.unit}'/>">
                                 </div>
                             </div>
 
                             <div class="mb-4">
                                 <label class="fm-caption fw-bold d-block mb-2">Global Price Index (₫)</label>
-                                <input type="number" step="0.01" name="sellPrice" class="fm-form-control py-3 fw-bold text-primary" required placeholder="0.00">
+                                <input type="number" step="0.01" name="sellPrice" class="fm-form-control py-3 fw-bold text-primary" required placeholder="0.00" value="<c:out value='${param.sellPrice}'/>">
                             </div>
 
                             <div class="mb-0">
                                 <label class="fm-caption fw-bold d-block mb-2">Operational Narrative / Description</label>
-                                <textarea name="description" class="fm-form-control" style="min-height: 150px;" placeholder="Detailed specification and quality attributes..."></textarea>
+                                <textarea name="description" class="fm-form-control" style="min-height: 150px;" placeholder="Detailed specification and quality attributes..."><c:out value='${param.description}'/></textarea>
                             </div>
                         </div>
 
@@ -60,7 +60,7 @@
                             <h3 class="fm-h3 mb-4 border-bottom pb-2 text-dark">Logistics Media</h3>
                             <div class="mb-5">
                                 <label class="fm-caption fw-bold d-block mb-2">Media Attribution URL</label>
-                                <input type="text" name="imageUrl" class="fm-form-control" placeholder="https://cloud.cdn/image.jpg">
+                                <input type="text" name="imageUrl" class="fm-form-control" placeholder="https://cloud.cdn/image.jpg" value="<c:out value='${param.imageUrl}'/>">
                                 <p class="small text-muted mt-2">Specify a high-resolution endpoint for the procurement catalog.</p>
                             </div>
 
