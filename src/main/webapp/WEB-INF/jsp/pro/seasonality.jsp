@@ -74,7 +74,7 @@
               <td><c:out value="${p.date}"/></td>
               <td class="text-end fw-bold"><fmt:formatNumber value="${p.actual}" type="number" minFractionDigits="0" maxFractionDigits="0"/></td>
               <td class="text-end text-muted"><fmt:formatNumber value="${p.rollingMean}" type="number" minFractionDigits="0" maxFractionDigits="0"/></td>
-              <td class="text-end"><span class="badge bg-light text-dark border">${p.zScore}</span></td>
+              <td class="text-end"><span class="badge bg-light text-dark border">${p.ZScore}</span></td>
               <td>
                 <c:choose>
                   <c:when test="${p.signal == 'PEAK'}"><span class="fm-status-badge expired">PEAK</span></c:when>
