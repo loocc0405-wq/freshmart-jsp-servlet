@@ -13,16 +13,20 @@
             <!-- Messages inserted dynamically here -->
         </div>
 
-        <div id="chatbot-loading" class="chatbot-loading">AI is typing...</div>
+        <div id="chatbot-loading" class="chatbot-loading">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
 
         <div class="chatbot-input-area">
             <input
                 type="text"
                 id="chatbot-input"
-                placeholder="Type a message..."
+                placeholder="Nhập tin nhắn..."
                 autocomplete="off"
             >
-            <button type="button" id="chatbot-send-btn" aria-label="Send message">
+            <button type="button" id="chatbot-send-btn" aria-label="Gửi tin nhắn">
                 <i class="bi bi-send-fill"></i>
             </button>
         </div>

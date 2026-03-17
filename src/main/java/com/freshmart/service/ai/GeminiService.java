@@ -6,31 +6,54 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
+import java.util.List;
+
 public class GeminiService {
 
-    public String generateResponse(String systemPrompt, String userMessage) {
+    public boolean isConfigured() {
+        return AiConstants.isGeminiEnabled();
+    }
+
+    public String generateResponse(String systemPrompt, String userMessage, List<String[]> history) {
         try {
-            String apiKey = safe(AiConstants.GEMINI_API_KEY);
+            String apiKey = safe(AiConstants.resolveGeminiApiKey());
             String apiUrl = safe(AiConstants.GEMINI_API_URL);
             String prompt = safe(systemPrompt);
             String message = safe(userMessage);
 
-            if (apiKey.isBlank() || apiUrl.isBlank() || message.isBlank()) {
-                return AiConstants.FALLBACK_RESPONSE;
+            if (apiKey.isBlank()) {
+                System.out.println("[GeminiService] Gemini disabled because no API key was configured.");
+                return null;
+            }
+            if (apiUrl.isBlank() || message.isBlank()) {
+                System.err.println("[GeminiService] Missing API URL or message.");
+                return null;
             }
 
-            JsonObject payload = buildPayload(prompt, message);
+            JsonObject payload = buildPayload(prompt, message, history);
+            System.out.println("[GeminiService] Sending request to Gemini API...");
             String responseJson = HttpClientUtil.postJson(apiUrl, payload.toString(), apiKey);
 
             String parsed = parseGeminiResponse(responseJson);
-            return parsed.isBlank() ? AiConstants.FALLBACK_RESPONSE : parsed;
+            if (parsed.isBlank()) {
+                System.err.println("[GeminiService] Gemini returned empty response.");
+                return null;
+            }
+
+            System.out.println("[GeminiService] Got response (" + parsed.length() + " chars)");
+            return parsed;
 
         } catch (Exception e) {
-            return AiConstants.FALLBACK_RESPONSE;
+            System.err.println("[GeminiService] Exception: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            return null;
         }
     }
 
-    private JsonObject buildPayload(String systemPrompt, String userMessage) {
+    public String generateResponse(String systemPrompt, String userMessage) {
+        return generateResponse(systemPrompt, userMessage, null);
+    }
+
+    private JsonObject buildPayload(String systemPrompt, String userMessage, List<String[]> history) {
         JsonObject root = new JsonObject();
 
         if (!systemPrompt.isBlank()) {
@@ -46,22 +69,40 @@ public class GeminiService {
         }
 
         JsonArray contents = new JsonArray();
+        if (history != null && !history.isEmpty()) {
+            for (String[] turn : history) {
+                if (turn == null || turn.length < 2 || turn[0] == null || turn[1] == null) {
+                    continue;
+                }
+                String role = "user".equalsIgnoreCase(turn[0]) ? "user" : "model";
+                JsonObject turnContent = new JsonObject();
+                turnContent.addProperty("role", role);
+
+                JsonArray turnParts = new JsonArray();
+                JsonObject turnText = new JsonObject();
+                turnText.addProperty("text", turn[1]);
+                turnParts.add(turnText);
+
+                turnContent.add("parts", turnParts);
+                contents.add(turnContent);
+            }
+        }
+
         JsonObject userContent = new JsonObject();
         userContent.addProperty("role", "user");
-
         JsonArray userParts = new JsonArray();
         JsonObject userText = new JsonObject();
         userText.addProperty("text", userMessage);
         userParts.add(userText);
-
         userContent.add("parts", userParts);
         contents.add(userContent);
 
         root.add("contents", contents);
 
         JsonObject generationConfig = new JsonObject();
-        generationConfig.addProperty("temperature", 0.4);
-        generationConfig.addProperty("maxOutputTokens", 512);
+        generationConfig.addProperty("temperature", 0.35);
+        generationConfig.addProperty("maxOutputTokens", 1536);
+        generationConfig.addProperty("topP", 0.9);
         root.add("generationConfig", generationConfig);
 
         return root;
@@ -77,13 +118,14 @@ public class GeminiService {
 
             if (jsonObject.has("error") && jsonObject.get("error").isJsonObject()) {
                 JsonObject error = jsonObject.getAsJsonObject("error");
-                if (error.has("message") && !error.get("message").isJsonNull()) {
-                    return "";
-                }
+                String errorMsg = error.has("message") ? error.get("message").getAsString() : "Unknown error";
+                System.err.println("[GeminiService] API Error: " + errorMsg);
+                return "";
             }
 
             JsonArray candidates = jsonObject.getAsJsonArray("candidates");
             if (candidates == null || candidates.isEmpty()) {
+                System.err.println("[GeminiService] No candidates in response.");
                 return "";
             }
 
@@ -112,6 +154,7 @@ public class GeminiService {
             return answer.toString().trim();
 
         } catch (Exception e) {
+            System.err.println("[GeminiService] Parse error: " + e.getMessage());
             return "";
         }
     }

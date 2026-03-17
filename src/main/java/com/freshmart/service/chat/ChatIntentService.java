@@ -27,7 +27,16 @@ public class ChatIntentService {
                 "còn hàng", "con hang", "hết hàng", "het hang",
                 "sản phẩm", "san pham", "mặt hàng", "mat hang",
                 "trái cây", "trai cay", "rau", "cá", "ca", "thịt", "thit",
-                "táo", "tao", "cam", "chuối", "chuoi", "sữa", "sua")) {
+                "táo", "tao", "cam", "chuối", "chuoi", "sữa", "sua",
+                "bán gì", "ban gi", "bán những gì", "ban nhung gi",
+                "có gì", "co gi", "danh mục", "danh muc",
+                "loại nào", "loai nao", "nhóm hàng", "nhom hang",
+                "bán chạy", "ban chay", "best seller", "phổ biến", "pho bien",
+                "có rau", "co rau", "có thịt", "co thit",
+                "có cá", "co ca", "có trái", "co trai",
+                "món gì", "mon gi", "hàng gì", "hang gi",
+                "sữa", "sua", "đồ uống", "do uong", "nước", "nuoc",
+                "tồn kho", "ton kho", "còn không", "con khong")) {
             return ChatIntent.PRODUCT_QUERY;
         }
 
@@ -36,7 +45,11 @@ public class ChatIntentService {
                 "ship", "giao hàng", "giao hang", "phí ship", "phi ship",
                 "free ship", "miễn phí giao", "mien phi giao",
                 "mở cửa", "mo cua", "đóng cửa", "dong cua",
-                "bảo hành", "bao hanh", "chính sách", "chinh sach")) {
+                "bảo hành", "bao hanh", "chính sách", "chinh sach",
+                "policy", "thanh toán", "thanh toan", "cod",
+                "giờ mở cửa", "gio mo cua", "mấy giờ", "may gio",
+                "liên hệ", "lien he", "hotline", "contact",
+                "số điện thoại", "so dien thoai", "email")) {
             return ChatIntent.POLICY_QUERY;
         }
 
@@ -56,8 +69,25 @@ public class ChatIntentService {
         }
 
         if (containsAny(raw, normalized,
-                "chào", "xin chào", "hello", "hi", "giúp", "giup",
-                "hướng dẫn", "huong dan", "support")) {
+                "dự báo", "du bao", "forecast", "prediction",
+                "dự đoán doanh thu", "du doan doanh thu",
+                "doanh thu tháng tới", "doanh thu thang toi",
+                "doanh thu quý tới", "doanh thu quy toi",
+                "kế hoạch nhập hàng", "ke hoach nhap hang",
+                "procurement", "biên lợi nhuận", "bien loi nhuan",
+                "phân tích doanh thu", "phan tich doanh thu",
+                "xu hướng doanh thu", "xu huong doanh thu",
+                "cảnh báo giá", "canh bao gia",
+                "ai forecast", "ai engine", "ai dự báo")) {
+            return ChatIntent.REVENUE_FORECAST;
+        }
+
+        if (containsAny(raw, normalized,
+                "chào", "xin chào", "hello", "hi", "hey",
+                "giúp", "giup", "hỗ trợ", "ho tro",
+                "hướng dẫn", "huong dan", "support",
+                "freshmart", "fresh mart",
+                "cảm ơn", "cam on", "thanks", "tks", "cám ơn")) {
             return ChatIntent.GENERAL_FAQ;
         }
 

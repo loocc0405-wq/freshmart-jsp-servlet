@@ -1,4 +1,4 @@
-# FreshMart - Fresh Food Management & Revenue Forecasting (No AI)
+# FreshMart - Fresh Food Management & Hybrid AI Revenue Forecasting
 
 Tech stack (as requested in the assignment):
 - Java + JSP/Servlet (MVC)
@@ -6,15 +6,21 @@ Tech stack (as requested in the assignment):
 - SQL Server (default)
 - Filters: Authentication / Authorization / Tier(PRO) gating
 - Chart.js (Actual vs Forecast)
+- Hybrid AI Forecast Engine: deterministic forecasting + Gemini narrative layer
 
 This starter project implements the **core architecture** and several key business rules:
 - Role-based access control: **ADMIN / STAFF / SELLER / CUSTOMER**
 - Tier gating: **FREE / PRO** (PRO features are in `/pro/*`)
 - Inventory by lot (batch) with FEFO deduction when an order is **COMPLETED**
 - Revenue aggregation into `revenue_daily` when an order is **COMPLETED**
-- Basic forecasting methods (no AI): Moving Average & Exponential Smoothing
-
-> Note: This repository is a clean, professional baseline. You can extend CRUD screens for suppliers/products/lots, add carts, OMS workflow, fake payment, etc.
+- Forecasting utilities: Moving Average & Exponential Smoothing
+- **AI Engine dự báo doanh thu** với:
+  - lịch sử đơn hàng
+  - biến động giá nhập
+  - trạng thái tồn kho
+  - sự kiện marketing
+  - mùa vụ + proxy thời tiết theo tháng
+  - khoảng tin cậy, procurement plan và margin warning
 
 ## Quick start
 
@@ -24,17 +30,44 @@ This starter project implements the **core architecture** and several key busine
    You can create the database/tables using:
    - `db/schema-sqlserver.sql` (SQL Server)
 
-2. Build WAR:
+2. (Optional) Configure Gemini key for narrative AI layer:
+```bash
+export GEMINI_API_KEY=your_api_key_here
+```
+If no API key is configured, the AI forecast endpoint still works in **hybrid deterministic mode**.
+
+3. Build WAR:
 ```bash
 mvn clean package
 ```
 
-3. Deploy `target/freshmart.war` to **Tomcat 10.1+** (copy into `TOMCAT_HOME/webapps/`), then start Tomcat.
+4. Deploy `target/freshmart.war` to **Tomcat 10.1+** (copy into `TOMCAT_HOME/webapps/`), then start Tomcat.
 
 > ⚠️ Lưu ý: Project đang dùng `jakarta.servlet-api 6.0` + JSTL Jakarta → **bắt buộc Tomcat 10.1+**. Nếu muốn chạy Tomcat 9 (javax.*) thì phải hạ dependency và đổi toàn bộ imports/taglib.
 
-4. Open:
+5. Open:
 - `http://localhost:8080/freshmart/`
+
+## AI forecast API
+
+- `GET /api/ai/forecast?period=month`
+- `POST /api/ai/forecast`
+
+Example body:
+```json
+{
+  "period": "quarter",
+  "productId": null
+}
+```
+
+Response returns a markdown forecast report with:
+- quantitative forecast
+- confidence interval
+- procurement plan
+- profit margin warnings
+- seasonality insights
+- preprocessing/modeling summary
 
 ## Default accounts (created on startup)
 
@@ -58,4 +91,3 @@ If you want to switch back to MySQL:
 1) Change `src/main/resources/META-INF/persistence.xml` to use MySQL driver + URL + dialect.
 2) In `pom.xml`, replace the SQL Server driver with MySQL Connector/J.
 3) Use `db/schema.sql`.
-
