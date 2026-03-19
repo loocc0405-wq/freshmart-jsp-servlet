@@ -7,11 +7,10 @@
 <jsp:include page="/WEB-INF/jsp/common/header.jsp"/>
 
 <div class="container-fluid px-4 py-4">
-    <!-- Header -->
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div>
             <h1 class="fm-h1 mb-1">Inventory Performance</h1>
-            <p class="fm-text-secondary mb-0">Comprehensive auditing and financial valuation of active warehouse stock.</p>
+            <p class="fm-text-secondary mb-0">Comprehensive auditing, stock movements and disposal history for warehouse lots.</p>
         </div>
         <div class="d-flex gap-2">
             <button class="fm-btn btn-light border small"><i class="bi bi-printer me-2"></i>Print Ledger</button>
@@ -19,13 +18,23 @@
         </div>
     </div>
 
-    <!-- Multi-metric KPI Grid -->
+    <c:if test="${not empty successMessage}">
+        <div class="alert alert-success border-0 shadow-sm mb-4">
+            <i class="bi bi-check-circle me-2"></i><c:out value="${successMessage}"/>
+        </div>
+    </c:if>
+    <c:if test="${not empty errorMessage}">
+        <div class="alert alert-danger border-0 shadow-sm mb-4">
+            <i class="bi bi-exclamation-triangle me-2"></i><c:out value="${errorMessage}"/>
+        </div>
+    </c:if>
+
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
             <div class="fm-card border-start border-4 border-primary p-4 h-100">
                 <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Stock Valuation</div>
                 <div class="fm-h2 mb-2 text-primary">${totalInventoryValue}</div>
-                <div class="small text-muted"><i class="bi bi-graph-up me-1 text-success"></i> +2.4% vs last week</div>
+                <div class="small text-muted"><i class="bi bi-graph-up me-1 text-success"></i> Current value of usable on-hand stock</div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
@@ -39,19 +48,18 @@
             <div class="fm-card border-start border-4 border-warning p-4 h-100">
                 <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Expiry Risk Stock</div>
                 <div class="fm-h2 mb-2 text-warning">${upcomingExpiryCount}</div>
-                <div class="small text-muted"><i class="bi bi-clock-history me-1"></i> Threshold: 7 Days Remaining</div>
+                <div class="small text-muted"><i class="bi bi-clock-history me-1"></i> Threshold: ${upcomingExpiryDays} Days Remaining</div>
             </div>
         </div>
         <div class="col-md-6 col-xl-3">
             <div class="fm-card border-start border-4 border-danger p-4 h-100">
-                <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Void Stock (Expired)</div>
+                <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Pending Disposal Lots</div>
                 <div class="fm-h2 mb-2 text-danger">${expiredLotsCount}</div>
-                <div class="small text-muted">Awaiting Disposal Protocol</div>
+                <div class="small text-muted">Expired lots still waiting for disposal action</div>
             </div>
         </div>
     </div>
 
-    <!-- Advanced Filter Bar -->
     <div class="fm-surface p-3 mb-4">
         <form method="get" action="${pageContext.request.contextPath}/staff/inventory-report" class="row g-2 align-items-end">
             <div class="col-md-3">
@@ -82,30 +90,34 @@
         </form>
     </div>
 
-    <!-- Data Presentation Tabs -->
     <div class="fm-surface overflow-hidden">
         <ul class="nav nav-tabs border-bottom-0 bg-light-subtle px-3 pt-3 gap-1" id="reportTabs">
             <li class="nav-item">
                 <button class="nav-link active fm-caption fw-bold border-0 py-3 px-4" data-bs-toggle="tab" data-bs-target="#tab-summary">Operational Ledger</button>
             </li>
             <li class="nav-item">
-                <button class="nav-link fm-caption fw-bold border-0 py-3 px-4" data-bs-toggle="tab" data-bs-target="#tab-lowstock">Replenishment required</button>
+                <button class="nav-link fm-caption fw-bold border-0 py-3 px-4" data-bs-toggle="tab" data-bs-target="#tab-lowstock">Replenishment Required</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fm-caption fw-bold border-0 py-3 px-4" data-bs-toggle="tab" data-bs-target="#tab-transactions">Transaction History</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fm-caption fw-bold border-0 py-3 px-4" data-bs-toggle="tab" data-bs-target="#tab-disposals">Disposal History</button>
             </li>
             <li class="nav-item text-danger">
-                <button class="nav-link fm-caption fw-bold border-0 py-3 px-4 text-danger" data-bs-toggle="tab" data-bs-target="#tab-expired">Disposal Ledger</button>
+                <button class="nav-link fm-caption fw-bold border-0 py-3 px-4 text-danger" data-bs-toggle="tab" data-bs-target="#tab-expired">Pending Disposal</button>
             </li>
         </ul>
-        
+
         <div class="tab-content">
-            <!-- TAB: ALL PRODUCTS OVERVIEW -->
             <div class="tab-pane fade show active" id="tab-summary">
                 <table class="fm-data-table">
                     <thead class="bg-light">
                         <tr>
                             <th>SKU Master Name</th>
                             <th class="text-end">Lifecycle Intake</th>
-                            <th class="text-end">Bio-Available</th>
-                            <th class="text-end">Void (Expired)</th>
+                            <th class="text-end">Available Qty</th>
+                            <th class="text-end">Expired Qty</th>
                             <th class="text-end">Fulfillment Rate</th>
                             <th>Next Expiry Event</th>
                             <th class="text-end">Inventory Value</th>
@@ -143,7 +155,6 @@
                 </table>
             </div>
 
-            <!-- TAB: LOW STOCK -->
             <div class="tab-pane fade" id="tab-lowstock">
                 <div class="p-5 text-center ${not empty lowStockProducts ? 'd-none' : ''}">
                     <i class="bi bi-check-circle fs-1 text-success opacity-25 mb-3"></i>
@@ -155,7 +166,7 @@
                         <thead>
                             <tr>
                                 <th>Restock Priority SKU</th>
-                                <th>Available Bio-Stock</th>
+                                <th>Available Stock</th>
                                 <th>Threshold Delta</th>
                                 <th class="text-end">Actions</th>
                             </tr>
@@ -165,7 +176,7 @@
                                 <tr class="bg-warning-subtle">
                                     <td class="fw-bold"><c:out value="${o.productName}"/></td>
                                     <td class="fw-bold text-danger">${o.availableQty} Units</td>
-                                    <td class="small">Below safe threshold</td>
+                                    <td class="small">Below safe threshold (${lowStockThreshold})</td>
                                     <td class="text-end">
                                         <a href="${pageContext.request.contextPath}/staff/import-lot?productId=${o.productId}" class="fm-btn fm-btn-primary py-1 px-3 small" style="font-size: 0.75rem;">Initialize Replenishment</a>
                                     </td>
@@ -176,12 +187,123 @@
                 </c:if>
             </div>
 
-            <!-- TAB: EXPIRED LEDGER -->
+            <div class="tab-pane fade" id="tab-transactions">
+                <c:if test="${empty recentTransactions}">
+                    <div class="p-5 text-center">
+                        <i class="bi bi-clock-history fs-1 text-muted opacity-25 mb-3"></i>
+                        <h5 class="fw-bold">No Inventory Transactions Yet</h5>
+                        <p class="text-muted small">Once lots are imported, sold, adjusted or disposed, the audit trail will appear here.</p>
+                    </div>
+                </c:if>
+                <c:if test="${not empty recentTransactions}">
+                    <table class="fm-data-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Product</th>
+                                <th>Lot</th>
+                                <th class="text-end">Qty</th>
+                                <th>Reference</th>
+                                <th>Actor</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach items="${recentTransactions}" var="tx">
+                                <tr>
+                                    <td class="small text-nowrap">${tx.createdAt}</td>
+                                    <td>
+                                        <span class="badge ${tx.type == 'IMPORT' ? 'text-bg-primary' : tx.type == 'SALE' ? 'text-bg-success' : tx.type == 'ADJUST' ? 'text-bg-warning' : tx.type == 'DISPOSE' ? 'text-bg-danger' : 'text-bg-secondary'}">
+                                            ${tx.type}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold"><c:out value="${tx.productLot.product.name}"/></div>
+                                        <div class="small text-muted">
+                                            <c:out value="${tx.productLot.supplier != null ? tx.productLot.supplier.name : 'No supplier'}"/>
+                                        </div>
+                                    </td>
+                                    <td class="small">#LOT-${tx.productLot.id}</td>
+                                    <td class="text-end fw-bold ${tx.quantity >= 0 ? 'text-success' : 'text-danger'}">${tx.quantity}</td>
+                                    <td class="small">
+                                        <c:choose>
+                                            <c:when test="${not empty tx.referenceType}">
+                                                <span class="fw-semibold"><c:out value="${tx.referenceType}"/></span>
+                                                <c:if test="${tx.referenceId != null}">#${tx.referenceId}</c:if>
+                                            </c:when>
+                                            <c:otherwise>-</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="small">
+                                        <c:choose>
+                                            <c:when test="${tx.createdBy != null}">
+                                                <c:out value="${not empty tx.createdBy.fullName ? tx.createdBy.fullName : tx.createdBy.username}"/>
+                                            </c:when>
+                                            <c:otherwise>System</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="small text-muted"><c:out value="${tx.note}"/></td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </c:if>
+            </div>
+
+            <div class="tab-pane fade" id="tab-disposals">
+                <c:if test="${empty recentDisposals}">
+                    <div class="p-5 text-center">
+                        <i class="bi bi-trash3 fs-1 text-muted opacity-25 mb-3"></i>
+                        <h5 class="fw-bold">No Disposal Records Yet</h5>
+                        <p class="text-muted small">Disposed lots will remain visible here for audit instead of being hard deleted.</p>
+                    </div>
+                </c:if>
+                <c:if test="${not empty recentDisposals}">
+                    <table class="fm-data-table">
+                        <thead>
+                            <tr>
+                                <th>Disposed At</th>
+                                <th>Product</th>
+                                <th>Lot</th>
+                                <th class="text-end">Disposed Qty</th>
+                                <th>Reason</th>
+                                <th>Performed By</th>
+                                <th>Note</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <c:forEach items="${recentDisposals}" var="d">
+                                <tr>
+                                    <td class="small text-nowrap">${d.disposedAt}</td>
+                                    <td>
+                                        <div class="fw-semibold"><c:out value="${d.productLot.product.name}"/></div>
+                                        <div class="small text-muted">#LOT-${d.productLot.id}</div>
+                                    </td>
+                                    <td class="small">Import ${d.productLot.importDate} · Exp ${d.productLot.expiryDate}</td>
+                                    <td class="text-end fw-bold text-danger">${d.disposedQty}</td>
+                                    <td class="small"><c:out value="${d.reason}"/></td>
+                                    <td class="small">
+                                        <c:choose>
+                                            <c:when test="${d.disposedBy != null}">
+                                                <c:out value="${not empty d.disposedBy.fullName ? d.disposedBy.fullName : d.disposedBy.username}"/>
+                                            </c:when>
+                                            <c:otherwise>System</c:otherwise>
+                                        </c:choose>
+                                    </td>
+                                    <td class="small text-muted"><c:out value="${d.note}"/></td>
+                                </tr>
+                            </c:forEach>
+                        </tbody>
+                    </table>
+                </c:if>
+            </div>
+
             <div class="tab-pane fade" id="tab-expired">
                 <c:if test="${empty expiredLots}">
                     <div class="p-5 text-center">
                         <i class="bi bi-shield-check fs-1 text-success opacity-25 mb-3"></i>
-                        <h5 class="fw-bold">Zero Void Inventory</h5>
+                        <h5 class="fw-bold">Zero Pending Disposal</h5>
                         <p class="text-muted small">No expired batches currently detected in active storage.</p>
                     </div>
                 </c:if>
@@ -189,11 +311,11 @@
                     <table class="fm-data-table">
                         <thead>
                             <tr>
-                                <th>Void Batch SKU</th>
-                                <th>Target ID</th>
+                                <th>Expired Batch SKU</th>
+                                <th>Lot ID</th>
                                 <th>Expiry Event Date</th>
-                                <th>Volume remaining</th>
-                                <th class="text-end">Disposal Audit</th>
+                                <th>Qty Remaining</th>
+                                <th class="text-end">Disposal Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -204,11 +326,11 @@
                                     <td class="fw-bold text-danger">${lot.expiryDate}</td>
                                     <td class="fw-bold">${lot.qtyLeft}</td>
                                     <td class="text-end">
-                                        <form action="${pageContext.request.contextPath}/staff/delete-lot" method="post" onsubmit="return confirm('Authorize physical disposal of batch #${lot.id}?');">
-                                            <input type="hidden" name="lotId" value="${lot.id}">
-                                            <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}">
-                                            <button type="submit" class="fm-btn btn-danger py-1 px-3 small" style="font-size: 0.75rem;">Authorize Disposal</button>
-                                        </form>
+                                        <a href="${pageContext.request.contextPath}/staff/lot-disposals/new?lotId=${lot.id}&redirect=/staff/inventory-report"
+                                           class="fm-btn btn-danger py-1 px-3 small"
+                                           style="font-size: 0.75rem;">
+                                            Open Disposal Form
+                                        </a>
                                     </td>
                                 </tr>
                             </c:forEach>

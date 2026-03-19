@@ -2,8 +2,10 @@ package com.freshmart.service;
 
 import com.freshmart.entity.Order;
 import com.freshmart.entity.OrderItem;
+import com.freshmart.entity.OrderItemLotAllocation;
 import com.freshmart.entity.ProductLot;
 import com.freshmart.enums.OrderStatus;
+import com.freshmart.repository.OrderItemLotAllocationRepository;
 import com.freshmart.repository.OrderRepository;
 import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.service.dto.FefoAllocationPlan;
@@ -15,7 +17,9 @@ import com.freshmart.util.OrderFefoPlanner;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class StaffOrderOmsService {
 
@@ -25,6 +29,7 @@ public class StaffOrderOmsService {
     private final JpaExecutor executor = new JpaExecutor();
     private final OrderRepository orderRepo = new OrderRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
+    private final OrderItemLotAllocationRepository allocationRepository = new OrderItemLotAllocationRepository();
 
     public List<StaffOrderListRow> listOrders(OrderStatus status, int limit, int nearExpiryDays) {
         return executor.execute(em -> {
@@ -67,6 +72,13 @@ public class StaffOrderOmsService {
             Order order = orderRepo.findByIdWithRefs(em, orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
 
+            Map<Long, List<OrderItemLotAllocation>> allocationsByOrderItemId = new HashMap<>();
+            for (OrderItemLotAllocation allocation : allocationRepository.findByOrderId(em, orderId)) {
+                allocationsByOrderItemId
+                        .computeIfAbsent(allocation.getOrderItem().getId(), key -> new ArrayList<>())
+                        .add(allocation);
+            }
+
             LocalDate today = LocalDate.now();
             List<StaffOrderItemAssessment> assessments = new ArrayList<>();
             boolean allFulfillable = true;
@@ -82,10 +94,12 @@ public class StaffOrderOmsService {
                 );
 
                 StaffOrderItemAssessment assessment = new StaffOrderItemAssessment(
+                        item.getId(),
                         item.getProduct().getId(),
                         item.getProduct().getName(),
                         item.getQuantity(),
-                        plan
+                        plan,
+                        allocationsByOrderItemId.getOrDefault(item.getId(), List.of())
                 );
 
                 assessments.add(assessment);

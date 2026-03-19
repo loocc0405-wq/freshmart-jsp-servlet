@@ -89,10 +89,17 @@
         Có <strong><c:out value="${detailView.riskyItemCount}"/></strong> dòng có shortage hoặc dùng lot near-expiry trong ${detailView.nearExpiryWindowDays} ngày.
     </div>
 
-    <c:if test="${order.status != 'PENDING'}">
+    <c:if test="${order.status != 'PENDING' && order.status != 'COMPLETED'}">
         <div class="alert alert-info">
-            Bảng FEFO bên dưới là <strong>preview theo tồn hiện tại</strong>,
-            không phải lịch sử lot đã xuất, vì hệ thống chưa lưu trace tiêu thụ theo từng lot cho order.
+            Bảng FEFO bên dưới vẫn là <strong>preview theo tồn hiện tại</strong>.
+            Khi đơn hoàn tất, hệ thống sẽ lưu trace thật theo từng lot đã xuất.
+        </div>
+    </c:if>
+
+    <c:if test="${order.status == 'COMPLETED'}">
+        <div class="alert alert-success">
+            Đơn này đã có <strong>trace lot-level thực tế</strong>. Bảng nào có lịch sử cấp phát sẽ hiển thị đúng lot đã xuất,
+            số lượng đã lấy ở từng lot và không còn là preview.
         </div>
     </c:if>
 
@@ -211,11 +218,40 @@
                         Thiếu tồn: <c:out value="${line.shortageQty}"/>
                     </div>
 
-                    <c:if test="${empty line.plan.allocations}">
+                    <c:if test="${line.hasActualAllocations}">
+                        <div class="alert alert-light border small mb-3">
+                            Đây là lịch sử xuất kho thực tế của order item #${line.orderItemId}. Tổng đã cấp phát: <strong>${line.actualAllocatedQty}</strong>.
+                        </div>
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                            <tr>
+                                <th>Lot ID</th>
+                                <th>Ngày nhập</th>
+                                <th>HSD</th>
+                                <th>Đã lấy thực tế</th>
+                                <th>Ghi nhận lúc</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <c:forEach items="${line.actualAllocations}" var="alloc">
+                                <tr>
+                                    <td><c:out value="${alloc.productLot.id}"/></td>
+                                    <td><c:out value="${alloc.productLot.importDate}"/></td>
+                                    <td><c:out value="${alloc.productLot.expiryDate}"/></td>
+                                    <td><strong><c:out value="${alloc.allocatedQty}"/></strong></td>
+                                    <td><c:out value="${alloc.createdAt}"/></td>
+                                </tr>
+                            </c:forEach>
+                            </tbody>
+                        </table>
+                    </c:if>
+
+                    <c:if test="${not line.hasActualAllocations and empty line.plan.allocations}">
                         <div class="text-muted">Không có lot khả dụng để phân bổ FEFO.</div>
                     </c:if>
 
-                    <c:if test="${not empty line.plan.allocations}">
+                    <c:if test="${not line.hasActualAllocations and not empty line.plan.allocations}">
+                        <div class="small text-muted mb-2">Đây là preview FEFO theo tồn hiện tại, chưa phải trace thực tế.</div>
                         <table class="table table-sm align-middle mb-0">
                             <thead>
                             <tr>

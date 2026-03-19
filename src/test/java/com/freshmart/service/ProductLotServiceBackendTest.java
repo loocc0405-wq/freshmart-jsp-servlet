@@ -156,7 +156,7 @@ class ProductLotServiceBackendTest {
 
         RecordingLotRepository repo = new RecordingLotRepository(expectedLot);
         TestJpaExecutor executor = new TestJpaExecutor(newEntityManagerProxy(new EntityManagerState()));
-        ProductLotService service = new ProductLotService(executor, repo);
+        ProductLotService service = new ProductLotService(executor, repo, new InventoryAuditService());
 
         Optional<ProductLot> result = service.getLotDetail(77L);
 
@@ -176,7 +176,8 @@ class ProductLotServiceBackendTest {
         state.put(ProductLot.class, 55L, activeLot);
         ProductLotService service = new ProductLotService(
                 new TestJpaExecutor(newEntityManagerProxy(state)),
-                new ProductLotRepository()
+                new ProductLotRepository(),
+                new InventoryAuditService()
         );
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
@@ -197,7 +198,8 @@ class ProductLotServiceBackendTest {
         state.put(ProductLot.class, 56L, expiredLot);
         ProductLotService service = new ProductLotService(
                 new TestJpaExecutor(newEntityManagerProxy(state)),
-                new ProductLotRepository()
+                new ProductLotRepository(),
+                new InventoryAuditService()
         );
 
         service.deleteLot(56L);
