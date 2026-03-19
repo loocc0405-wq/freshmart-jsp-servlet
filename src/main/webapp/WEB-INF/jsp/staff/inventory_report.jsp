@@ -6,6 +6,37 @@
                 <c:set var="pageTitle" value="Inventory Performance Analytics" />
                 <jsp:include page="/WEB-INF/jsp/common/header.jsp" />
 
+                <c:url var="exportCsvUrl" value="/staff/inventory-report">
+                    <c:param name="export" value="csv" />
+                    <c:if test="${filter.productId != null}">
+                        <c:param name="productId" value="${filter.productId}" />
+                    </c:if>
+                    <c:if test="${filter.supplierId != null}">
+                        <c:param name="supplierId" value="${filter.supplierId}" />
+                    </c:if>
+                    <c:if test="${not empty filter.status}">
+                        <c:param name="status" value="${filter.status}" />
+                    </c:if>
+                    <c:if test="${filter.importFrom != null}">
+                        <c:param name="importFrom" value="${filter.importFrom}" />
+                    </c:if>
+                    <c:if test="${filter.importTo != null}">
+                        <c:param name="importTo" value="${filter.importTo}" />
+                    </c:if>
+                    <c:if test="${filter.expiryFrom != null}">
+                        <c:param name="expiryFrom" value="${filter.expiryFrom}" />
+                    </c:if>
+                    <c:if test="${filter.expiryTo != null}">
+                        <c:param name="expiryTo" value="${filter.expiryTo}" />
+                    </c:if>
+                    <c:if test="${filter.minQtyLeft != null}">
+                        <c:param name="minQtyLeft" value="${filter.minQtyLeft}" />
+                    </c:if>
+                    <c:if test="${filter.maxQtyLeft != null}">
+                        <c:param name="maxQtyLeft" value="${filter.maxQtyLeft}" />
+                    </c:if>
+                </c:url>
+
                 <div class="container-fluid px-4 py-4">
                     <div class="d-flex align-items-center justify-content-between mb-4">
                         <div>
@@ -15,12 +46,13 @@
                             </p>
                         </div>
                         <div class="d-flex gap-2">
-                            <button type="button" class="fm-btn btn-light border small">
+                            <button type="button" class="fm-btn btn-light border small" onclick="window.print()">
                                 <i class="bi bi-printer me-2"></i>Print Ledger
                             </button>
-                            <button type="button" class="fm-btn fm-btn-primary small">
+                            <a href="${exportCsvUrl}"
+                                class="fm-btn fm-btn-primary small">
                                 <i class="bi bi-file-earmark-excel me-2"></i>Export CSV
-                            </button>
+                            </a>
                         </div>
                     </div>
 
@@ -76,6 +108,41 @@
                                 </div>
                                 <div class="fm-h2 mb-2 text-danger">${expiredLotsCount}</div>
                                 <div class="small text-muted">Expired lots still waiting for disposal action</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6 col-xl-4">
+                            <div class="fm-card border-start border-4 border-warning p-4 h-100">
+                                <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Near-expiry Value</div>
+                                <div class="fm-h2 mb-2 text-warning">
+                                    <fmt:formatNumber value="${nearExpiryValue}" type="number" maxFractionDigits="2" />
+                                </div>
+                                <div class="small text-muted">Capital tied in lots expiring within ${upcomingExpiryDays}
+                                    days</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-xl-4">
+                            <div class="fm-card border-start border-4 border-danger p-4 h-100">
+                                <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Expired Stock Value</div>
+                                <div class="fm-h2 mb-2 text-danger">
+                                    <fmt:formatNumber value="${expiredValue}" type="number" maxFractionDigits="2" />
+                                </div>
+                                <div class="small text-muted">Estimated waste value still sitting in expired batches
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 col-xl-4">
+                            <div class="fm-card border-start border-4 border-secondary p-4 h-100">
+                                <div class="fm-caption text-uppercase fw-bold opacity-75 mb-1">Stagnant Inventory</div>
+                                <div class="fm-h2 mb-2 text-secondary">${stagnantLotsCount}</div>
+                                <div class="small text-muted">Lots older than ${stagnantLotDays} days · value <strong>
+                                        <fmt:formatNumber value="${stagnantValue}" type="number"
+                                            maxFractionDigits="2" />
+                                    </strong></div>
                             </div>
                         </div>
                     </div>

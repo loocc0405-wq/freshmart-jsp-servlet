@@ -267,6 +267,27 @@ class ProductLotServiceBackendTest {
                         case "remove":
                             state.removed = args[0];
                             return null;
+                        case "createQuery":
+                            return mockQuery();
+                        default:
+                            return defaultValue(method.getReturnType());
+                    }
+                }
+        );
+    }
+
+    private static jakarta.persistence.Query mockQuery() {
+        return (jakarta.persistence.Query) Proxy.newProxyInstance(
+                jakarta.persistence.Query.class.getClassLoader(),
+                new Class[]{jakarta.persistence.TypedQuery.class},
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "setParameter":
+                            return proxy;
+                        case "getSingleResult":
+                            return 0L;
+                        case "executeUpdate":
+                            return 0;
                         default:
                             return defaultValue(method.getReturnType());
                     }

@@ -31,31 +31,31 @@ public class ProductLotService {
     }
 
     ProductLotService(JpaExecutor executor,
-                      ProductLotRepository lotRepo,
-                      InventoryAuditService auditService) {
+            ProductLotRepository lotRepo,
+            InventoryAuditService auditService) {
         this.executor = executor;
         this.lotRepo = lotRepo;
         this.auditService = auditService;
     }
 
     public ProductLot importLot(Long productId,
-                                Long supplierId,
-                                LocalDate importDate,
-                                LocalDate expiryDate,
-                                int quantity,
-                                BigDecimal importPrice,
-                                EntityManager em) {
+            Long supplierId,
+            LocalDate importDate,
+            LocalDate expiryDate,
+            int quantity,
+            BigDecimal importPrice,
+            EntityManager em) {
         return importLot(productId, supplierId, importDate, expiryDate, quantity, importPrice, null, em);
     }
 
     public ProductLot importLot(Long productId,
-                                Long supplierId,
-                                LocalDate importDate,
-                                LocalDate expiryDate,
-                                int quantity,
-                                BigDecimal importPrice,
-                                Long performedByUserId,
-                                EntityManager em) {
+            Long supplierId,
+            LocalDate importDate,
+            LocalDate expiryDate,
+            int quantity,
+            BigDecimal importPrice,
+            Long performedByUserId,
+            EntityManager em) {
         Product product = em.find(Product.class, productId);
         if (product == null) {
             throw new IllegalArgumentException("Product not found: " + productId);
@@ -81,8 +81,7 @@ public class ProductLotService {
                 em,
                 lot,
                 actor,
-                "Imported lot #" + lot.getId() + " for product " + product.getName()
-        );
+                "Imported lot #" + lot.getId() + " for product " + product.getName());
         return lot;
     }
 
@@ -138,7 +137,7 @@ public class ProductLotService {
      */
     public void deleteLot(Long lotId) {
         executor.executeVoid(em -> {
-            ProductLot lot = em.find(ProductLot.class, lotId);
+            ProductLot lot = lotRepo.findByIdForUpdate(em, lotId);
             if (lot == null) {
                 throw new IllegalArgumentException("Lot not found: " + lotId);
             }
@@ -152,15 +151,38 @@ public class ProductLotService {
                         "Chỉ được loại bỏ lô đã hết hạn hoặc đã dùng hết để tránh sai lệch tồn kho.");
             }
 
+            Long allocationCount = em.createQuery(
+                    "SELECT COUNT(a) FROM OrderItemLotAllocation a WHERE a.productLot.id = :lotId",
+                    Long.class).setParameter("lotId", lotId).getSingleResult();
+
+            Long disposalCount = em.createQuery(
+                    "SELECT COUNT(d) FROM LotDisposal d WHERE d.productLot.id = :lotId",
+                    Long.class).setParameter("lotId", lotId).getSingleResult();
+
+            Long transactionCount = em.createQuery(
+                    "SELECT COUNT(t) FROM InventoryTransaction t WHERE t.productLot.id = :lotId",
+                    Long.class).setParameter("lotId", lotId).getSingleResult();
+
+            if ((allocationCount != null && allocationCount > 0)
+                    || (disposalCount != null && disposalCount > 0)
+                    || (transactionCount != null && transactionCount > 1)) {
+                throw new IllegalStateException(
+                        "Lô đã có lịch sử audit/xuất kho/tiêu hủy nên không thể xóa cứng. Hãy giữ lịch sử hoặc dùng phiếu tiêu hủy.");
+            }
+
+            em.createQuery(
+                    "DELETE FROM InventoryTransaction t WHERE t.productLot.id = :lotId").setParameter("lotId", lotId)
+                    .executeUpdate();
+
             em.remove(lot);
         });
     }
 
     public ProductLot disposeLot(Long lotId,
-                                 int disposeQty,
-                                 String reason,
-                                 String note,
-                                 Long performedByUserId) {
+            int disposeQty,
+            String reason,
+            String note,
+            Long performedByUserId) {
         return executor.execute(em -> {
             ProductLot lot = lotRepo.findByIdForUpdate(em, lotId);
             if (lot == null) {
@@ -217,25 +239,25 @@ public class ProductLotService {
     }
 
     public ProductLot updateLot(Long lotId,
-                                Long productId,
-                                Long supplierId,
-                                LocalDate importDate,
-                                LocalDate expiryDate,
-                                int newQtyIn,
-                                BigDecimal importPrice,
-                                EntityManager em) {
+            Long productId,
+            Long supplierId,
+            LocalDate importDate,
+            LocalDate expiryDate,
+            int newQtyIn,
+            BigDecimal importPrice,
+            EntityManager em) {
         return updateLot(lotId, productId, supplierId, importDate, expiryDate, newQtyIn, importPrice, null, em);
     }
 
     public ProductLot updateLot(Long lotId,
-                                Long productId,
-                                Long supplierId,
-                                LocalDate importDate,
-                                LocalDate expiryDate,
-                                int newQtyIn,
-                                BigDecimal importPrice,
-                                Long performedByUserId,
-                                EntityManager em) {
+            Long productId,
+            Long supplierId,
+            LocalDate importDate,
+            LocalDate expiryDate,
+            int newQtyIn,
+            BigDecimal importPrice,
+            Long performedByUserId,
+            EntityManager em) {
         ProductLot lot = lotRepo.findByIdForUpdate(em, lotId);
         if (lot == null) {
             throw new IllegalArgumentException("Lot not found: " + lotId);
@@ -281,8 +303,7 @@ public class ProductLotService {
                     merged,
                     deltaQtyLeft,
                     actor,
-                    "Adjusted lot #" + merged.getId() + " qty_left from " + oldQtyLeft + " to " + merged.getQtyLeft()
-            );
+                    "Adjusted lot #" + merged.getId() + " qty_left from " + oldQtyLeft + " to " + merged.getQtyLeft());
         }
 
         return merged;
@@ -390,9 +411,9 @@ public class ProductLotService {
     }
 
     private void validateLotInput(LocalDate importDate,
-                                  LocalDate expiryDate,
-                                  int quantity,
-                                  BigDecimal importPrice) {
+            LocalDate expiryDate,
+            int quantity,
+            BigDecimal importPrice) {
         if (importDate == null || expiryDate == null) {
             throw new IllegalArgumentException("Import date and expiry date are required");
         }

@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
  */
 public class InventoryReportService {
 
+    public static final int DEFAULT_STAGNANT_DAYS = 30;
+
     private final JpaExecutor executor = new JpaExecutor();
     private final ProductRepository productRepo = new ProductRepository();
     private final ProductLotRepository lotRepo = new ProductLotRepository();
@@ -46,15 +48,15 @@ public class InventoryReportService {
         public BigDecimal availableValue;
 
         public ProductInventoryOverview(Long productId,
-                                        String productName,
-                                        int totalQtyIn,
-                                        int totalQtyLeft,
-                                        int availableQty,
-                                        int expiredQty,
-                                        int activeLotsCount,
-                                        int expiredLotsCount,
-                                        LocalDate nearestExpiry,
-                                        BigDecimal availableValue) {
+                String productName,
+                int totalQtyIn,
+                int totalQtyLeft,
+                int availableQty,
+                int expiredQty,
+                int activeLotsCount,
+                int expiredLotsCount,
+                LocalDate nearestExpiry,
+                BigDecimal availableValue) {
             this.productId = productId;
             this.productName = productName;
             this.totalQtyIn = totalQtyIn;
@@ -68,17 +70,49 @@ public class InventoryReportService {
             this.availableValue = availableValue;
         }
 
-        public Long getProductId() { return productId; }
-        public String getProductName() { return productName; }
-        public int getTotalQtyIn() { return totalQtyIn; }
-        public int getTotalQtyLeft() { return totalQtyLeft; }
-        public int getAvailableQty() { return availableQty; }
-        public int getExpiredQty() { return expiredQty; }
-        public int getTotalQtyConsumed() { return totalQtyConsumed; }
-        public int getActiveLotsCount() { return activeLotsCount; }
-        public int getExpiredLotsCount() { return expiredLotsCount; }
-        public LocalDate getNearestExpiry() { return nearestExpiry; }
-        public BigDecimal getAvailableValue() { return availableValue; }
+        public Long getProductId() {
+            return productId;
+        }
+
+        public String getProductName() {
+            return productName;
+        }
+
+        public int getTotalQtyIn() {
+            return totalQtyIn;
+        }
+
+        public int getTotalQtyLeft() {
+            return totalQtyLeft;
+        }
+
+        public int getAvailableQty() {
+            return availableQty;
+        }
+
+        public int getExpiredQty() {
+            return expiredQty;
+        }
+
+        public int getTotalQtyConsumed() {
+            return totalQtyConsumed;
+        }
+
+        public int getActiveLotsCount() {
+            return activeLotsCount;
+        }
+
+        public int getExpiredLotsCount() {
+            return expiredLotsCount;
+        }
+
+        public LocalDate getNearestExpiry() {
+            return nearestExpiry;
+        }
+
+        public BigDecimal getAvailableValue() {
+            return availableValue;
+        }
     }
 
     /**
@@ -93,15 +127,23 @@ public class InventoryReportService {
         private final Long totalActiveLots;
         private final int upcomingExpiryCount;
         private final int expiredLotsCount;
+        private final BigDecimal nearExpiryValue;
+        private final BigDecimal expiredValue;
+        private final int stagnantLotsCount;
+        private final BigDecimal stagnantValue;
 
         public InventoryReportSnapshot(List<ProductInventoryOverview> allProductsOverview,
-                                       List<ProductInventoryOverview> lowStockProducts,
-                                       List<ProductInventoryOverview> upcomingExpiryProducts,
-                                       List<ProductLot> expiredLots,
-                                       BigDecimal totalInventoryValue,
-                                       Long totalActiveLots,
-                                       int upcomingExpiryCount,
-                                       int expiredLotsCount) {
+                List<ProductInventoryOverview> lowStockProducts,
+                List<ProductInventoryOverview> upcomingExpiryProducts,
+                List<ProductLot> expiredLots,
+                BigDecimal totalInventoryValue,
+                Long totalActiveLots,
+                int upcomingExpiryCount,
+                int expiredLotsCount,
+                BigDecimal nearExpiryValue,
+                BigDecimal expiredValue,
+                int stagnantLotsCount,
+                BigDecimal stagnantValue) {
             this.allProductsOverview = allProductsOverview;
             this.lowStockProducts = lowStockProducts;
             this.upcomingExpiryProducts = upcomingExpiryProducts;
@@ -110,6 +152,10 @@ public class InventoryReportService {
             this.totalActiveLots = totalActiveLots;
             this.upcomingExpiryCount = upcomingExpiryCount;
             this.expiredLotsCount = expiredLotsCount;
+            this.nearExpiryValue = nearExpiryValue;
+            this.expiredValue = expiredValue;
+            this.stagnantLotsCount = stagnantLotsCount;
+            this.stagnantValue = stagnantValue;
         }
 
         public List<ProductInventoryOverview> getAllProductsOverview() {
@@ -143,6 +189,22 @@ public class InventoryReportService {
         public int getExpiredLotsCount() {
             return expiredLotsCount;
         }
+
+        public BigDecimal getNearExpiryValue() {
+            return nearExpiryValue;
+        }
+
+        public BigDecimal getExpiredValue() {
+            return expiredValue;
+        }
+
+        public int getStagnantLotsCount() {
+            return stagnantLotsCount;
+        }
+
+        public BigDecimal getStagnantValue() {
+            return stagnantValue;
+        }
     }
 
     public List<ProductInventoryOverview> getAllProductInventoryOverview() {
@@ -150,8 +212,7 @@ public class InventoryReportService {
             List<Product> products = productRepo.findAll(em, true);
             Map<Long, List<ProductLot>> lotsByProductId = loadLotsByProductIds(
                     em,
-                    products.stream().map(Product::getId).collect(Collectors.toSet())
-            );
+                    products.stream().map(Product::getId).collect(Collectors.toSet()));
 
             List<ProductInventoryOverview> result = new ArrayList<>();
             LocalDate today = LocalDate.now();
@@ -206,21 +267,28 @@ public class InventoryReportService {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE l.expiryDate < CURRENT_DATE AND l.qtyLeft > 0 " +
                         "ORDER BY l.expiryDate ASC, l.id ASC",
-                ProductLot.class
-        ).getResultList());
+                ProductLot.class).getResultList());
     }
 
     private boolean isEmptyFilter(InventoryLotFilter filter) {
         return filter == null
                 || (filter.getProductId() == null
-                && filter.getSupplierId() == null
-                && (filter.getStatus() == null || filter.getStatus().isBlank())
-                && filter.getImportFrom() == null
-                && filter.getImportTo() == null
-                && filter.getExpiryFrom() == null
-                && filter.getExpiryTo() == null
-                && filter.getMinQtyLeft() == null
-                && filter.getMaxQtyLeft() == null);
+                        && filter.getSupplierId() == null
+                        && (filter.getStatus() == null || filter.getStatus().isBlank())
+                        && filter.getImportFrom() == null
+                        && filter.getImportTo() == null
+                        && filter.getExpiryFrom() == null
+                        && filter.getExpiryTo() == null
+                        && filter.getMinQtyLeft() == null
+                        && filter.getMaxQtyLeft() == null);
+    }
+
+    private BigDecimal lotRemainingValue(ProductLot lot) {
+        if (lot == null || lot.getQtyLeft() == null || lot.getQtyLeft() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal price = lot.getImportPrice() == null ? BigDecimal.ZERO : lot.getImportPrice();
+        return price.multiply(BigDecimal.valueOf(lot.getQtyLeft()));
     }
 
     private ProductInventoryOverview toOverview(Product product, List<ProductLot> lots, LocalDate today) {
@@ -278,8 +346,7 @@ public class InventoryReportService {
                 activeLotsCount,
                 expiredLotsCount,
                 nearestExpiry,
-                availableValue
-        );
+                availableValue);
     }
 
     /**
@@ -288,7 +355,7 @@ public class InventoryReportService {
      * Professional fix:
      * - lot filters are still respected to find the relevant product set,
      * - but product-level overview metrics are calculated from the FULL inventory
-     *   of those matched products instead of only the already-filtered subset.
+     * of those matched products instead of only the already-filtered subset.
      *
      * This prevents misleading metrics such as:
      * - availableQty becoming zero just because the current filter is EXPIRED,
@@ -296,8 +363,8 @@ public class InventoryReportService {
      * - low stock / upcoming expiry lists being computed from partial lot slices.
      */
     public InventoryReportSnapshot buildReportSnapshot(InventoryLotFilter filter,
-                                                       int lowStockThreshold,
-                                                       int upcomingExpiryDays) {
+            int lowStockThreshold,
+            int upcomingExpiryDays) {
         return executor.execute(em -> {
             LocalDate today = LocalDate.now();
             LocalDate expiryDeadline = today.plusDays(Math.max(0, upcomingExpiryDays));
@@ -326,11 +393,11 @@ public class InventoryReportService {
                 } else {
                     Map<Long, Product> productsById = em.createQuery(
                             "SELECT p FROM Product p WHERE p.id IN :ids ORDER BY p.id ASC",
-                            Product.class
-                    ).setParameter("ids", selectedProductIds)
+                            Product.class).setParameter("ids", selectedProductIds)
                             .getResultList()
                             .stream()
-                            .collect(Collectors.toMap(Product::getId, Function.identity(), (a, b) -> a, LinkedHashMap::new));
+                            .collect(Collectors.toMap(Product::getId, Function.identity(), (a, b) -> a,
+                                    LinkedHashMap::new));
                     selectedProducts = new ArrayList<>(productsById.values());
                 }
             }
@@ -339,7 +406,8 @@ public class InventoryReportService {
 
             List<ProductInventoryOverview> allProductsOverview = new ArrayList<>();
             for (Product product : selectedProducts) {
-                List<ProductLot> productLots = fullLotsByProductId.getOrDefault(product.getId(), Collections.emptyList());
+                List<ProductLot> productLots = fullLotsByProductId.getOrDefault(product.getId(),
+                        Collections.emptyList());
                 if (!product.isActive() && productLots.isEmpty()) {
                     continue;
                 }
@@ -386,6 +454,34 @@ public class InventoryReportService {
 
             int expiredLotsCount = expiredLots.size();
 
+            BigDecimal nearExpiryValue = fullLotsByProductId.values().stream()
+                    .flatMap(List::stream)
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .filter(l -> !l.getExpiryDate().isBefore(today))
+                    .filter(l -> !l.getExpiryDate().isAfter(expiryDeadline))
+                    .map(this::lotRemainingValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal expiredValue = fullLotsByProductId.values().stream()
+                    .flatMap(List::stream)
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .filter(l -> l.getExpiryDate().isBefore(today))
+                    .map(this::lotRemainingValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            LocalDate stagnantThreshold = today.minusDays(DEFAULT_STAGNANT_DAYS);
+            List<ProductLot> stagnantLots = fullLotsByProductId.values().stream()
+                    .flatMap(List::stream)
+                    .filter(l -> l.getQtyLeft() > 0)
+                    .filter(l -> !l.getExpiryDate().isBefore(today))
+                    .filter(l -> l.getImportDate() != null && !l.getImportDate().isAfter(stagnantThreshold))
+                    .collect(Collectors.toList());
+
+            int stagnantLotsCount = stagnantLots.size();
+            BigDecimal stagnantValue = stagnantLots.stream()
+                    .map(this::lotRemainingValue)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
             return new InventoryReportSnapshot(
                     allProductsOverview,
                     lowStockProducts,
@@ -394,13 +490,16 @@ public class InventoryReportService {
                     totalInventoryValue,
                     totalActiveLots,
                     upcomingExpiryCount,
-                    expiredLotsCount
-            );
+                    expiredLotsCount,
+                    nearExpiryValue,
+                    expiredValue,
+                    stagnantLotsCount,
+                    stagnantValue);
         });
     }
 
     private Map<Long, List<ProductLot>> loadLotsByProductIds(jakarta.persistence.EntityManager em,
-                                                             Collection<Long> productIds) {
+            Collection<Long> productIds) {
         if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -411,13 +510,11 @@ public class InventoryReportService {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE p.id IN :ids " +
                         "ORDER BY p.id ASC, l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                ProductLot.class
-        ).setParameter("ids", productIds).getResultList();
+                ProductLot.class).setParameter("ids", productIds).getResultList();
 
         return lots.stream().collect(Collectors.groupingBy(
                 lot -> lot.getProduct().getId(),
                 LinkedHashMap::new,
-                Collectors.toList()
-        ));
+                Collectors.toList()));
     }
 }

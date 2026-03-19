@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Servlet để xem tồn kho theo lô và FEFO.
+ * Servlet d? xem t?n kho theo lô và FEFO.
  * Map: /staff/inventory
  */
-@WebServlet(urlPatterns = {"/staff/inventory", "/staff/inventory/view"})
+@WebServlet(urlPatterns = { "/staff/inventory", "/staff/inventory/view" })
 public class StaffInventoryViewServlet extends HttpServlet {
 
     private final JpaExecutor executor = new JpaExecutor();
@@ -91,13 +91,11 @@ public class StaffInventoryViewServlet extends HttpServlet {
 
             validateFilter(filter);
 
-            boolean hasFilter = hasFilter(filter);
-            if (hasFilter) {
-                List<ProductLot> filteredLots = executor.execute(em -> lotRepo.searchLots(em, filter, today));
-                long filteredCount = executor.execute(em -> lotRepo.countLots(em, filter, today));
-                req.setAttribute("filteredLots", filteredLots);
-                req.setAttribute("filteredCount", filteredCount);
-            }
+            List<ProductLot> filteredLots = executor.execute(em -> lotRepo.searchLots(em, filter, today));
+            long filteredCount = executor.execute(em -> lotRepo.countLots(em, filter, today));
+            req.setAttribute("filteredLots", filteredLots);
+            req.setAttribute("filteredCount", filteredCount);
+            req.setAttribute("hasActiveFilter", hasFilter(filter));
 
             if (filter.getProductId() != null) {
                 loadSelectedProductDetail(req, filter.getProductId(), today);
@@ -112,17 +110,17 @@ public class StaffInventoryViewServlet extends HttpServlet {
     private void validateFilter(InventoryLotFilter filter) {
         if (filter.getImportFrom() != null && filter.getImportTo() != null
                 && filter.getImportFrom().isAfter(filter.getImportTo())) {
-            throw new IllegalArgumentException("Ngày nhập bắt đầu không được lớn hơn ngày nhập kết thúc");
+            throw new IllegalArgumentException("Ngày nh?p b?t d?u không du?c l?n hon ngày nh?p k?t thúc");
         }
 
         if (filter.getExpiryFrom() != null && filter.getExpiryTo() != null
                 && filter.getExpiryFrom().isAfter(filter.getExpiryTo())) {
-            throw new IllegalArgumentException("Hạn sử dụng bắt đầu không được lớn hơn hạn sử dụng kết thúc");
+            throw new IllegalArgumentException("H?n s? d?ng b?t d?u không du?c l?n hon h?n s? d?ng k?t thúc");
         }
 
         if (filter.getMinQtyLeft() != null && filter.getMaxQtyLeft() != null
                 && filter.getMinQtyLeft() > filter.getMaxQtyLeft()) {
-            throw new IllegalArgumentException("Số lượng tồn tối thiểu không được lớn hơn tối đa");
+            throw new IllegalArgumentException("S? lu?ng t?n t?i thi?u không du?c l?n hon t?i da");
         }
     }
 
@@ -141,7 +139,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
     private void loadSelectedProductDetail(HttpServletRequest req, Long productId, LocalDate today) {
         Product selectedProduct = executor.execute(em -> productRepo.findById(em, productId).orElse(null));
         if (selectedProduct == null) {
-            throw new IllegalArgumentException("Sản phẩm không tồn tại.");
+            throw new IllegalArgumentException("S?n ph?m không t?n t?i.");
         }
 
         req.setAttribute("selectedProduct", selectedProduct);
@@ -155,8 +153,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE p.id = :pid " +
                         "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                ProductLot.class
-        ).setParameter("pid", productId).getResultList());
+                ProductLot.class).setParameter("pid", productId).getResultList());
         req.setAttribute("allLots", allLots);
 
         List<ProductLot> availableLots = allLots.stream()
