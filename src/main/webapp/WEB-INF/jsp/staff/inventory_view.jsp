@@ -275,7 +275,7 @@
                                             <span class="fm-status-badge expired border-0 px-3 shadow-none"><i class="status-dot expired"></i> VOID/EXPIRED</span>
                                         </c:when>
                                         <c:when test="${isCons}">
-                                            <span class="fm-status-badge border-0 px-3 shadow-none" style="background:var(--fm-slate-100); color:var(--fm-slate-500);"><i class="status-dot consumed"></i> CONSUMED</span>
+                                            <span class="fm-status-badge border-0 px-3 shadow-none" style="background:var(--fm-slate-100); color:var(--fm-slate-500);"><i class="status-dot consumed"></i> EMPTY</span>
                                         </c:when>
                                         <c:when test="${isCrit}">
                                             <span class="fm-status-badge expiring border-0 px-3 shadow-none"><i class="status-dot expiring"></i> CRITICAL FEFO</span>
@@ -293,14 +293,12 @@
                                         <button class="btn btn-white border-0 p-1 shadow-none hvr-soft transition" data-bs-toggle="dropdown"><i class="bi bi-three-dots-vertical fs-5 text-slate-400"></i></button>
                                         <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg py-2">
                                             <li><a class="dropdown-item py-2 fw-medium" href="${pageContext.request.contextPath}/staff/import-lot?id=${lot.id}"><i class="bi bi-pencil-square me-3 text-slate-400"></i> Edit Audit Logs</a></li>
-                                            <c:if test="${isExp && lot.qtyLeft > 0}">
+                                            <c:if test="${lot.qtyLeft > 0}">
                                                 <li><hr class="dropdown-divider opacity-50"></li>
                                                 <li>
-                                                    <form action="${pageContext.request.contextPath}/staff/delete-lot" method="post" onsubmit="return confirm('Confirm removal of expired stock?');">
-                                                        <input type="hidden" name="lotId" value="${lot.id}">
-                                                        <input type="hidden" name="csrf_token" value="${sessionScope.CSRF_TOKEN}">
-                                                        <button type="submit" class="dropdown-item py-2 fw-medium text-danger"><i class="bi bi-trash3 me-3 opacity-70"></i> Mark for Disposal</button>
-                                                    </form>
+                                                    <a class="dropdown-item py-2 fw-medium text-danger" href="${pageContext.request.contextPath}/staff/lot-disposals/new?lotId=${lot.id}&redirect=/staff/inventory">
+                                                        <i class="bi bi-trash3 me-3 opacity-70"></i> Dispose / Remove Qty
+                                                    </a>
                                                 </li>
                                             </c:if>
                                         </ul>

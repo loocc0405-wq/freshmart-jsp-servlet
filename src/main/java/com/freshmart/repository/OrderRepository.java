@@ -16,6 +16,10 @@ public class OrderRepository {
         return Optional.ofNullable(em.find(Order.class, id));
     }
 
+    public Optional<Order> findByIdForUpdate(EntityManager em, Long id) {
+        return Optional.ofNullable(em.find(Order.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE));
+    }
+
     public Order save(EntityManager em, Order order) {
         if (order.getId() == null) {
             em.persist(order);

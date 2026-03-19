@@ -41,6 +41,13 @@ class Module9OrderToDashboardIntegrationTest {
 
         executor.executeVoid(em -> {
             em.createNativeQuery(
+                    "DELETE FROM order_item_lot_allocations WHERE order_item_id IN (" +
+                            "SELECT id FROM order_items WHERE order_id IN (" +
+                            "SELECT id FROM orders WHERE order_code LIKE :codePrefix))")
+                    .setParameter("codePrefix", runKey + "%")
+                    .executeUpdate();
+
+            em.createNativeQuery(
                     "DELETE FROM order_items WHERE order_id IN (" +
                             "SELECT id FROM orders WHERE order_code LIKE :codePrefix)")
                     .setParameter("codePrefix", runKey + "%")
@@ -49,6 +56,13 @@ class Module9OrderToDashboardIntegrationTest {
             em.createNativeQuery(
                     "DELETE FROM orders WHERE order_code LIKE :codePrefix")
                     .setParameter("codePrefix", runKey + "%")
+                    .executeUpdate();
+
+            em.createNativeQuery(
+                    "DELETE FROM inventory_transactions WHERE product_lot_id IN (" +
+                            "SELECT id FROM product_lots WHERE product_id IN (" +
+                            "SELECT id FROM products WHERE name LIKE :namePrefix))")
+                    .setParameter("namePrefix", runKey + "%")
                     .executeUpdate();
 
             em.createNativeQuery(

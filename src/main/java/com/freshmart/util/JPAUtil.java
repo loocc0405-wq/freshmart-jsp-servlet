@@ -138,6 +138,54 @@ public final class JPAUtil {
                                 "CONSTRAINT fk_chat_feedback_message FOREIGN KEY (chat_message_id) REFERENCES chat_messages(id)" +
                                 ")"
                 );
+
+                ensureTableExists(
+                        conn,
+                        "order_item_lot_allocations",
+                        "CREATE TABLE order_item_lot_allocations (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "order_item_id BIGINT NOT NULL, " +
+                                "product_lot_id BIGINT NOT NULL, " +
+                                "allocated_qty INT NOT NULL, " +
+                                "created_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "CONSTRAINT fk_oila_order_item FOREIGN KEY (order_item_id) REFERENCES order_items(id), " +
+                                "CONSTRAINT fk_oila_product_lot FOREIGN KEY (product_lot_id) REFERENCES product_lots(id)" +
+                                ")"
+                );
+
+                ensureTableExists(
+                        conn,
+                        "inventory_transactions",
+                        "CREATE TABLE inventory_transactions (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "product_lot_id BIGINT NOT NULL, " +
+                                "type NVARCHAR(20) NOT NULL, " +
+                                "quantity INT NOT NULL, " +
+                                "reference_type NVARCHAR(50) NULL, " +
+                                "reference_id BIGINT NULL, " +
+                                "note NVARCHAR(500) NULL, " +
+                                "created_by BIGINT NULL, " +
+                                "created_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "CONSTRAINT fk_inv_tx_lot FOREIGN KEY (product_lot_id) REFERENCES product_lots(id), " +
+                                "CONSTRAINT fk_inv_tx_user FOREIGN KEY (created_by) REFERENCES users(id)" +
+                                ")"
+                );
+
+                ensureTableExists(
+                        conn,
+                        "lot_disposals",
+                        "CREATE TABLE lot_disposals (" +
+                                "id BIGINT IDENTITY(1,1) NOT NULL PRIMARY KEY, " +
+                                "product_lot_id BIGINT NOT NULL, " +
+                                "disposed_qty INT NOT NULL, " +
+                                "reason NVARCHAR(255) NOT NULL, " +
+                                "note NVARCHAR(500) NULL, " +
+                                "disposed_by BIGINT NULL, " +
+                                "disposed_at DATETIME2(0) NOT NULL DEFAULT (SYSDATETIME()), " +
+                                "CONSTRAINT fk_lot_disposals_lot FOREIGN KEY (product_lot_id) REFERENCES product_lots(id), " +
+                                "CONSTRAINT fk_lot_disposals_user FOREIGN KEY (disposed_by) REFERENCES users(id)" +
+                                ")"
+                );
             }
         } catch (Exception e) {
             System.err.println("schema pre-check failed: " + e.getMessage());

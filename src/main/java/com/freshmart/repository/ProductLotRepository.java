@@ -162,6 +162,10 @@ public class ProductLotRepository {
         return list.isEmpty() ? null : list.get(0);
     }
 
+    public ProductLot findByIdForUpdate(EntityManager em, Long id) {
+        return em.find(ProductLot.class, id, jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+    }
+
     /**
      * Search lots with dynamic filtering based on InventoryLotFilter conditions.
      */

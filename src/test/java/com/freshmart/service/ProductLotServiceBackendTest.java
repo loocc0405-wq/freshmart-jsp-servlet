@@ -48,7 +48,7 @@ class ProductLotServiceBackendTest {
         assertEquals(15, lot.getQtyIn());
         assertEquals(15, lot.getQtyLeft());
         assertEquals(BigDecimal.ZERO, lot.getImportPrice());
-        assertSame(lot, state.persisted);
+        assertTrue(state.persisted.contains(lot));
     }
 
     @Test
@@ -114,7 +114,7 @@ class ProductLotServiceBackendTest {
                         em
                 ));
 
-        assertTrue(ex.getMessage().contains("already consumed quantity: 6"));
+        assertTrue(ex.getMessage().contains("already consumed/disposed quantity: 6"));
     }
 
     @Test
@@ -156,7 +156,7 @@ class ProductLotServiceBackendTest {
 
         RecordingLotRepository repo = new RecordingLotRepository(expectedLot);
         TestJpaExecutor executor = new TestJpaExecutor(newEntityManagerProxy(new EntityManagerState()));
-        ProductLotService service = new ProductLotService(executor, repo);
+        ProductLotService service = new ProductLotService(executor, repo, new InventoryAuditService());
 
         Optional<ProductLot> result = service.getLotDetail(77L);
 
@@ -176,7 +176,8 @@ class ProductLotServiceBackendTest {
         state.put(ProductLot.class, 55L, activeLot);
         ProductLotService service = new ProductLotService(
                 new TestJpaExecutor(newEntityManagerProxy(state)),
-                new ProductLotRepository()
+                new ProductLotRepository(),
+                new InventoryAuditService()
         );
 
         IllegalStateException ex = assertThrows(IllegalStateException.class,
@@ -197,7 +198,8 @@ class ProductLotServiceBackendTest {
         state.put(ProductLot.class, 56L, expiredLot);
         ProductLotService service = new ProductLotService(
                 new TestJpaExecutor(newEntityManagerProxy(state)),
-                new ProductLotRepository()
+                new ProductLotRepository(),
+                new InventoryAuditService()
         );
 
         service.deleteLot(56L);
@@ -257,7 +259,7 @@ class ProductLotServiceBackendTest {
                         case "find":
                             return state.find((Class<?>) args[0], args[1]);
                         case "persist":
-                            state.persisted = args[0];
+                            state.persisted.add(args[0]);
                             return null;
                         case "merge":
                             state.merged = args[0];
@@ -289,7 +291,7 @@ class ProductLotServiceBackendTest {
 
     private static class EntityManagerState {
         private final Map<String, Object> store = new HashMap<>();
-        private Object persisted;
+        private final java.util.List<Object> persisted = new java.util.ArrayList<>();
         private Object merged;
         private Object removed;
 

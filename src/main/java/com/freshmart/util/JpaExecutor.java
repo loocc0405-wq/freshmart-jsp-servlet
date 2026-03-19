@@ -10,18 +10,18 @@ import java.util.function.Function;
 public class JpaExecutor {
 
     public <T> T execute(Function<EntityManager, T> work) {
-        EntityManager em = JPAUtil.createEntityManager();
-        EntityTransaction tx = em.getTransaction();
+        EntityManager entityManager = JPAUtil.createEntityManager();
+        EntityTransaction tx = entityManager.getTransaction();
         try {
             tx.begin();
-            T result = work.apply(em);
+            T result = work.apply(entityManager);
             tx.commit();
             return result;
         } catch (RuntimeException ex) {
             if (tx.isActive()) tx.rollback();
             throw ex;
         } finally {
-            em.close();
+            entityManager.close();
         }
     }
 

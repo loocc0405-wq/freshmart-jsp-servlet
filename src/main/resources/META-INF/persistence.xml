@@ -16,6 +16,9 @@
         <class>com.freshmart.entity.CartItem</class>
         <class>com.freshmart.entity.Order</class>
         <class>com.freshmart.entity.OrderItem</class>
+        <class>com.freshmart.entity.OrderItemLotAllocation</class>
+        <class>com.freshmart.entity.InventoryTransaction</class>
+        <class>com.freshmart.entity.LotDisposal</class>
         <class>com.freshmart.entity.RevenueDaily</class>
         <class>com.freshmart.entity.SubscriptionPayment</class>
         <class>com.freshmart.entity.AppSetting</class>
