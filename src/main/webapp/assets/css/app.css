@@ -463,3 +463,46 @@ body.app-body{
     margin-bottom: 0;
   }
 }
+
+/* Product Health badge - nhỏ hơn badge thường, dùng trong cột Stock */
+.fm-health-badge {
+  font-size: 0.65rem;
+  padding: 0.15em 0.45em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Product Health Guide box */
+.fm-health-guide {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-left: 3px solid #0d6efd;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+}
+
+.fm-health-guide__title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.45rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fm-health-guide__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.fm-health-guide__item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.fm-health-guide__desc {
+  color: #6c757d;
+}

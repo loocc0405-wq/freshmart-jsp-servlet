@@ -54,10 +54,27 @@ public class SupplierManagementServlet extends HttpServlet {
                 break;
 
             case "edit":
-                Long editId = Long.parseLong(request.getParameter("id"));
+                String editIdStr = request.getParameter("id");
+                if (editIdStr == null || editIdStr.isBlank()) {
+                    request.getSession().setAttribute("errorMessage", "Missing supplier id.");
+                    response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+                    return;
+                }
+                Long editId;
+                try {
+                    editId = Long.parseLong(editIdStr);
+                } catch (NumberFormatException e) {
+                    request.getSession().setAttribute("errorMessage", "Invalid supplier id.");
+                    response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+                    return;
+                }
                 Supplier supplier = supplierService.getById(editId);
+                if (supplier == null) {
+                    request.getSession().setAttribute("errorMessage", "Supplier not found (id=" + editId + ").");
+                    response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+                    return;
+                }
                 request.setAttribute("supplier", supplier);
-
                 request.getRequestDispatcher("/WEB-INF/jsp/staff/supplier_form.jsp")
                         .forward(request, response);
                 break;
@@ -122,14 +139,9 @@ public class SupplierManagementServlet extends HttpServlet {
             HttpSession session = request.getSession();
             
             if (result.getErrorCount() > 0) {
-                // Show errors
-                StringBuilder errorDetail = new StringBuilder();
-                errorDetail.append(message).append("<br/><br/><strong>Errors:</strong><ul>");
-                for (String error : result.getErrors()) {
-                    errorDetail.append("<li>").append(error).append("</li>");
-                }
-                errorDetail.append("</ul>");
-                session.setAttribute("errorMessage", errorDetail.toString());
+                // Tách summary và error list riêng để JSP render an toàn (không build HTML trong servlet)
+                session.setAttribute("importSummary", message.toString());
+                session.setAttribute("importErrors", result.getErrors());
             } else {
                 session.setAttribute("successMessage", message.toString());
             }
@@ -148,19 +160,31 @@ public class SupplierManagementServlet extends HttpServlet {
     // ==========================
     private void handleDelete(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        try {
-            Long deleteId = Long.parseLong(request.getParameter("id"));
-            supplierService.deleteById(deleteId);
-
-            HttpSession session = request.getSession();
-            session.setAttribute("successMessage", "Supplier deleted successfully!");
-            
+        String idParam = request.getParameter("id");
+        if (idParam == null || idParam.isBlank()) {
+            request.getSession().setAttribute("errorMessage", "Missing supplier id.");
             response.sendRedirect(request.getContextPath() + "/staff/suppliers");
-        } catch (Exception e) {
-            HttpSession session = request.getSession();
-            session.setAttribute("errorMessage", "Failed to delete supplier: " + e.getMessage());
-            response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+            return;
         }
+        try {
+            Long deleteId = Long.parseLong(idParam);
+            supplierService.deleteById(deleteId);
+            request.getSession().setAttribute("successMessage", "Supplier deleted successfully.");
+        } catch (NumberFormatException e) {
+            request.getSession().setAttribute("errorMessage", "Invalid supplier id.");
+        } catch (Exception e) {
+            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+            // FK constraint violation thường chứa "constraint", "foreign key", "reference"
+            if (msg.contains("constraint") || msg.contains("foreign key") || msg.contains("reference")) {
+                request.getSession().setAttribute("errorMessage",
+                        "Cannot delete this supplier because they have associated import records. " +
+                        "Remove the related lots first.");
+            } else {
+                request.getSession().setAttribute("errorMessage",
+                        "Failed to delete supplier: " + e.getMessage());
+            }
+        }
+        response.sendRedirect(request.getContextPath() + "/staff/suppliers");
     }
 
     // ==========================
@@ -176,7 +200,14 @@ public class SupplierManagementServlet extends HttpServlet {
             if (idParam == null || idParam.isEmpty()) {
                 supplier = new Supplier();
             } else {
-                supplier = supplierService.getById(Long.parseLong(idParam));
+                Long supplierId = Long.parseLong(idParam);
+                supplier = supplierService.getById(supplierId);
+                if (supplier == null) {
+                    HttpSession session = request.getSession();
+                    session.setAttribute("errorMessage", "Supplier not found (id=" + supplierId + "). It may have been deleted.");
+                    response.sendRedirect(request.getContextPath() + "/staff/suppliers");
+                    return;
+                }
             }
 
             // Read and validate fields
@@ -366,9 +397,10 @@ public class SupplierManagementServlet extends HttpServlet {
                         if (!matches) return false;
                     }
                     
-                    // certificate filter
+                    // certificate filter (contains, case-insensitive)
                     if (certFilter != null) {
-                        if (s.getCertificate() == null || !s.getCertificate().equals(certFilter)) {
+                        if (s.getCertificate() == null ||
+                                !s.getCertificate().toLowerCase().contains(certFilter.toLowerCase())) {
                             return false;
                         }
                     }
@@ -401,11 +433,14 @@ public class SupplierManagementServlet extends HttpServlet {
         // Pagination
         long total = scorecards.size();
         int totalPages = (int) ((total + pageSize - 1) / pageSize);
+        if (totalPages < 1) totalPages = 1;
+        // Clamp page nếu filter làm giảm số trang
+        if (page > totalPages) page = totalPages;
         int startIdx = (page - 1) * pageSize;
         int endIdx = Math.min(startIdx + pageSize, scorecards.size());
         
         java.util.List<com.freshmart.service.dto.SupplierScorecard> paginatedScorecards = 
-            scorecards.subList(startIdx, endIdx);
+            startIdx < scorecards.size() ? scorecards.subList(startIdx, endIdx) : java.util.List.of();
 
         request.setAttribute("scorecards", paginatedScorecards);
         request.setAttribute("statsTotal", totalSuppliers);

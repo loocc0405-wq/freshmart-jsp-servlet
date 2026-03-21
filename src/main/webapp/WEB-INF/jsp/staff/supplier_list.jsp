@@ -109,6 +109,24 @@
   <c:remove var="errorMessage" scope="session" />
 </c:if>
 
+<%-- Import result với error list (tách riêng để tránh HTML injection) --%>
+<c:if test="${not empty sessionScope.importSummary}">
+  <div class="alert alert-warning alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    <strong>${fn:escapeXml(sessionScope.importSummary)}</strong>
+    <c:if test="${not empty sessionScope.importErrors}">
+      <ul class="mb-0 mt-2">
+        <c:forEach var="err" items="${sessionScope.importErrors}">
+          <li>${fn:escapeXml(err)}</li>
+        </c:forEach>
+      </ul>
+    </c:if>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  <c:remove var="importSummary" scope="session" />
+  <c:remove var="importErrors" scope="session" />
+</c:if>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
     <h3 class="mb-0">Suppliers</h3>
@@ -170,7 +188,7 @@
            value="${fn:escapeXml(search)}" />
   </div>
   <div class="col-md-2">
-    <input type="text" class="form-control" name="certificate" placeholder="Certificate"
+    <input type="text" class="form-control" name="certificate" placeholder="Certificate (contains)"
            value="${fn:escapeXml(certificateFilter)}" />
   </div>
   <div class="col-md-2">
@@ -273,18 +291,19 @@
             </td>
             <td class="text-end">
               <c:set var="scoreVal" value="${sc.score}" />
+              <c:set var="scoreTooltip" value="Volume: lots+products | Lead time: lower=better | Expiry risk: lower=better | Recency: recent imports=better" />
               <c:choose>
                 <c:when test="${scoreVal >= 80}">
-                  <span class="text-success fw-bold"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
+                  <span class="text-success fw-bold" title="${scoreTooltip}"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:when>
                 <c:when test="${scoreVal >= 60}">
-                  <span class="text-primary"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
+                  <span class="text-primary" title="${scoreTooltip}"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:when>
                 <c:when test="${scoreVal >= 40}">
-                  <span class="text-warning"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
+                  <span class="text-warning" title="${scoreTooltip}"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:when>
                 <c:otherwise>
-                  <span class="text-danger"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
+                  <span class="text-danger" title="${scoreTooltip}"><fmt:formatNumber value="${scoreVal}" pattern="#0"/></span>
                 </c:otherwise>
               </c:choose>
             </td>
