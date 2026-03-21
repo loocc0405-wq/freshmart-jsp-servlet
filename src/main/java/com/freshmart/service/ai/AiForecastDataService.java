@@ -50,7 +50,7 @@ public class AiForecastDataService {
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
 
-    private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale("vi", "VN"));
+    private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale.Builder().setLanguage("vi").setRegion("VN").build());
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ProductRepository productRepo;

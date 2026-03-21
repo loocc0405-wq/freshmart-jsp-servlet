@@ -30,7 +30,7 @@ public class ChatContextService {
     private final JpaExecutor executor;
 
 
-    private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale("vi", "VN"));
+    private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale.Builder().setLanguage("vi").setRegion("VN").build());
 
     public ChatContextService() {
         this.productRepository = new ProductRepository();
