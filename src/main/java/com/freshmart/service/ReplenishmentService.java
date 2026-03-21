@@ -6,6 +6,7 @@ import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.service.dto.ReplenishSuggestion;
 import com.freshmart.service.dto.SupplierCandidate;
+import com.freshmart.service.util.SupplierRankingUtil;
 import com.freshmart.util.JpaExecutor;
 
 import jakarta.persistence.EntityManager;
@@ -15,7 +16,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class ReplenishmentService {
@@ -182,7 +182,7 @@ public class ReplenishmentService {
         }
 
         // Rank suppliers theo rule
-        SupplierCandidate best = rankSuppliers(candidates);
+        SupplierCandidate best = SupplierRankingUtil.pickBest(candidates);
 
         suggestion.setRecommendedSupplierId(best.getSupplierId());
         suggestion.setRecommendedSupplierName(best.getSupplierName());
@@ -195,36 +195,11 @@ public class ReplenishmentService {
         reason.append(best.getSupplierName());
         reason.append(" (Lead: ").append(best.getSupplierLeadTimeDays()).append("d");
         if (best.getAvgImportPrice() != null) {
-            reason.append(", Avg price: ").append(best.getAvgImportPrice());
+            reason.append(", Avg price: ").append(best.getAvgImportPrice().setScale(2, java.math.RoundingMode.HALF_UP));
         }
         reason.append(", Lots: ").append(best.getLotCount());
         reason.append(")");
 
         suggestion.setRecommendationReason(reason.toString());
-    }
-
-    /**
-     * Rank suppliers theo rule ưu tiên:
-     * 1. leadTimeDays nhỏ hơn
-     * 2. avgImportPrice thấp hơn
-     * 3. lastImportDate mới hơn
-     * 4. lotCount nhiều hơn
-     * 5. totalQtyIn nhiều hơn
-     * 6. supplierId nhỏ hơn
-     */
-    private SupplierCandidate rankSuppliers(List<SupplierCandidate> candidates) {
-        if (candidates.isEmpty()) {
-            return null;
-        }
-
-        candidates.sort(Comparator
-                .comparing(SupplierCandidate::getSupplierLeadTimeDays, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(SupplierCandidate::getAvgImportPrice, Comparator.nullsLast(Comparator.naturalOrder()))
-                .thenComparing(SupplierCandidate::getLastImportDate, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(SupplierCandidate::getLotCount, Comparator.reverseOrder())
-                .thenComparing(SupplierCandidate::getTotalQtyIn, Comparator.reverseOrder())
-                .thenComparing(SupplierCandidate::getSupplierId));
-
-        return candidates.get(0);
     }
 }
