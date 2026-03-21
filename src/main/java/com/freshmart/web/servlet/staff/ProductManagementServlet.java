@@ -1,7 +1,11 @@
 package com.freshmart.web.servlet.staff;
 
 import com.freshmart.entity.Product;
+import com.freshmart.service.ProductHealthService;
 import com.freshmart.service.ProductService;
+import com.freshmart.service.dto.ProductHealthRow;
+
+import java.util.Map;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -21,10 +25,12 @@ import java.util.List;
 public class ProductManagementServlet extends HttpServlet {
 
     private ProductService productService;
+    private ProductHealthService productHealthService;
 
     @Override
     public void init() {
         productService = new ProductService();
+        productHealthService = new ProductHealthService();
     }
 
     @Override
@@ -298,6 +304,10 @@ public class ProductManagementServlet extends HttpServlet {
         request.setAttribute("pageSize", pageSize);
         request.setAttribute("totalItems", totalItems);
         request.setAttribute("totalPages", totalPages);
+
+        // Product Health data cho trang hiện tại
+        Map<Long, ProductHealthRow> productHealthMap = productHealthService.buildHealthMap(products);
+        request.setAttribute("productHealthMap", productHealthMap);
 
         request.getRequestDispatcher("/WEB-INF/jsp/staff/product_list.jsp")
                 .forward(request, response);

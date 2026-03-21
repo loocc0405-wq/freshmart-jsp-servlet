@@ -108,3 +108,33 @@ a:hover {
 
 .fm-bg-surface { background-color: var(--fm-surface) !important; }
 .fm-bg-muted { background-color: var(--fm-surface-muted) !important; }
+
+/* Tailwind Bridge Utilities (Slate/Indigo/Zinc) */
+.bg-slate-50   { background-color: var(--fm-slate-50) !important; }
+.bg-slate-100  { background-color: var(--fm-slate-100) !important; }
+.bg-slate-800  { background-color: var(--fm-slate-800) !important; }
+.bg-slate-900  { background-color: var(--fm-slate-900) !important; }
+.bg-slate-50-subtle { background-color: rgba(248, 250, 252, 0.5) !important; }
+
+.text-slate-300 { color: var(--fm-slate-300) !important; }
+.text-slate-500 { color: var(--fm-slate-500) !important; }
+.text-slate-900 { color: var(--fm-slate-900) !important; }
+.text-slate-50-50 { color: rgba(248, 250, 252, 0.5) !important; }
+
+.bg-indigo-100 { background-color: #E0E7FF !important; }
+.bg-indigo-subtle { background-color: #EEF2FF !important; }
+.text-indigo-600 { color: #4F46E5 !important; }
+
+.bg-zinc-100 { background-color: #F4F4F5 !important; }
+.text-zinc-500 { color: #71717A !important; }
+.text-zinc-900 { color: #18181B !important; }
+
+/* Micro-animations */
+.transition { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+.hvr-boost:hover { transform: translateY(-2px); filter: brightness(1.1); }
+.anim-fade-in { animation: fadeIn 0.4s ease-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

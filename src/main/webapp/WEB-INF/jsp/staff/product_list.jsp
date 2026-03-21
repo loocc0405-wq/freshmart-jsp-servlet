@@ -25,25 +25,24 @@
 
       <div class="col-md-5">
         <label class="form-label mb-1">Name</label>
-        <!-- FIX: name=keyword, value lấy từ requestScope.keyword -->
         <input class="form-control" type="text" name="keyword"
                value="${keyword}" placeholder="Type keyword...">
       </div>
 
-      <div class="col-md-5">
+      <div class="col-md-4">
         <label class="form-label mb-1">Category</label>
         <input class="form-control" type="text" name="category"
                value="${category}" placeholder="e.g. Rau, Thịt, Cá...">
       </div>
 
       <div class="col-md-2">
-        <div class="form-check">
+        <div class="form-check mt-4">
           <input class="form-check-input" type="checkbox" name="showInactive" id="showInactive"
                  <c:if test="${showInactive}">checked</c:if> />
           <label class="form-check-label" for="showInactive">Include inactive</label>
         </div>
       </div>
-      <div class="col-md-2 d-grid">
+      <div class="col-md-1 d-grid">
         <button class="btn btn-outline-primary" type="submit">Search</button>
       </div>
     </form>
@@ -57,6 +56,35 @@
   </div>
 </c:if>
 
+<!-- Product Health Guide -->
+<div class="fm-health-guide mb-3">
+  <div class="fm-health-guide__title">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" class="me-1" style="vertical-align:-1px">
+      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+      <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+    </svg>
+    Product Health Guide
+  </div>
+  <div class="fm-health-guide__items">
+    <div class="fm-health-guide__item">
+      <span class="badge bg-success fm-health-badge">Healthy</span>
+      <span class="fm-health-guide__desc">Good stock, no near-expiry lots</span>
+    </div>
+    <div class="fm-health-guide__item">
+      <span class="badge bg-info text-dark fm-health-badge">Low</span>
+      <span class="fm-health-guide__desc">Stock available but limited (&le;10)</span>
+    </div>
+    <div class="fm-health-guide__item">
+      <span class="badge bg-warning text-dark fm-health-badge">Expiry Risk</span>
+      <span class="fm-health-guide__desc">Has lots expiring within 3 days</span>
+    </div>
+    <div class="fm-health-guide__item">
+      <span class="badge bg-danger fm-health-badge">Out</span>
+      <span class="fm-health-guide__desc">No usable stock remaining</span>
+    </div>
+  </div>
+</div>
+
 <!-- Table card -->
 <div class="card">
   <div class="card-body">
@@ -64,20 +92,25 @@
       <table class="table table-hover align-middle">
         <thead class="table-light">
           <tr>
-            <th style="width:70px;">ID</th>
+            <th style="width:60px;">ID</th>
             <th>Name</th>
             <th>Category</th>
             <th>Unit</th>
             <th class="text-end">Sell price</th>
             <th>Status</th>
-            <th>Image</th>
-            <th>Description</th>
-            <th class="text-end" style="width:180px;">Action</th>
+            <th class="text-end">Stock</th>
+            <th>Near Expiry</th>
+            <th class="text-end">Avg Import</th>
+            <th class="text-end">Margin</th>
+            <th>Best Supplier</th>
+            <th>Restock</th>
+            <th class="text-end" style="width:150px;">Action</th>
           </tr>
         </thead>
 
         <tbody>
         <c:forEach var="p" items="${products}">
+          <c:set var="h" value="${productHealthMap[p.id]}" />
           <tr>
             <td class="text-muted">${p.id}</td>
             <td class="fw-semibold">${p.name}</td>
@@ -108,21 +141,100 @@
               </c:choose>
             </td>
 
-            <td>
+            <%-- Stock column --%>
+            <td class="text-end">
               <c:choose>
-                <c:when test="${not empty p.imageUrl}">
-                  <a href="${p.imageUrl}" target="_blank" class="text-decoration-none">View</a>
+                <c:when test="${h == null}">
+                  <span class="text-muted">-</span>
                 </c:when>
-                <c:otherwise><span class="text-muted">-</span></c:otherwise>
+                <c:otherwise>
+                  <div class="lh-1">
+                    <div class="fw-semibold">${h.stock}</div>
+                    <span class="badge ${h.healthBadgeCssClass} fm-health-badge mt-1">${h.healthBadgeLabel}</span>
+                  </div>
+                </c:otherwise>
               </c:choose>
             </td>
 
+            <%-- Near Expiry column --%>
             <td>
               <c:choose>
-                <c:when test="${not empty p.description}">
-                  <span>${p.description}</span>
+                <c:when test="${h == null || !h.hasNearExpiry()}">
+                  <span class="text-muted">-</span>
                 </c:when>
-                <c:otherwise><span class="text-muted">-</span></c:otherwise>
+                <c:otherwise>
+                  <span class="badge bg-warning text-dark" title="${h.expiringLots} ${h.expiringLots == 1 ? 'lot' : 'lots'} expiring within 3 days">
+                    ${h.expiringQty} units / ${h.expiringLots} ${h.expiringLots == 1 ? 'lot' : 'lots'}
+                  </span>
+                </c:otherwise>
+              </c:choose>
+            </td>
+
+            <%-- Avg Import Price column --%>
+            <td class="text-end">
+              <c:choose>
+                <c:when test="${h == null || h.avgImportPrice == null}">
+                  <span class="text-muted">-</span>
+                </c:when>
+                <c:otherwise>
+                  <fmt:formatNumber value="${h.avgImportPrice}" type="number" minFractionDigits="0" maxFractionDigits="0"/>
+                </c:otherwise>
+              </c:choose>
+            </td>
+
+            <%-- Estimated Margin column --%>
+            <td class="text-end">
+              <c:choose>
+                <c:when test="${h == null || h.estimatedMargin == null}">
+                  <span class="text-muted">-</span>
+                </c:when>
+                <c:when test="${h.hasNegativeMargin()}">
+                  <span class="badge bg-danger bg-opacity-75" title="Negative margin - check pricing">
+                    <fmt:formatNumber value="${h.estimatedMargin}" type="number" minFractionDigits="0" maxFractionDigits="0"/>
+                  </span>
+                </c:when>
+                <c:otherwise>
+                  <span class="text-success fw-semibold">
+                    +<fmt:formatNumber value="${h.estimatedMargin}" type="number" minFractionDigits="0" maxFractionDigits="0"/>
+                  </span>
+                </c:otherwise>
+              </c:choose>
+            </td>
+
+            <%-- Best Supplier column --%>
+            <td>
+              <c:choose>
+                <c:when test="${h == null || !h.hasSupplierRecommendation()}">
+                  <span class="text-muted">-</span>
+                </c:when>
+                <c:otherwise>
+                  <div class="small" title="${h.recommendationReason}">
+                    <div class="fw-semibold">${h.recommendedSupplierName}</div>
+                    <div class="text-muted">
+                      <c:if test="${h.recommendedSupplierLeadTimeDays != null}">LT: ${h.recommendedSupplierLeadTimeDays}d</c:if>
+                      <c:if test="${h.recommendedSupplierLeadTimeDays != null && h.recommendedSupplierAvgImportPrice != null}"> | </c:if>
+                      <c:if test="${h.recommendedSupplierAvgImportPrice != null}">Avg: <fmt:formatNumber value="${h.recommendedSupplierAvgImportPrice}" type="number" minFractionDigits="0" maxFractionDigits="0"/></c:if>
+                    </div>
+                  </div>
+                </c:otherwise>
+              </c:choose>
+            </td>
+
+            <%-- Restock Action column --%>
+            <td>
+              <c:choose>
+                <c:when test="${h != null && h.hasSupplierRecommendation()}">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="${pageContext.request.contextPath}/staff/import-lot?productId=${p.id}&supplierId=${h.recommendedSupplierId}">
+                    Restock
+                  </a>
+                </c:when>
+                <c:otherwise>
+                  <a class="btn btn-sm btn-outline-secondary"
+                     href="${pageContext.request.contextPath}/staff/import-lot?productId=${p.id}">
+                    Restock
+                  </a>
+                </c:otherwise>
               </c:choose>
             </td>
 
@@ -148,7 +260,7 @@
 
         <c:if test="${empty products}">
           <tr>
-            <td colspan="9" class="text-center text-muted py-4">
+            <td colspan="13" class="text-center text-muted py-4">
               No products found.
             </td>
           </tr>

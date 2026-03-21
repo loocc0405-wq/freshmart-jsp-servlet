@@ -195,8 +195,7 @@ public class ReplenishmentService {
         reason.append(best.getSupplierName());
         reason.append(" (Lead: ").append(best.getSupplierLeadTimeDays()).append("d");
         if (best.getAvgImportPrice() != null) {
-            BigDecimal avgPrice = best.getAvgImportPrice().setScale(2, RoundingMode.HALF_UP);
-            reason.append(", Avg price: ").append(avgPrice.toPlainString());
+            reason.append(", Avg price: ").append(best.getAvgImportPrice());
         }
         reason.append(", Lots: ").append(best.getLotCount());
         reason.append(")");
