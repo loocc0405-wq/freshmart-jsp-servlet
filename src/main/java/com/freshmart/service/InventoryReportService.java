@@ -291,6 +291,14 @@ public class InventoryReportService {
         return price.multiply(BigDecimal.valueOf(lot.getQtyLeft()));
     }
 
+    private BigDecimal lotAvailableValue(ProductLot lot) {
+        if (lot == null || lot.getAvailableToSell() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal price = lot.getImportPrice() == null ? BigDecimal.ZERO : lot.getImportPrice();
+        return price.multiply(BigDecimal.valueOf(lot.getAvailableToSell()));
+    }
+
     private ProductInventoryOverview toOverview(Product product, List<ProductLot> lots, LocalDate today) {
         int totalIn = lots.stream().mapToInt(ProductLot::getQtyIn).sum();
 
@@ -301,7 +309,7 @@ public class InventoryReportService {
         int availableQty = lots.stream()
                 .filter(l -> l.getQtyLeft() > 0)
                 .filter(l -> !l.getExpiryDate().isBefore(today))
-                .mapToInt(ProductLot::getQtyLeft)
+                .mapToInt(ProductLot::getAvailableToSell)
                 .sum();
 
         int expiredQty = lots.stream()
@@ -330,10 +338,7 @@ public class InventoryReportService {
         BigDecimal availableValue = lots.stream()
                 .filter(l -> l.getQtyLeft() > 0)
                 .filter(l -> !l.getExpiryDate().isBefore(today))
-                .map(l -> {
-                    BigDecimal price = l.getImportPrice() == null ? BigDecimal.ZERO : l.getImportPrice();
-                    return price.multiply(BigDecimal.valueOf(l.getQtyLeft()));
-                })
+                .map(this::lotAvailableValue)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return new ProductInventoryOverview(

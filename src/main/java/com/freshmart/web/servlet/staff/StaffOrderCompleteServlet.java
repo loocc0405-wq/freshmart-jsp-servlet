@@ -1,5 +1,7 @@
 package com.freshmart.web.servlet.staff;
 
+import com.freshmart.config.AppConstants;
+import com.freshmart.entity.User;
 import com.freshmart.service.OrderService;
 
 import jakarta.servlet.annotation.WebServlet;
@@ -8,7 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@WebServlet(urlPatterns = {"/staff/orders/complete"})
+@WebServlet(urlPatterns = { "/staff/orders/complete" })
 public class StaffOrderCompleteServlet extends HttpServlet {
 
     private static final String SESSION_OMS_SUCCESS = "staffOmsSuccessMessage";
@@ -25,16 +27,16 @@ public class StaffOrderCompleteServlet extends HttpServlet {
             }
 
             Long orderId = Long.parseLong(rawId.trim());
-            orderService.completeOrder(orderId);
+            User actor = (User) req.getSession().getAttribute(AppConstants.SESSION_USER);
+            Long actorUserId = actor == null ? null : actor.getId();
+            orderService.completeOrder(orderId, actorUserId);
             req.getSession().setAttribute(
                     SESSION_OMS_SUCCESS,
-                    "Đơn #" + orderId + " đã được hoàn tất theo FEFO."
-            );
+                    "Đơn #" + orderId + " đã được hoàn tất theo FEFO từ phần hàng đã reserve.");
         } catch (RuntimeException ex) {
             req.getSession().setAttribute(
                     SESSION_OMS_ERROR,
-                    "Không thể hoàn tất đơn: " + ex.getMessage()
-            );
+                    "Không thể hoàn tất đơn: " + ex.getMessage());
         }
 
         resp.sendRedirect(req.getContextPath() + "/staff/orders/detail?id=" + rawId);

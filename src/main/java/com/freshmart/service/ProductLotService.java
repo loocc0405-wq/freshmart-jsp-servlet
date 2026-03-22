@@ -155,6 +155,10 @@ public class ProductLotService {
                     "SELECT COUNT(a) FROM OrderItemLotAllocation a WHERE a.productLot.id = :lotId",
                     Long.class).setParameter("lotId", lotId).getSingleResult();
 
+            Long reservationCount = em.createQuery(
+                    "SELECT COUNT(r) FROM OrderItemLotReservation r WHERE r.productLot.id = :lotId",
+                    Long.class).setParameter("lotId", lotId).getSingleResult();
+
             Long disposalCount = em.createQuery(
                     "SELECT COUNT(d) FROM LotDisposal d WHERE d.productLot.id = :lotId",
                     Long.class).setParameter("lotId", lotId).getSingleResult();
@@ -164,10 +168,11 @@ public class ProductLotService {
                     Long.class).setParameter("lotId", lotId).getSingleResult();
 
             if ((allocationCount != null && allocationCount > 0)
+                    || (reservationCount != null && reservationCount > 0)
                     || (disposalCount != null && disposalCount > 0)
                     || (transactionCount != null && transactionCount > 1)) {
                 throw new IllegalStateException(
-                        "Lô đã có lịch sử audit/xuất kho/tiêu hủy nên không thể xóa cứng. Hãy giữ lịch sử hoặc dùng phiếu tiêu hủy.");
+                        "Lô đã có lịch sử reserve/audit/xuất kho/tiêu hủy nên không thể xóa cứng. Hãy giữ lịch sử hoặc dùng phiếu tiêu hủy.");
             }
 
             em.createQuery(
@@ -194,8 +199,14 @@ public class ProductLotService {
             if (lot.getQtyLeft() == null || lot.getQtyLeft() <= 0) {
                 throw new IllegalStateException("Lô không còn tồn để tiêu hủy.");
             }
-            if (disposeQty > lot.getQtyLeft()) {
-                throw new IllegalArgumentException("Không thể tiêu hủy vượt số lượng còn lại của lô.");
+            int availableToDispose = lot.getAvailableToSell();
+            if (availableToDispose <= 0) {
+                throw new IllegalStateException("Lô hiện không còn phần tồn khả dụng để tiêu hủy vì đã được reserve.");
+            }
+            if (disposeQty > availableToDispose) {
+                throw new IllegalArgumentException(
+                        "Không thể tiêu hủy vượt phần tồn chưa reserve của lô. Khả dụng để tiêu hủy: "
+                                + availableToDispose);
             }
             String normalizedReason = noteOrThrow(reason, "Lý do tiêu hủy là bắt buộc.");
             User actor = resolveUser(em, performedByUserId);
@@ -228,11 +239,14 @@ public class ProductLotService {
 
             int totalIn = lots.stream().mapToInt(ProductLot::getQtyIn).sum();
             int totalLeft = lots.stream().mapToInt(ProductLot::getQtyLeft).sum();
+            int totalReserved = lots.stream().mapToInt(l -> safeInt(l.getQtyReserved())).sum();
             int totalConsumed = totalIn - totalLeft;
 
             Map<String, Integer> summary = new LinkedHashMap<>();
             summary.put("totalIn", totalIn);
             summary.put("totalLeft", totalLeft);
+            summary.put("totalReserved", totalReserved);
+            summary.put("totalAvailableToSell", Math.max(0, totalLeft - totalReserved));
             summary.put("totalConsumed", totalConsumed);
             return summary;
         });
@@ -274,11 +288,20 @@ public class ProductLotService {
 
         int currentQtyIn = safeInt(lot.getQtyIn());
         int currentQtyLeft = safeInt(lot.getQtyLeft());
+        int currentQtyReserved = safeInt(lot.getQtyReserved());
         int consumedOrDisposed = currentQtyIn - currentQtyLeft;
 
         if (newQtyIn < consumedOrDisposed) {
             throw new IllegalArgumentException(
                     "New qtyIn cannot be smaller than already consumed/disposed quantity: " + consumedOrDisposed);
+        }
+        if ((newQtyIn - consumedOrDisposed) < currentQtyReserved) {
+            throw new IllegalArgumentException(
+                    "New qtyIn would make qtyLeft smaller than reserved quantity: " + currentQtyReserved);
+        }
+        if (currentQtyReserved > 0 && expiryDate.isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "Không thể đổi hạn sử dụng về quá khứ khi lô đang được reserve.");
         }
 
         if (consumedOrDisposed > 0 && !lot.getProduct().getId().equals(productId)) {
@@ -323,17 +346,18 @@ public class ProductLotService {
                     ProductLot.class).setParameter("pid", productId).getResultList();
 
             if (lots.isEmpty()) {
-                return new StockSummaryDto(0, 0, 0, 0, 0, 0, 0, 0, BigDecimal.ZERO, null);
+                return new StockSummaryDto(0, 0, 0, 0, 0, 0, 0, 0, 0, BigDecimal.ZERO, null);
             }
 
             int totalIn = lots.stream().mapToInt(ProductLot::getQtyIn).sum();
             int totalRemaining = lots.stream().mapToInt(ProductLot::getQtyLeft).sum();
+            int totalReserved = lots.stream().mapToInt(l -> safeInt(l.getQtyReserved())).sum();
             int consumedQty = totalIn - totalRemaining;
 
             int availableQty = lots.stream()
                     .filter(l -> l.getQtyLeft() > 0)
                     .filter(l -> !l.getExpiryDate().isBefore(today))
-                    .mapToInt(ProductLot::getQtyLeft)
+                    .mapToInt(ProductLot::getAvailableToSell)
                     .sum();
 
             int expiredQty = lots.stream()
@@ -362,7 +386,7 @@ public class ProductLotService {
             BigDecimal availableValue = lots.stream()
                     .filter(l -> l.getQtyLeft() > 0)
                     .filter(l -> !l.getExpiryDate().isBefore(today))
-                    .map(l -> BigDecimal.valueOf(l.getQtyLeft())
+                    .map(l -> BigDecimal.valueOf(l.getAvailableToSell())
                             .multiply(l.getImportPrice() != null ? l.getImportPrice() : BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -376,6 +400,7 @@ public class ProductLotService {
             return new StockSummaryDto(
                     totalIn,
                     totalRemaining,
+                    totalReserved,
                     availableQty,
                     expiredQty,
                     consumedQty,

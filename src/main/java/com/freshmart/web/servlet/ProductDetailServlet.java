@@ -13,7 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 
-@WebServlet(urlPatterns = {"/product"})
+@WebServlet(urlPatterns = { "/product" })
 public class ProductDetailServlet extends HttpServlet {
 
     private final JpaExecutor executor = new JpaExecutor();
@@ -36,15 +36,21 @@ public class ProductDetailServlet extends HttpServlet {
             return;
         }
 
-        // load product and check active flag outside of lambda so we can bail
         Product p = executor.execute(em -> productRepo.findById(em, id).orElse(null));
         if (p == null || !p.isActive()) {
             resp.sendError(404);
             return;
         }
-        int available = executor.execute(em -> inventoryService.getAvailableQty(em, id, LocalDate.now()));
+
+        LocalDate today = LocalDate.now();
+        int available = executor.execute(em -> inventoryService.getAvailableQty(em, id, today));
+        int physical = executor.execute(em -> inventoryService.getPhysicalQty(em, id, today));
+        int reserved = executor.execute(em -> inventoryService.getReservedQty(em, id, today));
+
         req.setAttribute("product", p);
         req.setAttribute("availableQty", available);
+        req.setAttribute("physicalQty", physical);
+        req.setAttribute("reservedQty", reserved);
 
         req.getRequestDispatcher("/WEB-INF/jsp/catalog/product_detail.jsp").forward(req, resp);
     }

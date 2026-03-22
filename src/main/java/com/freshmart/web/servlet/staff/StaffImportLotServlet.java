@@ -1,6 +1,8 @@
 package com.freshmart.web.servlet.staff;
 
+import com.freshmart.config.AppConstants;
 import com.freshmart.entity.ProductLot;
+import com.freshmart.entity.User;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.repository.SupplierRepository;
 import com.freshmart.service.ProductLotService;
@@ -16,10 +18,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
-/**
- * Servlet để nhập lô sản phẩm (import lot / import stock).
- * Map: /staff/import-lot
- */
 @WebServlet(urlPatterns = { "/staff/import-lot", "/staff/inventory/import" })
 public class StaffImportLotServlet extends HttpServlet {
 
@@ -114,6 +112,9 @@ public class StaffImportLotServlet extends HttpServlet {
             LocalDate expiryDate = LocalDate.parse(expiryDateRaw, fmt);
             BigDecimal importPrice = priceRaw == null ? BigDecimal.ZERO : new BigDecimal(priceRaw);
 
+            User actor = (User) req.getSession().getAttribute(AppConstants.SESSION_USER);
+            Long actorUserId = actor == null ? null : actor.getId();
+
             ProductLot savedLot = executor.execute(em -> {
                 if (lotIdRaw != null && !lotIdRaw.isBlank()) {
                     Long lotId = Long.parseLong(lotIdRaw.trim());
@@ -125,6 +126,7 @@ public class StaffImportLotServlet extends HttpServlet {
                             expiryDate,
                             quantity,
                             importPrice,
+                            actorUserId,
                             em);
                 }
                 return lotService.importLot(
@@ -134,6 +136,7 @@ public class StaffImportLotServlet extends HttpServlet {
                         expiryDate,
                         quantity,
                         importPrice,
+                        actorUserId,
                         em);
             });
 

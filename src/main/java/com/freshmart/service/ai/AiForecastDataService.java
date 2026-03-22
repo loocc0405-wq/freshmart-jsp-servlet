@@ -36,9 +36,11 @@ import java.util.stream.Collectors;
  *
  * Responsibilities:
  * 1. Preprocess time-series revenue data into a continuous daily series.
- * 2. Aggregate supplier, inventory, marketing, seasonality, and weather-proxy signals.
- * 3. Produce a structured snapshot that can be used directly by the backend algorithm
- *    and optionally by Gemini as an explanation layer.
+ * 2. Aggregate supplier, inventory, marketing, seasonality, and weather-proxy
+ * signals.
+ * 3. Produce a structured snapshot that can be used directly by the backend
+ * algorithm
+ * and optionally by Gemini as an explanation layer.
  */
 public class AiForecastDataService {
 
@@ -49,8 +51,8 @@ public class AiForecastDataService {
     private static final int MAX_PRODUCT_SIGNALS = 8;
     private static final BigDecimal ONE_HUNDRED = BigDecimal.valueOf(100);
 
-
-    private static final NumberFormat VND_FORMAT = NumberFormat.getInstance(new Locale.Builder().setLanguage("vi").setRegion("VN").build());
+    private static final NumberFormat VND_FORMAT = NumberFormat
+            .getInstance(new Locale.Builder().setLanguage("vi").setRegion("VN").build());
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ProductRepository productRepo;
@@ -85,11 +87,13 @@ public class AiForecastDataService {
             fallback.targetStart = resolveTargetStart(fallback.generatedAt, safePeriod);
             fallback.targetEnd = resolveTargetEnd(fallback.targetStart, safePeriod);
             fallback.horizonDays = (int) ChronoUnit.DAYS.between(fallback.targetStart, fallback.targetEnd) + 1;
-            fallback.notes.add("Không thể tải đầy đủ dữ liệu DB, hệ thống sẽ trả về forecast an toàn với độ tin cậy thấp.");
+            fallback.notes
+                    .add("Không thể tải đầy đủ dữ liệu DB, hệ thống sẽ trả về forecast an toàn với độ tin cậy thấp.");
             fallback.weatherNarrative = buildWeatherNarrative(fallback.targetStart, fallback.targetEnd);
             fallback.seasonalityHighlights.add("Chưa đủ dữ liệu lịch sử để suy luận mùa vụ chi tiết.");
             fallback.monthFactors = new LinkedHashMap<>(defaultMonthFactors());
-            fallback.seasonalityFactor = averageMonthFactor(fallback.targetStart, fallback.targetEnd, fallback.monthFactors);
+            fallback.seasonalityFactor = averageMonthFactor(fallback.targetStart, fallback.targetEnd,
+                    fallback.monthFactors);
             fallback.marketingFactor = BigDecimal.ONE;
             fallback.inventoryFactor = BigDecimal.ONE;
             fallback.trendFactor = BigDecimal.ONE;
@@ -147,22 +151,27 @@ public class AiForecastDataService {
         snapshot.trendFactor = calculateTrendFactor(snapshot.avg7Daily, snapshot.avg30Daily, snapshot.avg90Daily);
 
         snapshot.monthFactors = computeMonthFactors(snapshot.historySeries);
-        snapshot.seasonalityFactor = averageMonthFactor(snapshot.targetStart, snapshot.targetEnd, snapshot.monthFactors);
+        snapshot.seasonalityFactor = averageMonthFactor(snapshot.targetStart, snapshot.targetEnd,
+                snapshot.monthFactors);
 
         populateMarketingSignals(snapshot);
-        snapshot.marketingFactor = calculateMarketingFactor(snapshot.upcomingEvents.size(), snapshot.targetStart, snapshot.targetEnd);
+        snapshot.marketingFactor = calculateMarketingFactor(snapshot.upcomingEvents.size(), snapshot.targetStart,
+                snapshot.targetEnd);
 
         snapshot.weatherNarrative = buildWeatherNarrative(snapshot.targetStart, snapshot.targetEnd);
         snapshot.productSignals = loadProductSignals(em, snapshot, productId);
         snapshot.inventoryFactor = calculateInventoryFactor(snapshot.productSignals, productId);
 
         snapshot.forecastDailyRevenue = calculateForecastDailyRevenue(snapshot);
-        snapshot.forecastRevenue = roundCurrency(snapshot.forecastDailyRevenue.multiply(BigDecimal.valueOf(snapshot.horizonDays)));
+        snapshot.forecastRevenue = roundCurrency(
+                snapshot.forecastDailyRevenue.multiply(BigDecimal.valueOf(snapshot.horizonDays)));
         snapshot.dailyStdDev = calculateStdDev(snapshot.historySeries, 90);
         snapshot.confidenceWidth = calculateConfidenceWidth(snapshot);
         snapshot.confidenceScore = calculateConfidenceScore(snapshot);
-        snapshot.confidenceLow = floorAtZero(roundCurrency(snapshot.forecastRevenue.multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(snapshot.confidenceWidth)))));
-        snapshot.confidenceHigh = roundCurrency(snapshot.forecastRevenue.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(snapshot.confidenceWidth))));
+        snapshot.confidenceLow = floorAtZero(roundCurrency(snapshot.forecastRevenue
+                .multiply(BigDecimal.ONE.subtract(BigDecimal.valueOf(snapshot.confidenceWidth)))));
+        snapshot.confidenceHigh = roundCurrency(
+                snapshot.forecastRevenue.multiply(BigDecimal.ONE.add(BigDecimal.valueOf(snapshot.confidenceWidth))));
 
         snapshot.seasonalityHighlights = buildSeasonalityHighlights(snapshot.monthFactors);
         populateSeasonalityDiagnostics(snapshot);
@@ -181,7 +190,8 @@ public class AiForecastDataService {
             snapshot.notes.add("Forecast đã giảm nhẹ theo rủi ro hụt hàng ở các SKU bán nhanh.");
         }
         if (!snapshot.seasonalityDiagnostics.isEmpty()) {
-            snapshot.notes.add("Seasonality được suy ra từ dữ liệu doanh thu lịch sử kết hợp knowledge base nông sản Việt Nam.");
+            snapshot.notes.add(
+                    "Seasonality được suy ra từ dữ liệu doanh thu lịch sử kết hợp knowledge base nông sản Việt Nam.");
         }
 
         return snapshot;
@@ -197,9 +207,9 @@ public class AiForecastDataService {
     }
 
     private Map<LocalDate, BigDecimal> loadRevenueSeries(EntityManager em,
-                                                         LocalDate from,
-                                                         LocalDate toInclusive,
-                                                         Long productId) {
+            LocalDate from,
+            LocalDate toInclusive,
+            Long productId) {
         Map<LocalDate, BigDecimal> series = new LinkedHashMap<>();
         for (LocalDate d = from; !d.isAfter(toInclusive); d = d.plusDays(1)) {
             series.put(d, BigDecimal.ZERO);
@@ -215,10 +225,10 @@ public class AiForecastDataService {
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createQuery(
-                        "SELECT o.createdAt, oi.lineTotal FROM OrderItem oi JOIN oi.order o " +
-                                "WHERE oi.product.id = :pid AND o.status = :status " +
-                                "AND o.createdAt >= :fromTs AND o.createdAt < :toTs " +
-                                "ORDER BY o.createdAt ASC")
+                "SELECT o.createdAt, oi.lineTotal FROM OrderItem oi JOIN oi.order o " +
+                        "WHERE oi.product.id = :pid AND o.status = :status " +
+                        "AND o.createdAt >= :fromTs AND o.createdAt < :toTs " +
+                        "ORDER BY o.createdAt ASC")
                 .setParameter("pid", productId)
                 .setParameter("status", OrderStatus.COMPLETED)
                 .setParameter("fromTs", from.atStartOfDay())
@@ -341,8 +351,8 @@ public class AiForecastDataService {
     }
 
     private BigDecimal averageMonthFactor(LocalDate targetStart,
-                                          LocalDate targetEnd,
-                                          Map<Integer, BigDecimal> monthFactors) {
+            LocalDate targetEnd,
+            Map<Integer, BigDecimal> monthFactors) {
         BigDecimal weightedSum = BigDecimal.ZERO;
         int weightedDays = 0;
 
@@ -366,7 +376,8 @@ public class AiForecastDataService {
 
     private void populateMarketingSignals(ForecastSnapshot snapshot) {
         LocalDate recentFrom = snapshot.generatedAt.minusDays(30);
-        List<MarketingEvent> events = buildMarketingCalendar(snapshot.targetStart.getYear(), snapshot.targetEnd.getYear());
+        List<MarketingEvent> events = buildMarketingCalendar(snapshot.targetStart.getYear(),
+                snapshot.targetEnd.getYear());
 
         for (MarketingEvent event : events) {
             if (!event.date.isBefore(snapshot.targetStart) && !event.date.isAfter(snapshot.targetEnd)) {
@@ -486,7 +497,7 @@ public class AiForecastDataService {
             signal.revenue30 = aggregate30.revenue;
             signal.dailyDemand = divide(BigDecimal.valueOf(signal.soldQty30), 30);
 
-            signal.stockQty = lotRepo.getAvailableQty(em, candidateId, today);
+            signal.stockQty = lotRepo.getAvailableToSellQty(em, candidateId, today);
             signal.expiringQty = lotRepo.getExpiringQty(em, candidateId, today, 3);
 
             hydrateSupplierAndPriceSignals(em, signal, today);
@@ -499,9 +510,9 @@ public class AiForecastDataService {
     }
 
     private Map<Long, SalesAggregate> loadSalesAggregate(EntityManager em,
-                                                         LocalDateTime from,
-                                                         LocalDateTime to,
-                                                         Long productId) {
+            LocalDateTime from,
+            LocalDateTime to,
+            Long productId) {
         StringBuilder jpql = new StringBuilder(
                 "SELECT oi.product.id, SUM(oi.quantity), SUM(oi.lineTotal) " +
                         "FROM OrderItem oi JOIN oi.order o " +
@@ -534,10 +545,10 @@ public class AiForecastDataService {
     private void hydrateSupplierAndPriceSignals(EntityManager em, ProductSignal signal, LocalDate today) {
         @SuppressWarnings("unchecked")
         List<Object[]> latestRows = em.createQuery(
-                        "SELECT s.name, pl.importPrice, pl.importDate, s.leadTimeDays " +
-                                "FROM ProductLot pl LEFT JOIN pl.supplier s " +
-                                "WHERE pl.product.id = :pid " +
-                                "ORDER BY pl.importDate DESC, pl.id DESC")
+                "SELECT s.name, pl.importPrice, pl.importDate, s.leadTimeDays " +
+                        "FROM ProductLot pl LEFT JOIN pl.supplier s " +
+                        "WHERE pl.product.id = :pid " +
+                        "ORDER BY pl.importDate DESC, pl.id DESC")
                 .setParameter("pid", signal.productId)
                 .setMaxResults(1)
                 .getResultList();
@@ -552,9 +563,9 @@ public class AiForecastDataService {
 
         @SuppressWarnings("unchecked")
         List<Object[]> oldestRows = em.createQuery(
-                        "SELECT pl.importPrice, pl.importDate " +
-                                "FROM ProductLot pl WHERE pl.product.id = :pid AND pl.importDate >= :fromDate " +
-                                "ORDER BY pl.importDate ASC, pl.id ASC")
+                "SELECT pl.importPrice, pl.importDate " +
+                        "FROM ProductLot pl WHERE pl.product.id = :pid AND pl.importDate >= :fromDate " +
+                        "ORDER BY pl.importDate ASC, pl.id ASC")
                 .setParameter("pid", signal.productId)
                 .setParameter("fromDate", today.minusDays(SUPPLIER_LOOKBACK_DAYS))
                 .setMaxResults(1)
@@ -573,7 +584,8 @@ public class AiForecastDataService {
                     .setScale(1, RoundingMode.HALF_UP);
         }
 
-        if (signal.sellPrice.compareTo(BigDecimal.ZERO) > 0 && signal.latestImportPrice.compareTo(BigDecimal.ZERO) > 0) {
+        if (signal.sellPrice.compareTo(BigDecimal.ZERO) > 0
+                && signal.latestImportPrice.compareTo(BigDecimal.ZERO) > 0) {
             signal.marginPct = signal.sellPrice.subtract(signal.latestImportPrice)
                     .divide(signal.sellPrice, 4, RoundingMode.HALF_UP)
                     .multiply(ONE_HUNDRED)
@@ -585,7 +597,8 @@ public class AiForecastDataService {
     }
 
     private void computeProcurementNeeds(ProductSignal signal) {
-        BigDecimal demandDuringLeadTime = signal.dailyDemand.multiply(BigDecimal.valueOf(signal.leadTimeDays + PROCUREMENT_BUFFER_DAYS));
+        BigDecimal demandDuringLeadTime = signal.dailyDemand
+                .multiply(BigDecimal.valueOf(signal.leadTimeDays + PROCUREMENT_BUFFER_DAYS));
         BigDecimal safetyStock = signal.dailyDemand.multiply(BigDecimal.valueOf(SAFETY_STOCK_DAYS));
         BigDecimal targetStock = demandDuringLeadTime.add(safetyStock);
         BigDecimal currentStock = BigDecimal.valueOf(Math.max(0, signal.stockQty));
@@ -602,7 +615,7 @@ public class AiForecastDataService {
 
         signal.needsReorder = signal.reorderQty.compareTo(BigDecimal.ZERO) > 0
                 && (signal.stockQty == 0
-                || signal.coverageDays.compareTo(BigDecimal.valueOf(signal.leadTimeDays + 1)) < 0);
+                        || signal.coverageDays.compareTo(BigDecimal.valueOf(signal.leadTimeDays + 1)) < 0);
 
         if (signal.stockQty == 0 && signal.soldQty30 > 0) {
             signal.reorderReason = "đã hết hàng nhưng vẫn có nhu cầu bán trong 30 ngày gần đây";
@@ -758,7 +771,8 @@ public class AiForecastDataService {
             long peakCount = points.stream().filter(p -> "PEAK".equals(p.getSignal())).count();
             long dipCount = points.stream().filter(p -> "DIP".equals(p.getSignal())).count();
 
-            snapshot.seasonalityDiagnostics.add("Tín hiệu bất thường 365 ngày: " + peakCount + " ngày PEAK, " + dipCount + " ngày DIP.");
+            snapshot.seasonalityDiagnostics
+                    .add("Tín hiệu bất thường 365 ngày: " + peakCount + " ngày PEAK, " + dipCount + " ngày DIP.");
             for (SeasonalityMonthStat stat : monthStats.stream().limit(4).collect(Collectors.toList())) {
                 snapshot.seasonalityDiagnostics.add("Tháng " + stat.getMonth() + ": TB="
                         + formatVND(stat.getAvgDemand()) + ", Min=" + formatVND(stat.getMinDemand())

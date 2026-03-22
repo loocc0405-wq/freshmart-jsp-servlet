@@ -8,6 +8,7 @@ import com.freshmart.util.JpaExecutor;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -85,6 +86,7 @@ class StaffImportLotServletTest {
         assertEquals(LocalDate.of(2026, 3, 20), lotService.expiryDate);
         assertEquals(12, lotService.quantity);
         assertEquals(new BigDecimal("95000.50"), lotService.importPrice);
+        assertEquals(null, lotService.performedByUserId);
         assertEquals("Nhập lô thành công! Lô ID: 88", context.attributes.get("successMessage"));
         assertEquals("/WEB-INF/jsp/staff/import_lot.jsp", context.forwardedTo.get());
     }
@@ -115,6 +117,7 @@ class StaffImportLotServletTest {
         servlet.doPost(context.request, newResponseProxy());
 
         assertEquals(Long.valueOf(99L), lotService.updateLotId);
+        assertEquals(null, lotService.performedByUserId);
         assertEquals("Cập nhật lô thành công! Lô ID: 99", context.attributes.get("successMessage"));
         assertSame(savedLot, context.attributes.get("editingLot"));
     }
@@ -193,6 +196,53 @@ class StaffImportLotServletTest {
         private final AtomicReference<String> forwardedTo = new AtomicReference<>();
         private final HttpServletRequest request;
 
+        private static class SessionContext {
+            private final Map<String, Object> attributes = new HashMap<>();
+            private final HttpSession proxy;
+
+            private SessionContext() {
+                this.proxy = (HttpSession) Proxy.newProxyInstance(
+                        HttpSession.class.getClassLoader(),
+                        new Class[] { HttpSession.class },
+                        (proxy, method, args) -> {
+                            switch (method.getName()) {
+                                case "getAttribute":
+                                    return attributes.get(args[0]);
+                                case "setAttribute":
+                                    attributes.put((String) args[0], args[1]);
+                                    return null;
+                                default:
+                                    return defaultValue(method.getReturnType());
+                            }
+                        });
+            }
+
+            private Object defaultValue(Class<?> returnType) {
+                if (!returnType.isPrimitive()) {
+                    return null;
+                }
+                if (returnType == boolean.class)
+                    return false;
+                if (returnType == byte.class)
+                    return (byte) 0;
+                if (returnType == short.class)
+                    return (short) 0;
+                if (returnType == int.class)
+                    return 0;
+                if (returnType == long.class)
+                    return 0L;
+                if (returnType == float.class)
+                    return 0f;
+                if (returnType == double.class)
+                    return 0d;
+                if (returnType == char.class)
+                    return '\0';
+                return null;
+            }
+        }
+
+        private final SessionContext sessionContext = new SessionContext();
+
         private RequestContext(Map<String, String> params) {
             this.params = params;
             this.request = (HttpServletRequest) Proxy.newProxyInstance(
@@ -209,6 +259,8 @@ class StaffImportLotServletTest {
                                 return attributes.get(args[0]);
                             case "getRequestDispatcher":
                                 return newDispatcherProxy((String) args[0], forwardedTo);
+                            case "getSession":
+                                return sessionContext.proxy;
                             default:
                                 return defaultValue(method.getReturnType());
                         }
@@ -295,6 +347,7 @@ class StaffImportLotServletTest {
         private LocalDate expiryDate;
         private int quantity;
         private BigDecimal importPrice;
+        private Long performedByUserId;
 
         private ProductLot updateResult;
         private Long updateLotId;
@@ -312,6 +365,7 @@ class StaffImportLotServletTest {
                 LocalDate expiryDate,
                 int quantity,
                 BigDecimal importPrice,
+                Long performedByUserId,
                 EntityManager em) {
             if (importFailure != null) {
                 throw importFailure;
@@ -322,6 +376,7 @@ class StaffImportLotServletTest {
             this.expiryDate = expiryDate;
             this.quantity = quantity;
             this.importPrice = importPrice;
+            this.performedByUserId = performedByUserId;
             return importResult;
         }
 
@@ -333,6 +388,7 @@ class StaffImportLotServletTest {
                 LocalDate expiryDate,
                 int newQtyIn,
                 BigDecimal importPrice,
+                Long performedByUserId,
                 EntityManager em) {
             this.updateLotId = lotId;
             this.importProductId = productId;
@@ -341,6 +397,7 @@ class StaffImportLotServletTest {
             this.expiryDate = expiryDate;
             this.quantity = newQtyIn;
             this.importPrice = importPrice;
+            this.performedByUserId = performedByUserId;
             return updateResult;
         }
     }

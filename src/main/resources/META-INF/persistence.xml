@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <persistence xmlns="https://jakarta.ee/xml/ns/persistence"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd"
-             version="3.1">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_1.xsd" version="3.1">
 
     <persistence-unit name="freshmartPU" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
@@ -16,6 +14,7 @@
         <class>com.freshmart.entity.CartItem</class>
         <class>com.freshmart.entity.Order</class>
         <class>com.freshmart.entity.OrderItem</class>
+        <class>com.freshmart.entity.OrderItemLotReservation</class>
         <class>com.freshmart.entity.OrderItemLotAllocation</class>
         <class>com.freshmart.entity.InventoryTransaction</class>
         <class>com.freshmart.entity.LotDisposal</class>
@@ -28,8 +27,7 @@
         <properties>
             <!-- SQL Server (default for this project) -->
             <property name="jakarta.persistence.jdbc.driver" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
-            <property name="jakarta.persistence.jdbc.url"
-                      value="jdbc:sqlserver://localhost:1433;databaseName=freshmart;encrypt=true;trustServerCertificate=true"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:sqlserver://localhost:1433;databaseName=freshmart;encrypt=true;trustServerCertificate=true"/>
             <property name="jakarta.persistence.jdbc.user" value="sa"/>
             <property name="jakarta.persistence.jdbc.password" value="123456"/>
 

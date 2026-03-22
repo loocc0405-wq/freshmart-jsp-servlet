@@ -25,20 +25,22 @@ public class ProductRepository {
     }
 
     public List<Product> search(EntityManager em,
-                                String keyword,
-                                String category,
-                                String stockStatus,
-                                boolean showInactive) {
+            String keyword,
+            String category,
+            String stockStatus,
+            boolean showInactive) {
         List<Product> baseResults = loadBaseSearchResults(em, keyword, category, showInactive);
         return filterByStockStatus(em, baseResults, stockStatus);
     }
 
     private int getAvailableQty(EntityManager em, Long productId, LocalDate today) {
         Long sum = em.createQuery(
-                "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
+                "SELECT COALESCE(SUM(CASE " +
+                        "WHEN l.qtyLeft - COALESCE(l.qtyReserved, 0) > 0 " +
+                        "THEN l.qtyLeft - COALESCE(l.qtyReserved, 0) ELSE 0 END), 0) " +
+                        "FROM ProductLot l " +
                         "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
-                Long.class
-        ).setParameter("pid", productId)
+                Long.class).setParameter("pid", productId)
                 .setParameter("today", today)
                 .getSingleResult();
         return sum == null ? 0 : sum.intValue();
@@ -49,8 +51,7 @@ public class ProductRepository {
                 "SELECT DISTINCT p.category FROM Product p " +
                         "WHERE p.category IS NOT NULL AND p.category <> '' " +
                         "ORDER BY p.category",
-                String.class
-        ).getResultList();
+                String.class).getResultList();
     }
 
     public Product save(EntityManager em, Product p) {
@@ -90,12 +91,12 @@ public class ProductRepository {
     }
 
     public List<Product> searchPaginated(EntityManager em,
-                                         String keyword,
-                                         String category,
-                                         String stockStatus,
-                                         boolean showInactive,
-                                         int offset,
-                                         int limit) {
+            String keyword,
+            String category,
+            String stockStatus,
+            boolean showInactive,
+            int offset,
+            int limit) {
         List<Product> filtered = search(em, keyword, category, stockStatus, showInactive);
         if (filtered.isEmpty()) {
             return List.of();
@@ -112,18 +113,18 @@ public class ProductRepository {
     }
 
     public long countSearch(EntityManager em,
-                            String keyword,
-                            String category,
-                            String stockStatus,
-                            boolean showInactive) {
+            String keyword,
+            String category,
+            String stockStatus,
+            boolean showInactive) {
         List<Product> filtered = search(em, keyword, category, stockStatus, showInactive);
         return filtered.size();
     }
 
     private List<Product> loadBaseSearchResults(EntityManager em,
-                                                String keyword,
-                                                String category,
-                                                boolean showInactive) {
+            String keyword,
+            String category,
+            boolean showInactive) {
         StringBuilder jpql = new StringBuilder("SELECT p FROM Product p WHERE 1=1");
 
         if (!showInactive) {
@@ -150,8 +151,8 @@ public class ProductRepository {
     }
 
     private List<Product> filterByStockStatus(EntityManager em,
-                                              List<Product> products,
-                                              String stockStatus) {
+            List<Product> products,
+            String stockStatus) {
         if (stockStatus == null || stockStatus.isBlank() || "all".equalsIgnoreCase(stockStatus)) {
             return products;
         }
@@ -163,9 +164,9 @@ public class ProductRepository {
     }
 
     private boolean matchesStockStatus(EntityManager em,
-                                       Product product,
-                                       String stockStatus,
-                                       LocalDate today) {
+            Product product,
+            String stockStatus,
+            LocalDate today) {
         int availableQty = getAvailableQty(em, product.getId(), today);
 
         if ("inStock".equalsIgnoreCase(stockStatus)) {

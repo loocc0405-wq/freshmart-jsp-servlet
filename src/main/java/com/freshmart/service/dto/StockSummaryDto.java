@@ -6,6 +6,7 @@ import java.time.LocalDate;
 public class StockSummaryDto {
     private final int totalIn;
     private final int totalRemaining;
+    private final int totalReserved;
     private final int availableQty;
     private final int expiredQty;
     private final int consumedQty;
@@ -16,17 +17,19 @@ public class StockSummaryDto {
     private final LocalDate nearestExpiry;
 
     public StockSummaryDto(int totalIn,
-                           int totalRemaining,
-                           int availableQty,
-                           int expiredQty,
-                           int consumedQty,
-                           int activeLotsCount,
-                           int expiredLotsCount,
-                           int expiringQty,
-                           BigDecimal availableValue,
-                           LocalDate nearestExpiry) {
+            int totalRemaining,
+            int totalReserved,
+            int availableQty,
+            int expiredQty,
+            int consumedQty,
+            int activeLotsCount,
+            int expiredLotsCount,
+            int expiringQty,
+            BigDecimal availableValue,
+            LocalDate nearestExpiry) {
         this.totalIn = totalIn;
         this.totalRemaining = totalRemaining;
+        this.totalReserved = totalReserved;
         this.availableQty = availableQty;
         this.expiredQty = expiredQty;
         this.consumedQty = consumedQty;
@@ -43,6 +46,10 @@ public class StockSummaryDto {
 
     public int getTotalRemaining() {
         return totalRemaining;
+    }
+
+    public int getTotalReserved() {
+        return totalReserved;
     }
 
     public int getAvailableQty() {

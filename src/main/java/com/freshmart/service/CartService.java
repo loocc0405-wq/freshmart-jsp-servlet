@@ -3,14 +3,12 @@ package com.freshmart.service;
 import com.freshmart.entity.Cart;
 import com.freshmart.entity.CartItem;
 import com.freshmart.entity.Product;
-import com.freshmart.entity.ProductLot;
 import com.freshmart.repository.CartItemRepository;
 import com.freshmart.repository.CartRepository;
 import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.util.JpaExecutor;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class CartService {
@@ -27,20 +25,7 @@ public class CartService {
     // HELPER: GET TOTAL STOCK
     // =====================================================
     private int getAvailableStock(jakarta.persistence.EntityManager em, Long productId) {
-
-        List<ProductLot> lots = lotRepo.findAvailableLotsFEFO(
-                em,
-                productId,
-                LocalDate.now()
-        );
-
-        int total = 0;
-
-        for (ProductLot lot : lots) {
-            total += lot.getQtyLeft();
-        }
-
-        return total;
+        return lotRepo.getAvailableToSellQty(em, productId, java.time.LocalDate.now());
     }
 
     // ===============================
@@ -50,7 +35,8 @@ public class CartService {
         return executor.execute(em -> {
             Cart cart = cartRepo.findByUserId(em, userId)
                     .orElse(null);
-            if (cart == null) return List.of();
+            if (cart == null)
+                return List.of();
             return cartItemRepo.findByCartId(em, cart.getId());
         });
     }
@@ -199,7 +185,8 @@ public class CartService {
                     qty = stock;
                 }
 
-                if (qty <= 0) continue;
+                if (qty <= 0)
+                    continue;
 
                 CartItem item = cartItemRepo
                         .findByCartAndProduct(em, cart.getId(), productId)
@@ -235,5 +222,5 @@ public class CartService {
     public void checkout(Long userId) {
         orderService.createCustomerOrder(userId);
     }
-   
+
 }

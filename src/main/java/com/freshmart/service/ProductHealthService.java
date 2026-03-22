@@ -51,8 +51,8 @@ public class ProductHealthService {
     private ProductHealthRow buildRowForProduct(EntityManager em, Product p, LocalDate today) {
         Long productId = p.getId();
 
-        // 1. Stock: tổng qtyLeft còn hạn
-        int stock = lotRepo.getAvailableQty(em, productId, today);
+        // 1. Stock: tổng ATP (qtyLeft - qtyReserved) còn hạn
+        int stock = lotRepo.getAvailableToSellQty(em, productId, today);
 
         // 2. Near expiry: trong vòng 3 ngày
         int expiringQty = lotRepo.getExpiringQty(em, productId, today, NEAR_EXPIRY_DAYS);
@@ -83,9 +83,8 @@ public class ProductHealthService {
     private BigDecimal getAvgImportPrice(EntityManager em, Long productId) {
         List<Double> result = em.createQuery(
                 "SELECT AVG(l.importPrice) FROM ProductLot l " +
-                "WHERE l.product.id = :pid AND l.importPrice IS NOT NULL AND l.importPrice > 0",
-                Double.class
-        ).setParameter("pid", productId).getResultList();
+                        "WHERE l.product.id = :pid AND l.importPrice IS NOT NULL AND l.importPrice > 0",
+                Double.class).setParameter("pid", productId).getResultList();
 
         if (result == null || result.isEmpty() || result.get(0) == null) {
             return null;
@@ -106,7 +105,8 @@ public class ProductHealthService {
         }
 
         SupplierCandidate best = SupplierRankingUtil.pickBest(candidates);
-        if (best == null) return;
+        if (best == null)
+            return;
 
         row.setRecommendedSupplierId(best.getSupplierId());
         row.setRecommendedSupplierName(best.getSupplierName());
