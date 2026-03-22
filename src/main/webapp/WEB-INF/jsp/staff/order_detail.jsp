@@ -89,13 +89,14 @@
                 </div>
 
                 <div class="alert ${detailView.allFulfillable ? 'alert-success' : 'alert-warning'}">
-                    <strong>OMS FEFO/ATP check:</strong>
+                    <strong>OMS FEFO/reservation check:</strong>
                     <c:choose>
                         <c:when test="${detailView.allFulfillable}">
-                            Hiện tại đơn đủ ATP để hoàn tất theo FEFO.
+                            Hiện tại đơn đủ phần hàng đã reserve hoặc ATP khả dụng để hoàn tất theo FEFO.
                         </c:when>
                         <c:otherwise>
-                            Hiện tại có mặt hàng thiếu ATP nếu hoàn tất theo FEFO ngay bây giờ.
+                            Hiện tại có mặt hàng thiếu phần reserve hợp lệ hoặc thiếu ATP nếu hoàn tất theo FEFO ngay
+                            bây giờ.
                         </c:otherwise>
                     </c:choose>
                     Có <strong>

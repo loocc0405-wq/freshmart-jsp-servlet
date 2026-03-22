@@ -1,10 +1,12 @@
 package com.freshmart.web.servlet;
 
 import com.freshmart.config.AppConstants;
+import com.freshmart.entity.CartItem;
 import com.freshmart.entity.Product;
 import com.freshmart.entity.User;
 import com.freshmart.repository.ProductRepository;
 import com.freshmart.service.CartService;
+import com.freshmart.service.InventoryService;
 import com.freshmart.util.GuestCartUtil;
 import com.freshmart.util.JpaExecutor;
 
@@ -16,6 +18,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.util.List;
 
 @WebServlet("/cart")
 public class CartServlet extends HttpServlet {
@@ -23,6 +27,7 @@ public class CartServlet extends HttpServlet {
     private final CartService cartService = new CartService();
     private final JpaExecutor executor = new JpaExecutor();
     private final ProductRepository productRepo = new ProductRepository();
+    private final InventoryService inventoryService = new InventoryService();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
@@ -34,35 +39,7 @@ public class CartServlet extends HttpServlet {
 
         try {
             if (user == null) {
-                Long productId = Long.parseLong(req.getParameter("productId"));
-                int qty = 1;
-
-                if (req.getParameter("qty") != null) {
-                    qty = Integer.parseInt(req.getParameter("qty"));
-                }
-
-                if (qty <= 0) {
-                    qty = 1;
-                }
-
-                Product product = executor.execute(em -> productRepo.findById(em, productId).orElse(null));
-
-                if (product != null) {
-                    switch (action) {
-                        case "add":
-                            GuestCartUtil.addItem(session, product, qty);
-                            break;
-                        case "update":
-                            GuestCartUtil.updateItem(session, productId, qty);
-                            break;
-                        case "remove":
-                            GuestCartUtil.removeItem(session, productId);
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
+                handleGuestCart(req, session, action);
                 resp.sendRedirect(req.getContextPath() + "/cart-view");
                 return;
             }
@@ -93,5 +70,73 @@ public class CartServlet extends HttpServlet {
         }
 
         resp.sendRedirect(req.getContextPath() + "/cart-view");
+    }
+
+    private void handleGuestCart(HttpServletRequest req, HttpSession session, String action) {
+        Long productId = Long.parseLong(req.getParameter("productId"));
+        int qty = 1;
+
+        if (req.getParameter("qty") != null && !req.getParameter("qty").isBlank()) {
+            qty = Integer.parseInt(req.getParameter("qty"));
+        }
+
+        Product product = executor.execute(em -> productRepo.findById(em, productId).orElse(null));
+        if (product == null) {
+            throw new IllegalArgumentException("Product not found");
+        }
+        if (!product.isActive()) {
+            throw new IllegalStateException("Product is inactive");
+        }
+
+        List<CartItem> guestCart = GuestCartUtil.getGuestCart(session);
+        int currentQty = currentGuestQty(guestCart, productId);
+        int availableQty = executor.execute(em -> inventoryService.getAvailableQty(em, productId, LocalDate.now()));
+
+        switch (action) {
+            case "add": {
+                if (qty <= 0) {
+                    qty = 1;
+                }
+                if (availableQty <= 0) {
+                    throw new IllegalStateException("Product out of stock");
+                }
+                if (currentQty + qty > availableQty) {
+                    throw new IllegalStateException("Not enough stock");
+                }
+                GuestCartUtil.addItem(session, product, qty);
+                break;
+            }
+            case "update": {
+                if (qty <= 0) {
+                    GuestCartUtil.removeItem(session, productId);
+                    break;
+                }
+                if (qty > availableQty) {
+                    throw new IllegalStateException("Not enough stock");
+                }
+                GuestCartUtil.updateItem(session, productId, qty);
+                break;
+            }
+            case "remove": {
+                GuestCartUtil.removeItem(session, productId);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    private int currentGuestQty(List<CartItem> guestCart, Long productId) {
+        if (guestCart == null || guestCart.isEmpty()) {
+            return 0;
+        }
+        for (CartItem item : guestCart) {
+            if (item != null
+                    && item.getProduct() != null
+                    && productId.equals(item.getProduct().getId())) {
+                return item.getQuantity() == null ? 0 : item.getQuantity();
+            }
+        }
+        return 0;
     }
 }
