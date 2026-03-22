@@ -98,7 +98,7 @@ public class OrderService {
     }
 
     public Order findById(Long id) {
-        return executor.execute(em -> orderRepo.findById(em, id).orElse(null));
+        return executor.execute(em -> orderRepo.findByIdWithRefs(em, id).orElse(null));
     }
 
     public Order completeOrder(Long orderId) {
