@@ -24,15 +24,15 @@ public class ProductLotRepository {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE p.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today " +
                         "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                ProductLot.class
-        );
+                ProductLot.class);
         q.setParameter("pid", productId);
         q.setParameter("today", today);
         return q.getResultList();
     }
 
     /**
-     * FEFO with pessimistic write lock to prevent race conditions during stock consumption.
+     * FEFO with pessimistic write lock to prevent race conditions during stock
+     * consumption.
      * Used within a transaction to ensure exclusive access to lots.
      */
     public List<ProductLot> findAvailableLotsFEFOForUpdate(EntityManager em, Long productId, LocalDate today) {
@@ -42,8 +42,7 @@ public class ProductLotRepository {
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE p.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today " +
                         "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
-                ProductLot.class
-        );
+                ProductLot.class);
         q.setParameter("pid", productId);
         q.setParameter("today", today);
         q.setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
@@ -56,10 +55,9 @@ public class ProductLotRepository {
      */
     public LocalDate findNearestExpiry(EntityManager em, Long productId, LocalDate today) {
         List<LocalDate> res = em.createQuery(
-                        "SELECT MIN(l.expiryDate) FROM ProductLot l " +
-                                "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
-                        LocalDate.class
-                )
+                "SELECT MIN(l.expiryDate) FROM ProductLot l " +
+                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND (l.qtyLeft - COALESCE(l.qtyReserved, 0)) > 0 AND l.expiryDate >= :today",
+                LocalDate.class)
                 .setParameter("pid", productId)
                 .setParameter("today", today)
                 .getResultList();
@@ -68,34 +66,73 @@ public class ProductLotRepository {
     }
 
     /**
-     * Total qty available (qtyLeft) for non-expired lots.
+     * Total physical qtyLeft for non-expired lots.
      */
     public int getAvailableQty(EntityManager em, Long productId, LocalDate today) {
         Long sum = em.createQuery(
-                        "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
-                                "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
-                        Long.class
-                )
+                "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
+                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
+                Long.class)
                 .setParameter("pid", productId)
                 .setParameter("today", today)
                 .getSingleResult();
         return sum == null ? 0 : sum.intValue();
     }
 
+    public int getReservedQty(EntityManager em, Long productId, LocalDate today) {
+        Long sum = em.createQuery(
+                "SELECT COALESCE(SUM(COALESCE(l.qtyReserved, 0)), 0) FROM ProductLot l " +
+                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
+                Long.class)
+                .setParameter("pid", productId)
+                .setParameter("today", today)
+                .getSingleResult();
+        return sum == null ? 0 : sum.intValue();
+    }
+
+    public int getAvailableToSellQty(EntityManager em, Long productId, LocalDate today) {
+        Long sum = em.createQuery(
+                "SELECT COALESCE(SUM(CASE " +
+                        "WHEN l.qtyLeft - COALESCE(l.qtyReserved, 0) > 0 " +
+                        "THEN l.qtyLeft - COALESCE(l.qtyReserved, 0) ELSE 0 END), 0) " +
+                        "FROM ProductLot l " +
+                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today",
+                Long.class)
+                .setParameter("pid", productId)
+                .setParameter("today", today)
+                .getSingleResult();
+        return sum == null ? 0 : sum.intValue();
+    }
+
+    public List<ProductLot> findReservableLotsFEFO(EntityManager em, Long productId, LocalDate today) {
+        TypedQuery<ProductLot> q = em.createQuery(
+                "SELECT l FROM ProductLot l " +
+                        "JOIN FETCH l.product p " +
+                        "LEFT JOIN FETCH l.supplier s " +
+                        "WHERE p.id = :pid AND l.qtyLeft > 0 AND l.expiryDate >= :today " +
+                        "ORDER BY l.expiryDate ASC, l.importDate ASC, l.id ASC",
+                ProductLot.class);
+        q.setParameter("pid", productId);
+        q.setParameter("today", today);
+        q.setLockMode(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE);
+        return q.getResultList();
+    }
+
     /**
-     * Total qtyLeft of lots that will expire within [today .. today+days] (inclusive),
+     * Total qtyLeft of lots that will expire within [today .. today+days]
+     * (inclusive),
      * and still have qtyLeft > 0.
      */
     public int getExpiringQty(EntityManager em, Long productId, LocalDate today, int days) {
-        if (days < 0) days = 0;
+        if (days < 0)
+            days = 0;
         LocalDate end = today.plusDays(days);
 
         Long sum = em.createQuery(
-                        "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
-                                "WHERE l.product.id = :pid AND l.qtyLeft > 0 " +
-                                "AND l.expiryDate >= :today AND l.expiryDate <= :end",
-                        Long.class
-                )
+                "SELECT COALESCE(SUM(l.qtyLeft), 0) FROM ProductLot l " +
+                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 " +
+                        "AND l.expiryDate >= :today AND l.expiryDate <= :end",
+                Long.class)
                 .setParameter("pid", productId)
                 .setParameter("today", today)
                 .setParameter("end", end)
@@ -105,19 +142,20 @@ public class ProductLotRepository {
     }
 
     /**
-     * Count number of lots that will expire within [today .. today+days] (inclusive),
+     * Count number of lots that will expire within [today .. today+days]
+     * (inclusive),
      * and still have qtyLeft > 0.
      */
     public int countExpiringLots(EntityManager em, Long productId, LocalDate today, int days) {
-        if (days < 0) days = 0;
+        if (days < 0)
+            days = 0;
         LocalDate end = today.plusDays(days);
 
         Long cnt = em.createQuery(
-                        "SELECT COUNT(l) FROM ProductLot l " +
-                                "WHERE l.product.id = :pid AND l.qtyLeft > 0 " +
-                                "AND l.expiryDate >= :today AND l.expiryDate <= :end",
-                        Long.class
-                )
+                "SELECT COUNT(l) FROM ProductLot l " +
+                        "WHERE l.product.id = :pid AND l.qtyLeft > 0 " +
+                        "AND l.expiryDate >= :today AND l.expiryDate <= :end",
+                Long.class)
                 .setParameter("pid", productId)
                 .setParameter("today", today)
                 .setParameter("end", end)
@@ -128,14 +166,13 @@ public class ProductLotRepository {
 
     public Integer findSuggestedLeadTimeDays(EntityManager em, Long productId) {
         List<Integer> result = em.createQuery(
-                        "SELECT s.leadTimeDays " +
-                                "FROM ProductLot l " +
-                                "JOIN l.supplier s " +
-                                "WHERE l.product.id = :pid " +
-                                "AND s.leadTimeDays IS NOT NULL " +
-                                "ORDER BY l.importDate DESC, l.id DESC",
-                        Integer.class
-                )
+                "SELECT s.leadTimeDays " +
+                        "FROM ProductLot l " +
+                        "JOIN l.supplier s " +
+                        "WHERE l.product.id = :pid " +
+                        "AND s.leadTimeDays IS NOT NULL " +
+                        "ORDER BY l.importDate DESC, l.id DESC",
+                Integer.class)
                 .setParameter("pid", productId)
                 .setMaxResults(1)
                 .getResultList();
@@ -156,8 +193,7 @@ public class ProductLotRepository {
                         "JOIN FETCH l.product p " +
                         "LEFT JOIN FETCH l.supplier s " +
                         "WHERE l.id = :id",
-                ProductLot.class
-        ).setParameter("id", lotId).getResultList();
+                ProductLot.class).setParameter("id", lotId).getResultList();
 
         return list.isEmpty() ? null : list.get(0);
     }
@@ -174,8 +210,7 @@ public class ProductLotRepository {
                 "SELECT l FROM ProductLot l " +
                         "JOIN FETCH l.product p " +
                         "LEFT JOIN FETCH l.supplier s " +
-                        "WHERE 1 = 1 "
-        );
+                        "WHERE 1 = 1 ");
 
         if (filter.getProductId() != null) {
             jpql.append("AND p.id = :productId ");
@@ -210,7 +245,7 @@ public class ProductLotRepository {
         }
 
         if ("AVAILABLE".equalsIgnoreCase(filter.getStatus())) {
-            jpql.append("AND l.qtyLeft > 0 AND l.expiryDate >= :today ");
+            jpql.append("AND l.qtyLeft > COALESCE(l.qtyReserved, 0) AND l.expiryDate >= :today ");
         } else if ("EXPIRING".equalsIgnoreCase(filter.getStatus())) {
             jpql.append("AND l.qtyLeft > 0 AND l.expiryDate >= :today AND l.expiryDate <= :expiringDeadline ");
         } else if ("EXPIRED".equalsIgnoreCase(filter.getStatus())) {
@@ -276,8 +311,7 @@ public class ProductLotRepository {
                 "SELECT COUNT(l) FROM ProductLot l " +
                         "JOIN l.product p " +
                         "LEFT JOIN l.supplier s " +
-                        "WHERE 1 = 1 "
-        );
+                        "WHERE 1 = 1 ");
 
         if (filter.getProductId() != null) {
             jpql.append("AND p.id = :productId ");
@@ -312,7 +346,7 @@ public class ProductLotRepository {
         }
 
         if ("AVAILABLE".equalsIgnoreCase(filter.getStatus())) {
-            jpql.append("AND l.qtyLeft > 0 AND l.expiryDate >= :today ");
+            jpql.append("AND l.qtyLeft > COALESCE(l.qtyReserved, 0) AND l.expiryDate >= :today ");
         } else if ("EXPIRING".equalsIgnoreCase(filter.getStatus())) {
             jpql.append("AND l.qtyLeft > 0 AND l.expiryDate >= :today AND l.expiryDate <= :expiringDeadline ");
         } else if ("EXPIRED".equalsIgnoreCase(filter.getStatus())) {
@@ -369,7 +403,8 @@ public class ProductLotRepository {
     }
 
     /**
-     * Aggregate supplier candidates từ lịch sử nhập hàng (product_lots) của một product.
+     * Aggregate supplier candidates từ lịch sử nhập hàng (product_lots) của một
+     * product.
      * Trả về danh sách supplier với thông tin:
      * - supplierId, supplierName, supplierLeadTimeDays
      * - avgImportPrice (trung bình giá nhập)
@@ -394,7 +429,7 @@ public class ProductLotRepository {
             Long supplierId = (Long) row[0];
             String supplierName = (String) row[1];
             Integer leadTimeDays = (Integer) row[2];
-            
+
             // AVG() returns Double, not BigDecimal
             Object avgPriceObj = row[3];
             BigDecimal avgPrice = null;
@@ -405,7 +440,7 @@ public class ProductLotRepository {
                     avgPrice = (BigDecimal) avgPriceObj;
                 }
             }
-            
+
             LocalDate lastImport = (LocalDate) row[4];
             Long lotCount = (Long) row[5];
             Long totalQtyIn = (Long) row[6];
@@ -417,8 +452,7 @@ public class ProductLotRepository {
                     avgPrice,
                     lastImport,
                     lotCount != null ? lotCount : 0L,
-                    totalQtyIn != null ? totalQtyIn : 0L
-            ));
+                    totalQtyIn != null ? totalQtyIn : 0L));
         }
 
         return candidates;

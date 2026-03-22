@@ -5,10 +5,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "product_lots",
-        indexes = {
-                @Index(name = "idx_lots_product_expiry", columnList = "product_id, expiry_date")
-        })
+@Table(name = "product_lots", indexes = {
+        @Index(name = "idx_lots_product_expiry", columnList = "product_id, expiry_date")
+})
 public class ProductLot {
 
     @Id
@@ -35,12 +34,14 @@ public class ProductLot {
     @Column(name = "qty_left", nullable = false)
     private Integer qtyLeft;
 
+    @Column(name = "qty_reserved", nullable = false)
+    private Integer qtyReserved = 0;
+
     @Column(name = "import_price", precision = 18, scale = 2)
     private BigDecimal importPrice = BigDecimal.ZERO;
 
-    public ProductLot() {}
-
-    // Getters / setters
+    public ProductLot() {
+    }
 
     public Long getId() {
         return id;
@@ -94,11 +95,26 @@ public class ProductLot {
         this.qtyLeft = qtyLeft;
     }
 
+    public Integer getQtyReserved() {
+        return qtyReserved;
+    }
+
+    public void setQtyReserved(Integer qtyReserved) {
+        this.qtyReserved = qtyReserved;
+    }
+
     public BigDecimal getImportPrice() {
         return importPrice;
     }
 
     public void setImportPrice(BigDecimal importPrice) {
         this.importPrice = importPrice;
+    }
+
+    @Transient
+    public int getAvailableToSell() {
+        int left = qtyLeft == null ? 0 : qtyLeft;
+        int reserved = qtyReserved == null ? 0 : qtyReserved;
+        return Math.max(0, left - reserved);
     }
 }

@@ -33,9 +33,9 @@ public class OrderService {
     private final InventoryAuditService inventoryAuditService = new InventoryAuditService();
 
     public Order createSellerWalkInOrder(Long sellerUserId,
-                                         PaymentMethod paymentMethod,
-                                         List<ItemRequest> items,
-                                         boolean completeNow) {
+            PaymentMethod paymentMethod,
+            List<ItemRequest> items,
+            boolean completeNow) {
 
         return executor.execute(em -> {
             User seller = requireUser(em, sellerUserId);
@@ -46,10 +46,12 @@ public class OrderService {
             order.setType(OrderType.WALK_IN);
             order.setPaymentMethod(paymentMethod);
             order.setStatus(completeNow ? OrderStatus.COMPLETED : OrderStatus.PENDING);
+            order.setCreatedAt(LocalDateTime.now());
             if (completeNow) {
                 order.setCompletedAt(LocalDateTime.now());
             }
 
+            LocalDate today = LocalDate.now();
             for (ItemRequest req : items) {
                 if (req == null || req.getQuantity() <= 0) {
                     continue;
@@ -61,6 +63,11 @@ public class OrderService {
                 }
                 if (!product.isActive()) {
                     throw new IllegalStateException("Product is inactive: " + product.getName());
+                }
+
+                int availableQty = inventoryService.getAvailableQty(em, product.getId(), today);
+                if (req.getQuantity() > availableQty) {
+                    throw new IllegalStateException("Not enough stock for product: " + product.getName());
                 }
 
                 OrderItem item = new OrderItem(product, req.getQuantity(), product.getSellPrice());
@@ -82,6 +89,8 @@ public class OrderService {
             if (completeNow) {
                 consumeAndTraceOrderItems(em, order, seller);
                 revenueService.addRevenue(em, order.getCompletedAt().toLocalDate(), total);
+            } else {
+                reserveOrderItems(em, order);
             }
 
             return order;
@@ -119,7 +128,6 @@ public class OrderService {
     }
 
     public Order updateStatus(Long orderId, OrderStatus newStatus, Long actorUserId) {
-
         return executor.execute(em -> {
             Order order = orderRepo.findByIdForUpdate(em, orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
@@ -137,6 +145,10 @@ public class OrderService {
 
             if (newStatus == OrderStatus.COMPLETED) {
                 finalizeOrder(em, order, resolveUser(em, actorUserId));
+            } else if (newStatus == OrderStatus.CANCELED) {
+                inventoryService.releaseReservations(em, order.getId(), "ORDER_CANCELED");
+                order.setStatus(OrderStatus.CANCELED);
+                orderRepo.save(em, order);
             } else {
                 order.setStatus(newStatus);
                 orderRepo.save(em, order);
@@ -147,14 +159,17 @@ public class OrderService {
     }
 
     public void updateOrderStatus(Long orderId, OrderStatus targetStatus) {
+        updateOrderStatus(orderId, targetStatus, null);
+    }
+
+    public void updateOrderStatus(Long orderId, OrderStatus targetStatus, Long actorUserId) {
         if (targetStatus == null) {
             throw new IllegalArgumentException("Target status is required.");
         }
-        updateStatus(orderId, targetStatus);
+        updateStatus(orderId, targetStatus, actorUserId);
     }
 
     public Order createCustomerOrder(Long customerId) {
-
         return executor.execute(em -> {
             User customer = requireUser(em, customerId);
 
@@ -196,6 +211,9 @@ public class OrderService {
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
             order.setTotalAmount(total);
             orderRepo.save(em, order);
+            em.flush();
+
+            reserveOrderItems(em, order);
 
             for (CartItem ci : cartItems) {
                 em.remove(ci);
@@ -212,18 +230,28 @@ public class OrderService {
         revenueService.addRevenue(em, order.getCompletedAt().toLocalDate(), order.getTotalAmount());
     }
 
+    private void reserveOrderItems(EntityManager em, Order order) {
+        LocalDate today = LocalDate.now();
+        List<OrderItem> sortedItems = new ArrayList<>(order.getItems());
+        sortedItems.sort(Comparator.comparing(item -> item.getProduct().getId()));
+        for (OrderItem item : sortedItems) {
+            inventoryService.reserveStockFEFO(em, item, item.getQuantity(), today);
+        }
+    }
+
     private void consumeAndTraceOrderItems(EntityManager em, Order order, User actor) {
         LocalDate today = LocalDate.now();
         List<OrderItem> sortedItems = new ArrayList<>(order.getItems());
         sortedItems.sort(Comparator.comparing(item -> item.getProduct().getId()));
 
         for (OrderItem item : sortedItems) {
-            List<LotConsumption> consumptions = inventoryService.consumeStockFEFO(
-                    em,
-                    item.getProduct().getId(),
-                    item.getQuantity(),
-                    today
-            );
+            List<LotConsumption> consumptions;
+            if (inventoryService.countActiveReservations(em, item.getId()) > 0) {
+                consumptions = inventoryService.consumeReservedStock(em, item);
+            } else {
+                consumptions = inventoryService.consumeStockFEFO(em, item.getProduct().getId(), item.getQuantity(),
+                        today);
+            }
             inventoryAuditService.recordSaleAllocations(em, item, consumptions, actor);
         }
     }

@@ -157,7 +157,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
         req.setAttribute("allLots", allLots);
 
         List<ProductLot> availableLots = allLots.stream()
-                .filter(l -> l.getQtyLeft() > 0)
+                .filter(l -> l.getAvailableToSell() > 0)
                 .filter(l -> !l.getExpiryDate().isBefore(today))
                 .collect(Collectors.toList());
         req.setAttribute("availableLots", availableLots);
@@ -170,7 +170,7 @@ public class StaffInventoryViewServlet extends HttpServlet {
 
         LocalDate sevenDaysLater = today.plusDays(7);
         List<ProductLot> upcomingExpiry = allLots.stream()
-                .filter(l -> l.getQtyLeft() > 0)
+                .filter(l -> l.getAvailableToSell() > 0)
                 .filter(l -> !l.getExpiryDate().isBefore(today))
                 .filter(l -> !l.getExpiryDate().isAfter(sevenDaysLater))
                 .collect(Collectors.toList());

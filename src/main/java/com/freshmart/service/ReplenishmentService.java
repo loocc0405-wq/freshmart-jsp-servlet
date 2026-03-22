@@ -56,7 +56,7 @@ public class ReplenishmentService {
                 BigDecimal forecastPerDay = avg7.multiply(trend).multiply(seasonFactor)
                         .setScale(2, RoundingMode.HALF_UP);
 
-                int stock = lotRepo.getAvailableQty(em, p.getId(), today);
+                int stock = lotRepo.getAvailableToSellQty(em, p.getId(), today);
 
                 Integer supplierLeadTime = lotRepo.findSuggestedLeadTimeDays(em, p.getId());
                 int effectiveLeadTime = (supplierLeadTime != null && supplierLeadTime > 0)
