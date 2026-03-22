@@ -74,10 +74,20 @@ public class CartServlet extends HttpServlet {
 
     private void handleGuestCart(HttpServletRequest req, HttpSession session, String action) {
         Long productId = Long.parseLong(req.getParameter("productId"));
-        int qty = 1;
 
+        if ("remove".equals(action)) {
+            GuestCartUtil.removeItem(session, productId);
+            return;
+        }
+
+        int qty = 1;
         if (req.getParameter("qty") != null && !req.getParameter("qty").isBlank()) {
             qty = Integer.parseInt(req.getParameter("qty"));
+        }
+
+        if ("update".equals(action) && qty <= 0) {
+            GuestCartUtil.removeItem(session, productId);
+            return;
         }
 
         Product product = executor.execute(em -> productRepo.findById(em, productId).orElse(null));
@@ -107,18 +117,10 @@ public class CartServlet extends HttpServlet {
                 break;
             }
             case "update": {
-                if (qty <= 0) {
-                    GuestCartUtil.removeItem(session, productId);
-                    break;
-                }
                 if (qty > availableQty) {
                     throw new IllegalStateException("Not enough stock");
                 }
                 GuestCartUtil.updateItem(session, productId, qty);
-                break;
-            }
-            case "remove": {
-                GuestCartUtil.removeItem(session, productId);
                 break;
             }
             default:

@@ -4,6 +4,7 @@ import com.freshmart.entity.Product;
 import com.freshmart.entity.ProductLot;
 import com.freshmart.entity.Supplier;
 import com.freshmart.entity.User;
+import com.freshmart.enums.InventoryTransactionType;
 import com.freshmart.repository.ProductLotRepository;
 import com.freshmart.service.dto.StockSummaryDto;
 import com.freshmart.util.JpaExecutor;
@@ -163,14 +164,25 @@ public class ProductLotService {
                     "SELECT COUNT(d) FROM LotDisposal d WHERE d.productLot.id = :lotId",
                     Long.class).setParameter("lotId", lotId).getSingleResult();
 
-            Long transactionCount = em.createQuery(
-                    "SELECT COUNT(t) FROM InventoryTransaction t WHERE t.productLot.id = :lotId",
-                    Long.class).setParameter("lotId", lotId).getSingleResult();
+            Long importTransactionCount = em.createQuery(
+                    "SELECT COUNT(t) FROM InventoryTransaction t WHERE t.productLot.id = :lotId AND t.type = :importType",
+                    Long.class)
+                    .setParameter("lotId", lotId)
+                    .setParameter("importType", InventoryTransactionType.IMPORT)
+                    .getSingleResult();
+
+            Long nonImportTransactionCount = em.createQuery(
+                    "SELECT COUNT(t) FROM InventoryTransaction t WHERE t.productLot.id = :lotId AND t.type <> :importType",
+                    Long.class)
+                    .setParameter("lotId", lotId)
+                    .setParameter("importType", InventoryTransactionType.IMPORT)
+                    .getSingleResult();
 
             if ((allocationCount != null && allocationCount > 0)
                     || (reservationCount != null && reservationCount > 0)
                     || (disposalCount != null && disposalCount > 0)
-                    || (transactionCount != null && transactionCount > 1)) {
+                    || (nonImportTransactionCount != null && nonImportTransactionCount > 0)
+                    || (importTransactionCount != null && importTransactionCount > 1)) {
                 throw new IllegalStateException(
                         "Lô đã có lịch sử reserve/audit/xuất kho/tiêu hủy nên không thể xóa cứng. Hãy giữ lịch sử hoặc dùng phiếu tiêu hủy.");
             }
