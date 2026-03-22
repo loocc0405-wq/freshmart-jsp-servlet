@@ -88,21 +88,41 @@
                     </div>
                 </div>
 
-                <div class="alert ${detailView.allFulfillable ? 'alert-success' : 'alert-warning'}">
-                    <strong>OMS FEFO/reservation check:</strong>
-                    <c:choose>
-                        <c:when test="${detailView.allFulfillable}">
-                            Hiện tại đơn đủ phần hàng đã reserve hoặc ATP khả dụng để hoàn tất theo FEFO.
-                        </c:when>
-                        <c:otherwise>
-                            Hiện tại có mặt hàng thiếu phần reserve hợp lệ hoặc thiếu ATP nếu hoàn tất theo FEFO ngay
-                            bây giờ.
-                        </c:otherwise>
-                    </c:choose>
-                    Có <strong>
-                        <c:out value="${detailView.riskyItemCount}" />
-                    </strong> dòng có shortage hoặc dùng lot near-expiry trong ${detailView.nearExpiryWindowDays} ngày.
-                </div>
+                <c:choose>
+                    <c:when test="${order.status == 'COMPLETED'}">
+                        <div class="alert alert-success">
+                            <strong>OMS FEFO/reservation check:</strong>
+                            Đơn này đã được hoàn tất. Nếu dòng hàng có lịch sử cấp phát thì bảng bên dưới sẽ hiển thị
+                            <strong>trace lot-level thực tế</strong>, không đánh giá lại theo ATP hiện tại nữa.
+                        </div>
+                    </c:when>
+                    <c:when test="${order.status == 'CANCELED'}">
+                        <div class="alert alert-secondary">
+                            <strong>OMS FEFO/reservation check:</strong>
+                            Đơn này đã bị hủy. Reservation của đơn phải được giải phóng khi hủy nên màn này chỉ giữ vai
+                            trò tra cứu lịch sử, không dùng ATP hiện tại để quyết định workflow nữa.
+                        </div>
+                    </c:when>
+                    <c:otherwise>
+                        <div class="alert ${detailView.allFulfillable ? 'alert-success' : 'alert-warning'}">
+                            <strong>OMS FEFO/reservation check:</strong>
+                            <c:choose>
+                                <c:when test="${detailView.allFulfillable}">
+                                    Hiện tại đơn đủ phần hàng đã reserve hoặc ATP khả dụng để hoàn tất theo FEFO.
+                                </c:when>
+                                <c:otherwise>
+                                    Hiện tại có mặt hàng thiếu phần reserve hợp lệ hoặc thiếu ATP nếu hoàn tất theo FEFO
+                                    ngay
+                                    bây giờ.
+                                </c:otherwise>
+                            </c:choose>
+                            Có <strong>
+                                <c:out value="${detailView.riskyItemCount}" />
+                            </strong> dòng có shortage hoặc dùng lot near-expiry trong
+                            ${detailView.nearExpiryWindowDays} ngày.
+                        </div>
+                    </c:otherwise>
+                </c:choose>
 
                 <c:if test="${order.status == 'PENDING' || order.status == 'PROCESSING' || order.status == 'SHIPPING'}">
                     <div class="alert alert-light border">
@@ -111,18 +131,10 @@
                     </div>
                 </c:if>
 
-                <c:if test="${order.status != 'PENDING' && order.status != 'COMPLETED'}">
+                <c:if test="${order.status == 'PROCESSING' || order.status == 'SHIPPING'}">
                     <div class="alert alert-info">
                         Bảng FEFO bên dưới vẫn là <strong>preview theo tồn hiện tại</strong>.
                         Khi đơn hoàn tất, hệ thống sẽ lưu trace thật theo từng lot đã xuất.
-                    </div>
-                </c:if>
-
-                <c:if test="${order.status == 'COMPLETED'}">
-                    <div class="alert alert-success">
-                        Đơn này đã có <strong>trace lot-level thực tế</strong>. Bảng nào có lịch sử cấp phát sẽ hiển thị
-                        đúng lot đã xuất,
-                        số lượng đã lấy ở từng lot và không còn là preview.
                     </div>
                 </c:if>
 
@@ -245,19 +257,36 @@
                                     </div>
                                     <div>
                                         <span class="badge bg-info text-dark">Yêu cầu: ${line.requestedQty}</span>
-                                        <span class="badge ${line.enoughStock ? 'bg-success' : 'bg-danger'}">ATP:
-                                            ${line.availableQty}</span>
-                                        <span
-                                            class="badge ${line.usesNearExpiryLots ? 'bg-warning text-dark' : 'bg-secondary'}">Near-expiry:
-                                            ${line.nearExpiryQty}</span>
+                                        <c:choose>
+                                            <c:when test="${line.hasActualAllocations}">
+                                                <span class="badge bg-success">Đã xuất thực tế:
+                                                    ${line.actualAllocatedQty}</span>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <span
+                                                    class="badge ${line.enoughStock ? 'bg-success' : 'bg-danger'}">ATP:
+                                                    ${line.availableQty}</span>
+                                                <span
+                                                    class="badge ${line.usesNearExpiryLots ? 'bg-warning text-dark' : 'bg-secondary'}">Near-expiry:
+                                                    ${line.nearExpiryQty}</span>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </div>
                                 </div>
 
                                 <div class="small text-muted mb-2">
-                                    HSD gần nhất:
-                                    <c:out value="${line.nearestExpiry}" /> |
-                                    Thiếu tồn:
-                                    <c:out value="${line.shortageQty}" />
+                                    <c:choose>
+                                        <c:when test="${line.hasActualAllocations}">
+                                            Dòng này đã có lịch sử xuất kho thực tế. HSD gần nhất đã cấp phát:
+                                            <c:out value="${line.nearestExpiry}" />.
+                                        </c:when>
+                                        <c:otherwise>
+                                            HSD gần nhất:
+                                            <c:out value="${line.nearestExpiry}" /> |
+                                            Thiếu tồn:
+                                            <c:out value="${line.shortageQty}" />
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
 
                                 <c:if test="${line.hasActualAllocations}">
