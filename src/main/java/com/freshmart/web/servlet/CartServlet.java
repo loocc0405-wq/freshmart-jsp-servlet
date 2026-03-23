@@ -37,6 +37,8 @@ public class CartServlet extends HttpServlet {
         User user = (User) session.getAttribute(AppConstants.SESSION_USER);
         String action = req.getParameter("action");
 
+        String productIdParam = req.getParameter("productId");
+
         try {
             if (user == null) {
                 handleGuestCart(req, session, action);
@@ -65,8 +67,15 @@ public class CartServlet extends HttpServlet {
                 default:
                     break;
             }
+
         } catch (Exception e) {
-            session.setAttribute("cartError", e.getMessage() == null ? "Cart operation failed" : e.getMessage());
+
+            session.setAttribute("cartError",
+                    e.getMessage() == null ? "Cart operation failed" : e.getMessage());
+
+            if (productIdParam != null) {
+                session.setAttribute("errorProductId", productIdParam);
+            }
         }
 
         resp.sendRedirect(req.getContextPath() + "/cart-view");
@@ -110,16 +119,20 @@ public class CartServlet extends HttpServlet {
                 if (availableQty <= 0) {
                     throw new IllegalStateException("Product out of stock");
                 }
+
                 if (currentQty + qty > availableQty) {
-                    throw new IllegalStateException("Not enough stock");
+                    throw new IllegalStateException("Only " + availableQty + " items available in stock");
                 }
+
                 GuestCartUtil.addItem(session, product, qty);
                 break;
             }
             case "update": {
+
                 if (qty > availableQty) {
-                    throw new IllegalStateException("Not enough stock");
+                    throw new IllegalStateException("Only " + availableQty + " items available in stock");
                 }
+
                 GuestCartUtil.updateItem(session, productId, qty);
                 break;
             }

@@ -48,9 +48,6 @@ public class CartService {
 
         executor.executeVoid(em -> {
 
-            // ------------------------------
-            // VALIDATE QTY
-            // ------------------------------
             if (qty <= 0) {
                 throw new RuntimeException("Quantity must be greater than 0");
             }
@@ -77,9 +74,8 @@ public class CartService {
 
             if (item == null) {
 
-                // CHECK STOCK BEFORE ADD
                 if (qty > stock) {
-                    throw new RuntimeException("Not enough stock");
+                    throw new RuntimeException("Only " + stock + " items available in stock");
                 }
 
                 item = new CartItem();
@@ -91,8 +87,9 @@ public class CartService {
             } else {
                 int newQty = item.getQuantity() + qty;
 
+                // ✅ CHỈ SỬA MESSAGE
                 if (newQty > stock) {
-                    throw new RuntimeException("Not enough stock");
+                    throw new RuntimeException("Only " + stock + " items available in stock");
                 }
 
                 item.setQuantity(newQty);
@@ -125,13 +122,10 @@ public class CartService {
                     throw new RuntimeException("Product is inactive");
                 }
 
-                // ------------------------------
-                // CHECK STOCK
-                // ------------------------------
                 int stock = getAvailableStock(em, productId);
 
                 if (qty > stock) {
-                    throw new RuntimeException("Not enough stock");
+                    throw new RuntimeException("Only " + stock + " items available in stock");
                 }
 
                 item.setQuantity(qty);
@@ -217,10 +211,9 @@ public class CartService {
     }
 
     // ===============================
-    // CHECKOUT - Wrapper to OrderService
+    // CHECKOUT
     // ===============================
     public void checkout(Long userId) {
         orderService.createCustomerOrder(userId);
     }
-
 }
