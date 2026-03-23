@@ -1,9 +1,11 @@
 USE freshmart;
-GO IF COL_LENGTH('dbo.product_lots', 'qty_reserved') IS NULL BEGIN
+GO
+IF COL_LENGTH('dbo.product_lots', 'qty_reserved') IS NULL BEGIN
 ALTER TABLE dbo.product_lots
 ADD qty_reserved INT NOT NULL CONSTRAINT df_product_lots_qty_reserved DEFAULT (0);
 END
-GO IF OBJECT_ID(N'dbo.order_item_lot_reservations', N'U') IS NULL BEGIN CREATE TABLE dbo.order_item_lot_reservations (
+GO
+IF OBJECT_ID(N'dbo.order_item_lot_reservations', N'U') IS NULL BEGIN CREATE TABLE dbo.order_item_lot_reservations (
         id BIGINT IDENTITY(1, 1) NOT NULL PRIMARY KEY,
         order_item_id BIGINT NOT NULL,
         product_lot_id BIGINT NOT NULL,
