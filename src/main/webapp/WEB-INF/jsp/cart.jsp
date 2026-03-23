@@ -36,6 +36,10 @@
                 <div class="alert alert-danger border-0 bg-danger-subtle mb-4 shadow-none"><i class="bi bi-exclamation-triangle-fill me-2"></i> ${error}</div>
             </c:if>
 
+            <!-- ✅ THÊM (KHÔNG ẢNH HƯỞNG CODE CŨ) -->
+            <c:set var="stockError" value="${sessionScope.cartError}" />
+            <c:set var="errorProductId" value="${sessionScope.errorProductId}" />
+
             <c:choose>
                 <c:when test="${empty items}">
                     <div class="fm-surface p-5 text-center shadow-none border-dashed" style="border: 2px dashed var(--fm-slate-200);">
@@ -78,6 +82,14 @@
                                                     </div>
                                                     <div>
                                                         <h4 class="fs-6 fw-bold mb-1"><c:out value="${item.product.name}"/></h4>
+
+                                                        <!-- ✅ THÊM DUY NHẤT CHỖ NÀY -->
+                                                        <c:if test="${errorProductId == item.product.id}">
+                                                            <div class="alert alert-warning mt-2 py-1 px-2 small">
+                                                                ${stockError}
+                                                            </div>
+                                                        </c:if>
+
                                                         <div class="fm-caption text-uppercase opacity-50 fw-bold">SKU-${item.product.id} • <c:out value="${item.product.unit}"/></div>
                                                     </div>
                                                 </div>
@@ -197,5 +209,9 @@
         </div>
     </div>
 </div>
+
+<!-- ✅ THÊM (KHÔNG ẢNH HƯỞNG GÌ) -->
+<c:remove var="cartError" scope="session"/>
+<c:remove var="errorProductId" scope="session"/>
 
 <jsp:include page="/WEB-INF/jsp/common/footer.jsp"/>
